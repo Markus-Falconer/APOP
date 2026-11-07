@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Load Bank Shopping</title>
+<meta name="description" content="What the APOP ICD requires of the load interface, the test equipment needed, what to look for in a DC electronic load, and candidate load banks checked against your generator voltage and power.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f4f3ef; --surface:#fcfcfb; --surface-2:#efeee9; --line:#dcdad3; --grid:#e7e5df;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#7a7972;
+  --accent:#c2410c; --s1:#2a78d6; --s2:#eb6834;
+  --good:#1c7c3c; --warn:#a35f00; --bad:#b42318; --band:rgba(42,120,214,.08); --pt:#0b0b0b;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+    --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+    --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+    --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+  --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+  --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+.mono,td.num,.kpi .v{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+header{border-bottom:1px solid var(--line);background:var(--surface)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+header .wrap{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding-top:18px;padding-bottom:16px}
+header h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
+header p{margin:0;color:var(--text-2);font-size:14px}
+nav{margin-left:auto;font-size:14px}
+nav a{color:var(--text-2);text-decoration:none;margin-left:14px}
+nav a[aria-current]{color:var(--text);font-weight:500;border-bottom:2px solid var(--accent)}
+main.wrap{display:grid;grid-template-columns:330px 1fr;gap:20px;padding-top:20px;padding-bottom:40px}
+@media (max-width:900px){main.wrap{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+aside.panel{padding:6px 16px 16px;align-self:start;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+aside.panel::-webkit-scrollbar{width:8px}
+aside.panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+@media (max-width:900px){aside.panel{position:static;max-height:none;overflow:visible}}
+fieldset{border:0;border-top:1px solid var(--line);margin:0;padding:12px 0 4px}
+fieldset:first-of-type{border-top:0}
+legend{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0}
+.field{display:grid;grid-template-columns:1fr 92px;align-items:center;gap:8px;margin:8px 0}
+.field label{font-size:14px;color:var(--text-2)}
+.field label small{color:var(--muted);display:block;font-size:12px;line-height:1.2}
+.field input[type=number]{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:14px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.field input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent);margin:-2px 0 0}
+.toggle{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--text-2);margin:8px 0}
+.toggle input{accent-color:var(--accent)}
+.btns{display:flex;gap:8px;margin-top:14px}
+button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--muted)}
+section.out{display:flex;flex-direction:column;gap:20px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{padding:12px 14px}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi .v{font-size:26px;font-weight:500;margin:2px 0 0;line-height:1.2}
+.kpi .v span{font-size:14px;color:var(--text-2);margin-left:3px}
+.kpi .c{font-size:12px;color:var(--text-2);margin-top:4px;display:flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.card{padding:16px}
+.card h2{font-size:15px;font-weight:600;margin:0 0 2px}
+.card .sub{font-size:13px;color:var(--text-2);margin:0 0 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:1100px){.grid2{grid-template-columns:1fr}}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-weight:500;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;text-align:right;padding:6px 10px;border-bottom:1px solid var(--line)}
+th:first-child,th:nth-child(2),td:first-child,td:nth-child(2){text-align:left}
+td{padding:7px 10px;border-bottom:1px solid var(--grid)}
+td.num{text-align:right}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:4px 20px;margin-top:14px;font-size:14px}
+.summary div{display:flex;justify-content:space-between;border-bottom:1px dashed var(--grid);padding:4px 0}
+.summary span:first-child{color:var(--text-2)}
+.warn{border-left:3px solid var(--warn);background:var(--surface);padding:10px 14px;border-radius:6px;font-size:14px}
+.warn:empty{display:none}
+svg text{font-family:"IBM Plex Sans",sans-serif}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--text);color:var(--surface);font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity .1s;font-family:"IBM Plex Mono",monospace}
+.units{padding:12px 0 10px;border-bottom:1px solid var(--line)}
+.units-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.units-l{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;padding:2px;background:var(--surface-2)}
+.seg button{border:0;background:transparent;padding:5px 14px;border-radius:5px;color:var(--text-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 0 0 1px var(--line)}
+details{margin-top:8px}
+summary{cursor:pointer;font-size:13px;color:var(--text-2)}
+.tag{font-size:11px;color:var(--accent);margin-left:4px}
+.unit-grid{display:grid;grid-template-columns:1fr 128px;gap:6px 8px;align-items:center;margin-top:10px;font-size:13px;color:var(--text-2)}
+.unit-grid select{font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);width:100%}
+.hint{font-size:12px;color:var(--muted);margin:-2px 0 8px;line-height:1.35}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 8px}
+.presets button{font-size:12px;padding:3px 9px}
+.tests input,.rotor-in input{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.tests input{min-width:86px}
+.tests input.lbl{text-align:left;font-family:inherit;min-width:120px}
+.tests td{padding:4px 5px;border-bottom:0}
+.tests th{white-space:nowrap}
+.x{border:0;background:transparent;color:var(--muted);font-size:18px;line-height:1;padding:2px 6px}
+.x:hover{color:var(--text)}
+.row-btns{display:flex;gap:8px;margin:10px 0 4px;flex-wrap:wrap;align-items:center}
+.fn{font-size:12px;color:var(--muted);margin:6px 0 0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin:-4px 0 8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:16px;height:0;border-top:2px solid}
+.legend i.dash{border-top-style:dashed}
+.legend i.pt{width:9px;height:9px;border:2px solid var(--text);border-radius:50%;background:var(--surface)}
+.legend i.band{width:14px;height:10px;border:0;background:var(--band)}
+h3{font-size:13px;font-weight:600;margin:16px 0 6px;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em}
+.rotor-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px;margin-bottom:6px}
+.rotor-in label{font-size:12px;color:var(--text-2);display:block;margin-bottom:3px}
+td.ok{color:var(--good)} td.off{color:var(--warn)}
+.toc{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;margin-top:10px}
+.toc a{color:var(--text-2)}
+.prose{font-size:15px;line-height:1.6;color:var(--text)}
+.prose p{margin:8px 0;max-width:78ch}
+.prose li{margin:6px 0;max-width:76ch}
+.prose h2{font-size:17px;margin:4px 0 6px}
+.prose h3{text-transform:none;letter-spacing:0;font-size:15px;color:var(--text);margin:18px 0 4px}
+.eq{font-family:"IBM Plex Mono",monospace;font-size:14px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.live{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;background:var(--surface-2);border-radius:4px;padding:0 4px}
+.pill{display:inline-block;font-size:12px;font-weight:500;padding:1px 8px;border-radius:10px;border:1px solid;white-space:nowrap}
+.pill.have{color:var(--good)} .pill.partial{color:var(--warn)} .pill.need{color:var(--bad)}
+ol.steps{padding-left:22px}
+ol.steps>li{margin:14px 0}
+ol.steps>li>b{display:block;margin-bottom:2px}
+ol.steps ul{margin:4px 0;padding-left:18px}
+.callout{border-left:3px solid var(--accent);background:var(--surface-2);padding:10px 14px;border-radius:6px;margin:12px 0;font-size:14px}
+.rec{font-size:15px;line-height:1.55;margin:0}
+tr.sel td{background:var(--surface-2)}
+td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
+.geo svg text{font-family:"IBM Plex Sans",sans-serif}
+.grid2>*{min-width:0}
+.cand a{color:var(--text)}
+td.ok{color:var(--good)} td.no{color:var(--bad)} td.mid{color:var(--warn)}
+.cand td.num{white-space:nowrap}
+.notes{font-size:14px;color:var(--text-2)}
+.notes h2{color:var(--text)}
+.notes li{margin:4px 0}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>Load Bank Shopping</h1>
+  <p>Test equipment for the power-generation side: what the ICD requires and what to buy</p>
+  <nav><a href="./">Cycle analysis</a><a href="cycle-v2.html">Cycle analysis V2</a><a href="generator.html">Generator physics</a><a href="nozzle.html">Nozzle modification</a><a href="aft-turbine.html">Aft turbine</a><a href="load-bank.html" aria-current="page">Load bank shopping</a></nav>
+</div></header>
+
+<main class="wrap">
+  <aside class="panel" aria-label="Sizing inputs">
+    <form id="inputs" onsubmit="return false"></form>
+    <div class="btns"><button type="button" id="reset">Reset inputs</button></div>
+  </aside>
+
+  <section class="out">
+    <div class="kpis">
+      <div class="panel kpi"><div class="l">Current at test power</div><div class="v" id="k-I"></div><div class="c" id="k-Ic"></div></div>
+      <div class="panel kpi"><div class="l">Resistance for 1 kW</div><div class="v" id="k-R"></div><div class="c" id="k-Rc"></div></div>
+      <div class="panel kpi"><div class="l">Rectifier ripple</div><div class="v" id="k-Rp"></div><div class="c" id="k-Rpc"></div></div>
+      <div class="panel kpi"><div class="l">Load voltage rating needed</div><div class="v" id="k-V"></div><div class="c" id="k-Vc"></div></div>
+    </div>
+
+    <div class="panel card prose">
+      <h2>1. What the ICD sets for the competition load bank</h2>
+      <ul>
+        <li>Your system delivers <b>1–200 V DC</b> into a facility DC load bank.</li>
+        <li>Voltage ripple should be under about <b>20%</b> of the supplied voltage. No filtering is needed with a commercially available 3-phase rectifier, but it must cope with a fast-spinning generator.</li>
+        <li>The load bank has <b>constant current (CC), constant voltage (CV), constant resistance (CR) and constant power (CP)</b> modes, and you pick the one that suits your generator.</li>
+        <li>It has a <b>male EC5</b> plug, so your side needs a <b>female EC5</b>.</li>
+        <li>The rectifier counts as support equipment: it goes in your sealed support box and is reviewed at Milestone 4.</li>
+      </ul>
+      <p>Your own test setup should copy that interface: a DC load with the same four modes, behind a female-to-male EC5 joint.</p>
+    </div>
+
+    <div class="panel card">
+      <h2>2. Candidate load banks for your numbers</h2>
+      <p class="sub">Checked against the inputs on the left: voltage rating at least 1.2× your worst-case open-circuit voltage, and enough current and power at your bus voltage for the test power. Prices are from retailer pages found in November 2026 and will change; get current quotes.</p>
+      <div class="tablewrap"><table class="cand" id="cand"></table></div>
+      <p class="fn">A load's power rating only applies where voltage × current fits inside it: a 1500 W / 500 V / 60 A load absorbs its full 1500 W only above 25 V.</p>
+    </div>
+
+    <div class="panel card prose">
+      <h2>3. Recommendation</h2>
+      <ul>
+        <li><b>Borrow or rent first.</b> Ask OSU's power electronics and senior-design labs, and test-equipment rental companies. You only need a 1.5 kW programmable load for a few months.</li>
+        <li><b>If you buy one,</b> a 1.5 kW, 500 V unit like the ITECH IT8514B+ covers every design being considered. Two 750 W, 500 V loads (B&amp;K 8612) in parallel also work.</li>
+        <li><b>Build a resistor bank as well.</b> Size it for your bus voltage (section 6), make it switchable in stages, and add a DC power meter and a scope. Use it as a backup load, an overspeed dump, and the load for early bench runs.</li>
+        <li><b>Ask the APOP team which load bank model they use.</b> Then you can check its minimum voltage and how each mode behaves with your generator before test day.</li>
+      </ul>
+    </div>
+
+    <div class="panel card prose">
+      <h2>4. What to look for in a load bank</h2>
+      <ol>
+        <li><b>Power:</b> at least 1.5 kW continuous at your operating voltage, so you can test past 1 kW. Read the power-vs-voltage curve.</li>
+        <li><b>Voltage:</b> rated above your worst-case open-circuit voltage, including overspeed and no-load runs, with margin. A 500 V-class load covers the whole ICD range; a 120–150 V unit is fine only if your bus stays under about 100 V.</li>
+        <li><b>Current:</b> I = P/V at your bus voltage (top left).</li>
+        <li><b>Minimum operating voltage:</b> 500 V-class loads need a few volts to draw full current (3.6 V at 60 A on the B&amp;K 8616). It only matters for very low-voltage designs.</li>
+        <li><b>All four modes: CC, CV, CR and CP</b> (CP is sometimes called CW). They behave differently with a generator:
+          <ul>
+            <li><b>CR</b> is the most forgiving: power is V²/R, and with the speed held, voltage just follows speed. Start here.</li>
+            <li><b>CV</b> works like a speed setpoint for a free aft rotor. On a front-shaft generator it can demand too much current.</li>
+            <li><b>CC</b> holds generator torque constant. Stable for the aft rotor as long as the voltage stays above the load's minimum.</li>
+            <li><b>CP</b> is the least forgiving: if the generator can't supply the set power, voltage collapses. Try it last.</li>
+          </ul></li>
+        <li><b>Stability with an inductive source:</b> the generator's windings and the load's control loop can oscillate. An adjustable slew rate or CV loop speed helps, and so does a capacitor on the DC bus.</li>
+        <li><b>Logging:</b> USB or LAN with SCPI commands, so you can script 30-second averages like the competition scoring.</li>
+        <li><b>Protections:</b> over-voltage, over-current, over-power, over-temperature and reverse polarity.</li>
+        <li><b>Practical points:</b> fan noise and size, runs on 120 V mains, terminals you can adapt to a male EC5, light enough to carry to engine runs.</li>
+      </ol>
+    </div>
+
+    <div class="panel card prose">
+      <h2>5. The rest of the test kit</h2>
+      <h3>Power path</h3>
+      <p>Generator → 3-phase rectifier → DC fuse or breaker → female EC5 → load bank.</p>
+      <ul>
+        <li><b>Rectifier:</b> a 3-phase bridge with heatsinking, rated well above your current and above the highest open-circuit voltage you could ever see, including overspeed. Fast-recovery or Schottky diodes handle the electrical frequency comfortably (top right). An unfiltered 3-phase bridge dips to about 87% of peak, so ripple is about 13% before any capacitor: that passes the ICD's 20%, but measure it.</li>
+        <li><b>Fuse or breaker:</b> rated for DC at your maximum voltage. DC arcs are much harder to break than AC.</li>
+        <li><b>Wiring:</b> short, heavy cable sized for at least 1.5× full-load current, with strain relief.</li>
+      </ul>
+      <h3>Measurement</h3>
+      <ul>
+        <li>The load's own voltage, current and power readback, logged to a PC.</li>
+        <li>An independent DC power meter or current shunt to cross-check the load.</li>
+        <li>An oscilloscope for ripple. If the DC bus isn't ground-referenced, use a differential or isolated probe.</li>
+        <li>Generator speed (optical or magnetic pickup) and thermocouples on the stator, rectifier and load.</li>
+        <li>A way to line the electrical log up in time with the ECU log and thrust.</li>
+      </ul>
+      <h3>Safety</h3>
+      <ul>
+        <li>An emergency stop, ideally a DC contactor.</li>
+        <li>An independent overspeed dump resistor. Essential for the aft turbine, which has no governor and runs away if the load drops.</li>
+        <li>An enclosure around live terminals, a Class C-rated fire extinguisher, and eye protection.</li>
+      </ul>
+      <h3>Bench dyno</h3>
+      <p>Drive the generator with a motor before it goes on the engine, so the load and rectifier are proven first.</p>
+    </div>
+
+    <div class="panel card">
+      <h2>6. Resistor bank sizing</h2>
+      <p class="sub">A fixed resistor bank is CR mode only. Stages switched in parallel give steps of load; values at your bus voltage.</p>
+      <div class="tablewrap"><table id="res"></table></div>
+    </div>
+
+    <div class="panel card prose">
+      <h2>Sources</h2>
+      <ul>
+        <li><a href="https://www.mouser.com/datasheet/2/43/bkprecision_08312015_8600_Series-1158913.pdf">B&amp;K Precision 8600 Series datasheet (Mouser)</a></li>
+        <li><a href="https://www.digikey.ch/en/products/detail/itech-electronic-co-ltd/IT8514B/20524687">ITECH IT8514B+ (Digi-Key CH)</a></li>
+        <li><a href="https://thedebugstore.com/a/s/products/m9714-dc-electronic-load-maynuo-uk">Maynuo M9714 (The Debug Store)</a></li>
+        <li><a href="https://www.bkprecision.com/products/power-supplies/8514B">B&amp;K Precision 8514B</a></li>
+        <li><a href="https://www.buerklin.com/en/p/ea-elektroautomatik/bench-power-supplies-and-loads/ea-el-9200-36-dt/26K9205/">EA-EL 9200-36 DT (Bürklin)</a></li>
+        <li><a href="https://windandsolar.com/products/1500-watt-diversion-dump-load-resistors-12-24-48-volt">1500 W diversion dump load (Missouri Wind and Solar)</a></li>
+        <li>APOP Power Generation ICD rev A, §4–5 (project docs)</li>
+      </ul>
+    </div>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = (v, d = 0) => isFinite(v) ? v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }) : "—";
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const FIELDS = [
+  ["Vbus", "Bus voltage at full load", "V", 60, 5, 200, 1],
+  ["Voc", "Worst-case open-circuit voltage", "V", 90, 5, 400, 1],
+  ["Ptest", "Highest test power", "W", 1500, 500, 3000, 50],
+  ["poles", "Generator poles", "", 2, 2, 12, 2],
+  ["rpm", "Generator speed", "rpm", 138600, 10000, 160000, 100],
+  ["stages", "Resistor bank stages", "", 4, 1, 8, 1],
+];
+const DEF = Object.fromEntries(FIELDS.map(f => [f[0], f[3]]));
+const state = { ...DEF, ...load("p100-loadbank", {}) };
+const CANDS = [
+  { name: "ITECH IT8514B+", url: "https://www.digikey.ch/en/products/detail/itech-electronic-co-ltd/IT8514B/20524687", P: 1500, V: 500, I: 60, modes: "CC/CV/CR/CW", price: "CHF 2,597 (Digi-Key CH)" },
+  { name: "B&K Precision 8616", url: "https://www.mouser.com/datasheet/2/43/bkprecision_08312015_8600_Series-1158913.pdf", P: 1200, V: 500, I: 60, modes: "CC/CV/CR/CW", price: "Similar class (not confirmed)" },
+  { name: "2× B&K Precision 8612 in parallel", url: "https://www.mouser.com/datasheet/2/43/bkprecision_08312015_8600_Series-1158913.pdf", P: 1500, V: 500, I: 60, modes: "CC/CV/CR/CW", price: "Not checked" },
+  { name: "Maynuo M9714", url: "https://thedebugstore.com/a/s/products/m9714-dc-electronic-load-maynuo-uk", P: 1200, V: 150, I: 60, modes: "CC/CR/CV/CW + combined", price: "£1,750–1,835 (UK)" },
+  { name: "B&K Precision 8614 / 8514B", url: "https://www.bkprecision.com/products/power-supplies/8514B", P: 1500, V: 120, I: 240, modes: "CC/CV/CR/CW", price: "Not checked" },
+  { name: "EA-EL 9200-36 DT", url: "https://www.buerklin.com/en/p/ea-elektroautomatik/bench-power-supplies-and-loads/ea-el-9200-36-dt/26K9205/", P: 1000, V: 200, I: 36, modes: "CC/CV/CP/CR", price: "Not checked" },
+  { name: "1.5 kW dump-load resistor bank (48 V version)", url: "https://windandsolar.com/products/1500-watt-diversion-dump-load-resistors-12-24-48-volt", P: 1500, V: null, I: null, R: 48 * 48 / 1500, modes: "CR only (fixed)", price: "$148 (sold out when checked)" },
+];
+function buildForm() {
+  $("inputs").innerHTML = `<fieldset><legend>Your generator</legend>${FIELDS.map(([k, l, u, , mn, mx, st]) => `<div class="field"><label for="n-${k}">${l}${u ? `<small>${u}</small>` : ""}</label><input type="number" id="n-${k}" step="any" value="${state[k]}"><input type="range" aria-label="${l}" id="r-${k}" min="${mn}" max="${mx}" step="${st}" value="${state[k]}"></div>`).join("")}</fieldset><p class="hint">Bus voltage is the rectified DC voltage at 1 kW. Open-circuit voltage should include overspeed and no-load runs.</p>`;
+  FIELDS.forEach(([k]) => {
+    const n = $("n-" + k), r = $("r-" + k);
+    n.addEventListener("input", () => { const v = parseFloat(n.value); if (isFinite(v)) { state[k] = v; r.value = v; update(); } });
+    r.addEventListener("input", () => { state[k] = parseFloat(r.value); n.value = r.value; update(); });
+  });
+}
+$("reset").onclick = () => { Object.assign(state, DEF); buildForm(); update(); };
+function kpi(id, val, unit, note, status) {
+  $(id).innerHTML = `${val}<span>${unit}</span>`;
+  const col = { good: "var(--good)", warn: "var(--warn)", bad: "var(--bad)" }[status] || "var(--muted)";
+  $(id + "c").innerHTML = `<span class="dot" style="background:${col}"></span>${note}`;
+}
+function update() {
+  save("p100-loadbank", state);
+  const { Vbus, Voc, Ptest, poles, rpm, stages } = state;
+  const I = Ptest / Vbus, I1 = 1000 / Vbus, R1 = Vbus * Vbus / 1000, fe = rpm / 60 * poles / 2;
+  kpi("k-I", fmt(I, 1), "A", `${fmt(I1, 1)} A at 1 kW · cable for ≥ ${fmt(1.5 * I, 0)} A`);
+  kpi("k-R", fmt(R1, 2), "Ω", `at ${fmt(Vbus)} V; ${fmt(Vbus * Vbus / Ptest, 2)} Ω for ${fmt(Ptest)} W`);
+  kpi("k-Rp", "≈13", "%", `unfiltered 3-phase bridge · ${fmt(fe / 1000, 2)} kHz electrical, ${fmt(6 * fe / 1000, 1)} kHz ripple`, "good");
+  const Vneed = 1.2 * Voc;
+  kpi("k-V", "≥ " + fmt(Vneed), "V", Voc > 200 ? "above the ICD's 200 V limit: lower the generator voltage" : `1.2× your ${fmt(Voc)} V worst case`, Voc > 200 ? "bad" : null);
+  // candidates
+  const rows = CANDS.map(c => {
+    let vOk, pAvail, why = [];
+    if (c.R) { // fixed resistor: power at the bus voltage
+      pAvail = Vbus * Vbus / c.R;
+      vOk = true;
+      const fit = Math.abs(pAvail - 1000) / 1000 < 0.25 ? "ok" : pAvail > 1600 ? "no" : "mid";
+      return `<tr><td><a href="${c.url}">${c.name}</a></td><td class="num">${fmt(c.R, 2)} Ω</td><td>${c.modes}</td><td class="num">${fmt(pAvail)} W at ${fmt(Vbus)} V</td><td>${c.price}</td><td class="${fit}">${fit === "ok" ? "✓ near 1 kW at your voltage" : fit === "no" ? "✕ overloaded at your voltage; rewire or resize" : "! not near 1 kW at your voltage"}</td></tr>`;
+    }
+    vOk = c.V >= Vneed;
+    pAvail = Math.min(c.P, Vbus * c.I);
+    if (!vOk) why.push(`voltage ${c.V} V < ${fmt(Vneed)} V`);
+    if (pAvail < Ptest) why.push(`only ${fmt(pAvail)} W at ${fmt(Vbus)} V`);
+    const cls = !vOk ? "no" : why.length ? "mid" : "ok";
+    return `<tr><td><a href="${c.url}">${c.name}</a></td><td class="num">${fmt(c.P)} W · ${c.V} V · ${c.I} A</td><td>${c.modes}</td><td class="num">${fmt(pAvail)} W at ${fmt(Vbus)} V</td><td>${c.price}</td><td class="${cls}">${cls === "ok" ? "✓ fits" : (cls === "no" ? "✕ " : "! ") + why.join("; ")}</td></tr>`;
+  }).join("");
+  $("cand").innerHTML = `<thead><tr><th>Load</th><th>Rating</th><th>Modes</th><th>Usable power</th><th>Price seen</th><th>Fit</th></tr></thead><tbody>${rows}</tbody>`;
+  $("cand").querySelectorAll("th,td:not(.num)").forEach(c => c.style.textAlign = "left");
+  // resistor bank: equal stages that together give the highest test power
+  const n = Math.round(stages), Rst = Vbus * Vbus / (Ptest / n);
+  let r = "";
+  for (let k = 1; k <= n; k++) { const R = Rst / k, P = Vbus * Vbus / R; r += `<tr><td>${k} of ${n} stages on</td><td class="num">${fmt(R, 2)} Ω</td><td class="num">${fmt(Vbus / R, 1)} A</td><td class="num">${fmt(P)} W</td></tr>`; }
+  $("res").innerHTML = `<thead><tr><th>Setting</th><th>Resistance</th><th>Current</th><th>Power at ${fmt(Vbus)} V</th></tr></thead><tbody>${r}<tr><td colspan="4" style="text-align:left">Each stage: ${fmt(Rst, 2)} Ω rated for at least ${fmt(1.5 * Ptest / n)} W continuous (1.5× margin) and ${fmt(Voc)} V, on a heatsink or in moving air.</td></tr></tbody>`;
+  $("res").querySelectorAll("th:first-child,td:first-child").forEach(c => c.style.textAlign = "left");
+}
+buildForm(); update();
+</script>
+</body></html>
