@@ -130,6 +130,10 @@ svg text{font-family:"IBM Plex Sans",sans-serif}
 .rec{margin-top:16px;border-left:3px solid var(--accent);padding:10px 14px}
 .rec p{margin:4px 0;font-size:14px;color:var(--text-2)}
 .rec b{color:var(--text)}
+.fit h3{font-size:13px;font-weight:600;color:var(--text-2);margin:8px 0 6px;text-transform:uppercase;letter-spacing:.05em}
+.fit .grid2>*{min-width:0}
+.fit td.num{text-align:right;white-space:nowrap}
+.fit td{text-align:left}
 .notes{font-size:14px;color:var(--text-2)}
 .notes h2{color:var(--text)}
 .notes li{margin:4px 0}
@@ -156,6 +160,17 @@ svg text{font-family:"IBM Plex Sans",sans-serif}
       <div class="panel kpi"><div class="l">Sleeve hoop stress</div><div class="v" id="k-S"></div><div class="c" id="k-Sc"></div></div>
     </div>
     <div class="warn" id="warn" role="status"></div>
+
+    <div class="panel card fit">
+      <h2>Size against the engine</h2>
+      <p class="sub" id="fitSub"></p>
+      <div class="legend"><span><i class="sw" style="background:var(--s1);opacity:.55"></i>Stator winding</span><span><i class="sw" style="background:var(--steel)"></i>Back-iron, core, compressor</span><span><i class="sw" style="background:var(--mag-n)"></i>Magnet</span><span><i class="sw" style="background:var(--s1);opacity:.15"></i>Inlet flow area</span><span><i class="sw" style="background:none;border:1.5px dashed var(--accent)"></i>Stock nut, coupler and nose</span></div>
+      <div class="grid2">
+        <div><h3>Side section, true scale</h3><div id="fitSide"></div></div>
+        <div><h3>Looking aft into the inlet</h3><div id="fitFront" style="max-width:340px;margin:0 auto"></div></div>
+      </div>
+      <div class="tablewrap" style="margin-top:10px"><table id="fitTab"></table></div>
+    </div>
 
     <div class="grid2">
       <div class="panel card">
@@ -705,6 +720,103 @@ function update() {
   ].join("");
   $("xs-rpm").textContent = fmt(state.rpm);
   drawXsec(o); drawEMF(o); drawField(o); drawSpeed(o); drawTrade(o); drawFlow(o);
+  drawFit(o);
+}
+
+// ---------- size against the engine (true scale) ----------
+// Measured engine geometry (mm). Positions: x = 0 at the compressor front face, negative = forward (intake side).
+const ENG = { DIN_R: 26.8, COMP_R: 30, COMP_L: 29, SHAFT_R: 3.165, NUT_R: 6.625, NUT_FLAT: 5.5, NUT_L: 15.8, COUP_R: 6.75, NOSE_R: 18, NECK: 15, NUT_G: 4 };
+const FIT = { GAP: 2, WALL: 2, END: 8, FLATS: 3 }; // aft gap to compressor, front cover, end-turn overhang each side (model: 16 mm total), core flats
+function fitLayout(o) {
+  const g = o.g, mm = v => v * 1e3;
+  const r = { ri: mm(g.ri), rm: mm(g.rm), rs: mm(g.rm + g.ts), rwIn: mm(g.rm + g.ts + g.clr), Ry: mm(g.Ry), Rst: mm(o.statorOD) / 2 };
+  r.Rbi = r.Ry + 2;
+  const L = mm(o.L), Lst = mm(o.Lst);
+  const x = { stAft: -FIT.GAP, stFwd: -FIT.GAP - Lst };
+  x.magAft = x.stAft - FIT.END; x.magFwd = x.magAft - L; x.coreFwd = x.magFwd - FIT.FLATS; x.front = x.stFwd - FIT.WALL;
+  return { r, x, L, Lst };
+}
+function drawFit(o) {
+  const { r, x, L, Lst } = fitLayout(o);
+  const E = ENG, NS2 = "http://www.w3.org/2000/svg";
+  // ---- side section ----
+  const host = $("fitSide"); host.innerHTML = "";
+  const xmin = Math.min(x.front, -E.NECK - 22) - 3, xmax = E.COMP_L + 3, W = 440, ml = 6, mr = 6, mt = 16, mb = 18;
+  const k = (W - ml - mr) / (xmax - xmin), rmax = E.COMP_R + 3, rmin = -11, H = Math.round(mt + mb + (rmax - rmin) * k);
+  const X = v => ml + (v - xmin) * k, Y = v => mt + (rmax - v) * k;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img", "aria-label": "True-scale half-section of the engine front: inlet, compressor, shaft, the stock nut and nose (dashed), and the proposed nut-rotor and stator" }, host);
+  const rect = (x0, x1, r0, r1, a) => el("rect", { x: X(Math.min(x0, x1)), y: Y(Math.max(r0, r1)), width: Math.abs(x1 - x0) * k, height: Math.abs(r1 - r0) * k, ...a }, svg);
+  const poly = (pts, a) => el("path", { d: pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + "," + Y(p[1]).toFixed(1)).join("") + "Z", ...a }, svg);
+  const txt = (xx, yy, s, a = {}) => el("text", { x: xx, y: yy, "font-size": 11, fill: "var(--text-2)", ...a }, svg).textContent = s;
+  el("line", { x1: X(xmin), x2: X(xmax), y1: Y(0), y2: Y(0), stroke: "var(--muted)", "stroke-dasharray": "8 3 2 3" }, svg);
+  // inlet shroud and compressor (simplified profile)
+  el("path", { d: `M${X(xmin)},${Y(E.DIN_R)} L${X(0)},${Y(E.DIN_R)} L${X(16)},${Y(27.9)} L${X(23)},${Y(29.7)} L${X(24)},${Y(E.COMP_R + 1)}`, fill: "none", stroke: "var(--text-2)", "stroke-width": 2 }, svg);
+  poly([[0, 8.5], [0, E.DIN_R - 0.3], [16, 27.4], [23, 29.3], [24, E.COMP_R], [24, 26], [16, 18], [8, 11]], { fill: "var(--grid)", stroke: "var(--line)" });
+  poly([[0, E.SHAFT_R], [0, 8.5], [8, 11], [16, 18], [24, 26], [24, E.COMP_R], [E.COMP_L, E.COMP_R], [E.COMP_L, E.SHAFT_R]], { fill: "var(--steel)", stroke: "var(--line)" });
+  txt(X(E.COMP_L) - 2, Y(E.COMP_R) - 6, "compressor Ø60", { "text-anchor": "end" });
+  txt(X(xmin) + 2, Y(E.DIN_R) - 5, "inlet Ø53.6");
+  // shaft
+  rect(x.coreFwd - 2, E.COMP_L + 3, 0, E.SHAFT_R, { fill: "var(--mag-n)", "fill-opacity": 0.55 });
+  // proposed: core, magnet, sleeve, stator
+  rect(x.coreFwd, 0, E.SHAFT_R, r.ri, { fill: "var(--steel)", stroke: "var(--line)" });
+  rect(x.magFwd, x.magAft, r.ri, r.rm, { fill: "var(--mag-n)" });
+  rect(x.magFwd, x.magAft, r.rm, r.rs, { fill: "var(--muted)", "fill-opacity": 0.45 });
+  rect(x.stFwd, x.stAft, r.rwIn, r.Ry, { fill: "var(--s1)", "fill-opacity": 0.55 });
+  rect(x.stFwd, x.stAft, r.Ry, r.Rbi, { fill: "var(--steel)" });
+  rect(x.front, x.stAft, r.Rbi, r.Rst, { fill: "var(--surface-2)", stroke: "var(--s1)", "stroke-width": 1.5 });
+  rect(x.front, x.stFwd, 0, r.Rbi, { fill: "var(--surface-2)", stroke: "var(--s1)", "stroke-width": 1.5 });
+  // stock references, dashed
+  const ghost = { fill: "none", stroke: "var(--accent)", "stroke-width": 1.5, "stroke-dasharray": "4 3" };
+  rect(-E.NUT_L, 0, 0, E.NUT_R, ghost);
+  rect(-E.NUT_L - 7, -E.NUT_L, 0, E.COUP_R, ghost);
+  el("path", { d: `M${X(-E.NECK)},${Y(0)} L${X(-E.NECK)},${Y(E.NOSE_R)} L${X(xmin)},${Y(E.NOSE_R)}`, ...ghost }, svg);
+  // labels and dimensions
+  const arrow = (x0, x1, yy, s) => { el("line", { x1: X(x0), x2: X(x1), y1: yy, y2: yy, stroke: "var(--text-2)" }, svg); [x0, x1].forEach(v => el("line", { x1: X(v), x2: X(v), y1: yy - 4, y2: yy + 4, stroke: "var(--text-2)" }, svg)); txt((X(x0) + X(x1)) / 2, yy - 5, s, { "text-anchor": "middle" }); };
+  arrow(x.front, 0, Y(-4.5), `generator: ${fmt(-x.front, 1)} mm ahead of the compressor`);
+  arrow(-E.NECK, 0, Y(-9.5), `stock neck ${E.NECK} mm`);
+  txt(X(xmin) + 2, Y(E.NOSE_R) - 4, "stock nose Ø36", { fill: "var(--accent)" });
+  txt(X(-E.NUT_L / 2), Y(0) + 11, "stock nut", { fill: "var(--accent)", "text-anchor": "middle" });
+  txt(X(xmin) + 2, H - 3, "← intake", {});
+  txt(X(xmax) - 2, H - 3, "compressor →", { "text-anchor": "end" });
+  // ---- front view, looking aft into the inlet ----
+  const hf = $("fitFront"); hf.innerHTML = "";
+  const S = E.COMP_R + 7;
+  const sv = el("svg", { viewBox: `${-S} ${-S} ${2 * S} ${2 * S}`, width: "100%", role: "img", "aria-label": "Looking aft into the inlet: the flow annulus between the inlet and the generator housing, with the stock nose and nut dashed" }, hf);
+  const circ = (rr, a) => el("circle", { cx: 0, cy: 0, r: rr, ...a }, sv);
+  const ringP = (r1, r2) => `M${r2},0A${r2},${r2} 0 1 1 ${-r2},0A${r2},${r2} 0 1 1 ${r2},0ZM${r1},0A${r1},${r1} 0 1 0 ${-r1},0A${r1},${r1} 0 1 0 ${r1},0Z`;
+  const sw = S / 160;
+  circ(E.COMP_R, { fill: "none", stroke: "var(--muted)", "stroke-width": sw, "stroke-dasharray": `${sw * 2} ${sw * 3}` });
+  el("path", { d: ringP(Math.min(r.Rst, E.DIN_R), E.DIN_R), fill: "var(--s1)", "fill-opacity": 0.12, "fill-rule": "evenodd" }, sv);
+  circ(E.DIN_R, { fill: "none", stroke: "var(--text-2)", "stroke-width": sw * 2 });
+  circ(r.Rst, { fill: "var(--surface-2)", stroke: "var(--s1)", "stroke-width": sw * 1.5 });
+  el("path", { d: ringP(r.rwIn, r.Ry), fill: "var(--s1)", "fill-opacity": 0.55, "fill-rule": "evenodd" }, sv);
+  el("path", { d: ringP(r.Ry, r.Rbi), fill: "var(--steel)", "fill-rule": "evenodd" }, sv);
+  el("path", { d: ringP(r.rm, r.rs), fill: "var(--muted)", "fill-opacity": 0.45, "fill-rule": "evenodd" }, sv);
+  el("path", { d: ringP(r.ri, r.rm), fill: "var(--mag-n)", "fill-rule": "evenodd" }, sv);
+  el("path", { d: ringP(E.SHAFT_R, r.ri), fill: "var(--steel)", stroke: "var(--line)", "stroke-width": sw, "fill-rule": "evenodd" }, sv);
+  circ(E.SHAFT_R, { fill: "var(--mag-n)", "fill-opacity": 0.55 });
+  const gs = { fill: "none", stroke: "var(--accent)", "stroke-width": sw * 1.5, "stroke-dasharray": `${sw * 4} ${sw * 3}` };
+  circ(E.NOSE_R, gs);
+  const a = Math.asin(E.NUT_FLAT / E.NUT_R), c = E.NUT_R * Math.cos(a);
+  el("path", { d: `M${-E.NUT_FLAT},${-c} A${E.NUT_R},${E.NUT_R} 0 0 1 ${E.NUT_FLAT},${-c} L${E.NUT_FLAT},${c} A${E.NUT_R},${E.NUT_R} 0 0 1 ${-E.NUT_FLAT},${c} Z`, ...gs }, sv);
+  const lab = (yy, s, col) => el("text", { x: -S + 1, y: yy, "font-size": S / 13, fill: col || "var(--text-2)" }, sv).textContent = s;
+  lab(-S + 3.2, "inlet Ø53.6 · compressor Ø60 dotted", null);
+  lab(S - 1, `generator Ø${fmt(2 * r.Rst, 1)} · stock nose Ø36 dashed`, null);
+  // ---- table ----
+  const annP = Math.PI / 4 * (53.6 ** 2 - Math.min(2 * r.Rst, 53.6) ** 2), annS = Math.PI / 4 * (53.6 ** 2 - 36 ** 2);
+  const arm = E.COMP_L + (-x.magAft) + L / 2, armModel = o.dCg * 1e3, Ilay = o.Iratio * (arm / armModel) ** 2;
+  const rows = [
+    ["Rotor OD over the sleeve", `Ø${fmt(2 * r.rs, 1)} mm`, `stock nut Ø13.25 (11 mm flats)`, `${fmt(2 * r.rs / 13.25, 2)}×`],
+    ["Nut-rotor length", `${fmt(-x.coreFwd, 1)} mm`, "stock nut 15.8 mm", `${fmt(-x.coreFwd / 15.8, 2)}×`],
+    ["Nut-rotor mass", `${fmt(o.mRot * 1000)} g`, "stock nut ~4 g; compressor 54 g", `+${fmt(o.mNet * 1000)} g`],
+    ["Core wall around the 1/4\" thread", `${fmt(r.ri - E.SHAFT_R, 2)} mm`, "shaft Ø6.33", ""],
+    ["Generator housing OD", `Ø${fmt(2 * r.Rst, 1)} mm`, "stock nose Ø36 · inlet Ø53.6", `${r.Rst <= E.NOSE_R ? fmt(E.NOSE_R - r.Rst, 1) + " mm inside the nose" : fmt(r.Rst - E.NOSE_R, 1) + " mm outside the nose"}`],
+    ["Inlet flow area", `${fmt(annP)} mm²`, `stock ${fmt(annS)} mm²`, `${annP >= annS ? "+" : ""}${fmt(100 * (annP / annS - 1), 1)}%`],
+    ["Front of generator", `${fmt(-x.front, 1)} mm ahead of compressor`, `stock neck ${E.NECK} mm`, -x.front > E.NECK ? `+${fmt(-x.front - E.NECK, 1)} mm engine length` : "fits the neck"],
+    ["Magnet centroid from front bearing", `${fmt(arm, 1)} mm`, `model assumes ${fmt(armModel, 1)} mm`, `overhung inertia ≈ ${fmt(Ilay, 1)}× compressor`],
+  ];
+  $("fitTab").innerHTML = `<thead><tr><th>Item</th><th style="text-align:right">Proposed</th><th style="text-align:left">Engine reference</th><th style="text-align:left">Comparison</th></tr></thead><tbody>${rows.map(rw => `<tr>${rw.map((c, i) => `<td${i === 1 ? ' class="num"' : ""}>${c}</td>`).join("")}</tr>`).join("")}</tbody>`;
+  $("fitSub").textContent = `Drawn to scale from the inputs and your measurements. The stator sits ${FIT.GAP} mm ahead of the compressor face with ${FIT.END} mm end turns each side, so the magnet starts ${fmt(-x.magAft, 0)} mm ahead of the compressor (the model's inertia figure assumes 5 mm). Compressor profile simplified.`;
 }
 
 // ---------- options A and B ----------

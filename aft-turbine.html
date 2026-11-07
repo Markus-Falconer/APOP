@@ -13,7 +13,7 @@
   --bg:#f4f3ef; --surface:#fcfcfb; --surface-2:#efeee9; --line:#dcdad3; --grid:#e7e5df;
   --text:#0b0b0b; --text-2:#52514e; --muted:#7a7972;
   --accent:#c2410c; --s1:#2a78d6; --s2:#eb6834;
-  --good:#1c7c3c; --warn:#a35f00; --bad:#b42318; --band:rgba(42,120,214,.08); --pt:#0b0b0b; --s3:#1baf7a;
+  --good:#1c7c3c; --warn:#a35f00; --bad:#b42318; --band:rgba(42,120,214,.08); --pt:#0b0b0b; --s3:#1baf7a; --steel:#cfcdc5;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -21,7 +21,7 @@
     --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
     --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
     --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
-    --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec; --s3:#199e70;
+    --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec; --s3:#199e70; --steel:#3c3b37;
   }
 }
 :root[data-theme="dark"]{
@@ -29,7 +29,7 @@
   --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
   --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
   --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
-  --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec; --s3:#199e70;
+  --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec; --s3:#199e70; --steel:#3c3b37;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
@@ -188,6 +188,14 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
       <h2>1. Layout</h2>
       <div id="schem" style="margin:6px 0 4px"></div>
       <p>Station 4 is the core turbine exit, where the ECU thermocouple sits. Station 45 is the aft rotor exit, and station 5 is the new nozzle exit. The rotor's bearings and a bevel pinion sit in a hub held on struts in the hot gas. A cross shaft runs out through one hollow strut to a gearbox and the generator outside the housing, where insulation and a cooling flow keep it within its temperature rating. The core turbine still drives only the compressor, so the ECU keeps holding corrected speed exactly as it does now.</p>
+      <h3>True scale: the module against the engine's rear and the stock nozzle</h3>
+      <p class="fn" style="margin-top:0">Drawn from the inputs on the left. The engine's rear and the stock tail cone length are simplified; measure them and the stock nozzle profile to refine the drawing.</p>
+      <div class="legend" id="lg-fit"></div>
+      <div class="grid2">
+        <div><h3>Side section</h3><div id="aftSide"></div></div>
+        <div><h3>Looking forward from behind</h3><div id="aftRear" style="max-width:340px;margin:0 auto"></div></div>
+      </div>
+      <div class="tablewrap" style="margin-top:8px"><table id="aftFit"></table></div>
     </div>
 
     <div class="panel card prose" id="energy">
@@ -657,7 +665,12 @@ const GROUPS = [
   ]],
   ["Packaging (estimates)", [
     F_("L0", "Overall length today", "length", 0.241, 0.2, 0.4, 0.001),
-    F_("dL", "Added length at the back", "length", 0.05, 0, 0.15, 0.001),
+    F_("Lh", "Hub and strut section length", "length", 0.035, 0.015, 0.08, 0.0005),
+    F_("Lr", "Rotor axial length", "length", 0.007, 0.004, 0.02, 0.0005),
+    F_("Ln", "Nozzle section length", "length", 0.048, 0.02, 0.1, 0.0005),
+    F_("wall", "Housing wall incl. containment", "length", 0.003, 0.001, 0.008, 0.0005),
+    F_("Lgen", "Generator envelope length (axial)", "length", 0.045, 0.02, 0.1, 0.001),
+    F_("Wgen", "Generator envelope width", "length", 0.04, 0.02, 0.08, 0.001),
     F_("dM", "Added mass of the aft module", "mass", 0.45, 0, 1.5, 0.005),
   ]],
 ];
@@ -699,6 +712,7 @@ const HINTS = {
   Nmax: "The core wheel's rating, at a hotter temperature than the aft position sees.",
   P_cool: "A fan run from the generator output. Battery-powered cooling would be support equipment instead.",
   protr: "Radial distance is scored from the engine case.",
+  Lh: "Module length = hub section + rotor + nozzle section; added length is that minus the stock nozzle's 40.4 mm.",
   D_aft: "“Match front-shaft EGT” below sizes it for the selected rotor.",
 };
 function buildForm() {
@@ -820,6 +834,7 @@ function update() {
   renderCompare({ stock, front, cases, A, aftMatch, Dmatch, fullStock, PA });
   renderRequirements({ A, front, Dmatch, PA });
   renderComparison({ A, front, aftMatch, Dmatch });
+  drawAftFit(A);
 }
 
 function kpi(id, val, unit, note, status) {
@@ -1002,7 +1017,7 @@ function renderCompare(r) {
 function renderRequirements(r) {
   const A = r.A, k = A.k, kf = A.kFullIdle;
   const I = 0.45 * A.mass * (state.Dt / 2) ** 2, wR = kf ? kf.N * 2 * Math.PI / 60 : NaN, KE = 0.5 * I * wR * wR;
-  const inch = v => v / 0.0254, L1 = state.L0 + state.dL, lb = state.dM / 0.45359237;
+  const inch = v => v / 0.0254, L1 = state.L0 + addedLen(), lb = state.dM / 0.45359237;
   const T45 = A.o90.failed ? "—" : T_(A.o90.T45), T45f = A.oFullLoad.failed ? "—" : T_(A.oFullLoad.T45);
   const rows = [
     ["Aerodynamic", "Pass the engine's flow with little extra back-pressure", `No copy NGV (it would need ${$("n-ratio").textContent} more throat). Strut, hub and duct loss ≲ ${fmt(100 * state.dp_aft, 1)}% of P₀₄, including the hollow cross-shaft strut.`, "Each 1% of P₀₄ lost behind the core costs roughly 15–20 °C of EGT at 90%."],
@@ -1135,6 +1150,89 @@ function chart(host, o) {
   }
 }
 const legend = (id, items) => { $(id).innerHTML = items.map(([kind, color, label]) => `<span><i class="${kind === "dash" ? "dash" : ""}" style="border-color:${color}"></i>${label}</span>`).join(""); };
+
+// ---------- true-scale size against the engine rear and the stock nozzle ----------
+const REAR = { CASE_R: 48.5, TURB_R: 29, TURB_L: 6.4, NOZ_IN_R: 29.2, NOZ_EX_R: 23.81, NOZ_L: 40.4, CONE_R: 18.75, CONE_L: 20, TIPCLR: 0.4 };
+const addedLen = () => state.Lh + state.Lr + state.Ln - REAR.NOZ_L / 1000;
+function drawAftFit(A) {
+  const mm = v => v * 1000, R = REAR;
+  const Lh = mm(state.Lh), Lr = mm(state.Lr), Ln = mm(state.Ln), Ltot = Lh + Lr + Ln;
+  const rt = mm(state.Dt) / 2, rh = mm(state.Dh) / 2, rIn = rt + R.TIPCLR, rOut = rIn + mm(state.wall), rex = mm(state.D_aft) / 2;
+  const rGen = R.CASE_R + mm(state.protr), Lg = mm(state.Lgen), xs = Lh * 0.45;
+  // ---- side section, upper half ----
+  const host = $("aftSide"); host.innerHTML = "";
+  const xmin = -30, xmax = Math.max(Ltot, R.NOZ_L) + 8, rmax = Math.max(rGen, R.CASE_R) + 4, rmin = -12;
+  const W = 440, ml = 6, mr = 6, mt = 14, mb = 16, k = (W - ml - mr) / (xmax - xmin), H = Math.round(mt + mb + (rmax - rmin) * k);
+  const X = v => ml + (v - xmin) * k, Y = v => mt + (rmax - v) * k;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img", "aria-label": "True-scale half-section of the engine rear with the stock nozzle dashed and the proposed aft-turbine module and generator" }, host);
+  const rect = (x0, x1, r0, r1, a) => el("rect", { x: X(Math.min(x0, x1)), y: Y(Math.max(r0, r1)), width: Math.abs(x1 - x0) * k, height: Math.abs(r1 - r0) * k, ...a }, svg);
+  const path = (pts, a, close) => el("path", { d: pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + "," + Y(p[1]).toFixed(1)).join("") + (close ? "Z" : ""), ...a }, svg);
+  const txt = (xx, yy, s, a = {}) => el("text", { x: xx, y: yy, "font-size": 11, fill: "var(--text-2)", ...a }, svg).textContent = s;
+  el("line", { x1: X(xmin), x2: X(xmax), y1: Y(0), y2: Y(0), stroke: "var(--muted)", "stroke-dasharray": "8 3 2 3" }, svg);
+  // engine rear: case, NGV and turbine (simplified)
+  path([[xmin, R.CASE_R], [-4, R.CASE_R], [0, R.CASE_R - 6], [0, R.NOZ_IN_R + 1.5]], { fill: "none", stroke: "var(--text-2)", "stroke-width": 2 });
+  rect(-17, -9.5, R.CONE_R, R.TURB_R, { fill: "var(--grid)", stroke: "var(--line)" });
+  rect(-8, -8 + R.TURB_L, 4, R.TURB_R, { fill: "var(--steel)", stroke: "var(--line)" });
+  txt(X(xmin) + 2, Y(R.CASE_R) - 5, "case Ø97");
+  txt(X(-12), Y(R.CONE_R) - 4, "NGV + turbine", { "text-anchor": "middle" });
+  // case radius reference line continued aft (for radial distance)
+  el("line", { x1: X(0), x2: X(xmax), y1: Y(R.CASE_R), y2: Y(R.CASE_R), stroke: "var(--muted)", "stroke-dasharray": "2 4" }, svg);
+  // proposed module
+  path([[0, rOut], [Lh + Lr, rOut], [Ltot, rex + (rOut - rIn)], [Ltot, rex], [Lh + Lr, rIn], [0, rIn]], { fill: "color-mix(in srgb, var(--s1) 22%, var(--surface))", stroke: "var(--s1)", "stroke-width": 1.5 }, true);
+  rect(0, Lh, 0, rh, { fill: "var(--surface-2)", stroke: "var(--text-2)" });
+  txt(X(Lh / 2), Y(rh / 2) + 4, "hub", { "text-anchor": "middle" });
+  rect(xs - 3, xs + 3, rh, rIn, { fill: "var(--grid)", stroke: "var(--line)" });
+  el("line", { x1: X(xs), x2: X(xs), y1: Y(rh * 0.5), y2: Y(rGen - 4), stroke: "var(--s2)", "stroke-width": 2.5 }, svg);
+  rect(Lh, Lh + Lr, rh, rt, { fill: "color-mix(in srgb, var(--s2) 35%, var(--surface))", stroke: "var(--s2)", "stroke-width": 1.5 });
+  rect(Lh, Lh + Lr, 0, rh, { fill: "var(--steel)", stroke: "var(--line)" });
+  path([[Lh + Lr, rh], [Lh + Lr + Math.min(0.8 * Ln, 2.2 * rh), 0], [Lh + Lr, 0]], { fill: "var(--grid)", stroke: "var(--line)" }, true);
+  rect(xs - Lg / 2, xs + Lg / 2, rOut, rGen, { fill: "color-mix(in srgb, var(--s2) 12%, var(--surface))", stroke: "var(--s2)", "stroke-width": 1.5 });
+  txt(X(xs), Y(rGen) - 4, "generator + gearbox", { "text-anchor": "middle", fill: "var(--s2)" });
+  txt(X(Lh + Lr / 2), Y(rt) - 4, "rotor", { "text-anchor": "middle", fill: "var(--s2)" });
+  // stock nozzle, dashed
+  const ghost = { fill: "none", stroke: "var(--accent)", "stroke-width": 1.5, "stroke-dasharray": "4 3" };
+  path([[0, R.NOZ_IN_R], [R.NOZ_L, R.NOZ_EX_R]], ghost);
+  path([[0, R.CONE_R], [R.CONE_L, 0]], ghost);
+  // dimensions below the centreline
+  const arrow = (x0, x1, yy, s) => { el("line", { x1: X(x0), x2: X(x1), y1: yy, y2: yy, stroke: "var(--text-2)" }, svg); [x0, x1].forEach(v => el("line", { x1: X(v), x2: X(v), y1: yy - 4, y2: yy + 4, stroke: "var(--text-2)" }, svg)); txt((X(x0) + X(x1)) / 2, yy - 4, s, { "text-anchor": "middle" }); };
+  arrow(0, R.NOZ_L, Y(-4), `stock nozzle ${R.NOZ_L} mm`);
+  arrow(0, Ltot, Y(-10), `module ${fmt(Ltot, 1)} mm (+${fmt(Ltot - R.NOZ_L, 1)})`);
+  txt(X(R.NOZ_L) + 3, Y(R.NOZ_EX_R) + 12, "stock", { fill: "var(--accent)" });
+  // ---- rear view, looking forward ----
+  const hr = $("aftRear"); hr.innerHTML = "";
+  const S = Math.max(rGen, R.CASE_R) + 6;
+  const sv = el("svg", { viewBox: `${-S} ${-S} ${2 * S} ${2 * S}`, width: "100%", role: "img", "aria-label": "Looking forward from behind: engine case, aft housing, rotor, exit, struts and the generator envelope, with the stock nozzle dashed" }, hr);
+  const sw = S / 160, circ = (rr, a) => el("circle", { cx: 0, cy: 0, r: rr, ...a }, sv);
+  const ringP = (r1, r2) => `M${r2},0A${r2},${r2} 0 1 1 ${-r2},0A${r2},${r2} 0 1 1 ${r2},0ZM${r1},0A${r1},${r1} 0 1 0 ${-r1},0A${r1},${r1} 0 1 0 ${r1},0Z`;
+  circ(R.CASE_R, { fill: "var(--surface-2)", stroke: "var(--text-2)", "stroke-width": sw * 2 });
+  circ(rOut, { fill: "color-mix(in srgb, var(--s1) 22%, var(--surface))", stroke: "var(--s1)", "stroke-width": sw * 1.5 });
+  el("path", { d: ringP(rh, rt), fill: "color-mix(in srgb, var(--s2) 35%, var(--surface))", "fill-rule": "evenodd" }, sv);
+  [90, 210, 330].forEach(a => { const t = a * Math.PI / 180; el("line", { x1: rh * Math.cos(t), y1: -rh * Math.sin(t), x2: rIn * Math.cos(t), y2: -rIn * Math.sin(t), stroke: "var(--line)", "stroke-width": sw * 5 }, sv); });
+  circ(rh, { fill: "var(--steel)", stroke: "var(--line)", "stroke-width": sw });
+  circ(rex, { fill: "none", stroke: "var(--s1)", "stroke-width": sw * 2.5 });
+  const gs = { fill: "none", stroke: "var(--accent)", "stroke-width": sw * 1.5, "stroke-dasharray": `${sw * 4} ${sw * 3}` };
+  circ(R.NOZ_EX_R, gs); circ(R.CONE_R, gs);
+  const Wg = mm(state.Wgen);
+  el("rect", { x: -Wg / 2, y: -rGen, width: Wg, height: rGen - rOut, fill: "color-mix(in srgb, var(--s2) 12%, var(--surface))", stroke: "var(--s2)", "stroke-width": sw * 1.5 }, sv);
+  if (rGen > R.CASE_R) { el("line", { x1: Wg / 2 + 2, x2: Wg / 2 + 2, y1: -R.CASE_R, y2: -rGen, stroke: "var(--bad)", "stroke-width": sw * 1.5 }, sv); el("text", { x: Wg / 2 + 4, y: -(R.CASE_R + rGen) / 2 + 2, "font-size": S / 15, fill: "var(--bad)" }, sv).textContent = `+${fmt(mm(state.protr), 0)} mm`; }
+  el("text", { x: -S + 1, y: S - 1.5, "font-size": S / 14, fill: "var(--text-2)" }, sv).textContent = `case Ø97 · exit Ø${fmt(2 * rex, 1)} · stock dashed`;
+  // ---- table ----
+  const inch = v => v / 25.4, Leng = mm(state.L0) + Ltot - R.NOZ_L;
+  const lengthScore = i => i <= 10 ? 15 : i >= 15 ? 0 : -3 * i + 45, radialScore = i => i <= 0 ? 15 : i >= 4 ? 0 : 15 - 3.75 * i;
+  const Aex = Math.PI * rex * rex, AexS = Math.PI * R.NOZ_EX_R ** 2, Aan = Math.PI * (rt * rt - rh * rh), AanS = Math.PI * (R.NOZ_IN_R ** 2 - R.CONE_R ** 2);
+  const rows = [
+    ["Module length (turbine exit to new nozzle exit)", `${fmt(Ltot, 1)} mm`, `stock nozzle ${R.NOZ_L} mm`, `+${fmt(Ltot - R.NOZ_L, 1)} mm`],
+    ["Overall engine length", `${fmt(Leng, 0)} mm (${fmt(inch(Leng), 2)} in)`, `today ${fmt(mm(state.L0), 0)} mm`, `length score ${fmt(lengthScore(inch(mm(state.L0))), 1)} → ${fmt(lengthScore(inch(Leng)), 1)} / 15`],
+    ["Housing OD", `Ø${fmt(2 * rOut, 1)} mm`, "case Ø97, stock nozzle inlet Ø58.4", `${fmt(R.CASE_R - rOut, 1)} mm inside the case radius`],
+    ["Generator outer edge", `${fmt(rGen, 1)} mm from the axis`, "case radius 48.5 mm", `radial score ${fmt(radialScore(inch(mm(state.protr))), 1)} / 15`],
+    ["Exit diameter", `Ø${fmt(2 * rex, 2)} mm`, "stock Ø47.62", `area ${Aex >= AexS ? "+" : ""}${fmt(100 * (Aex / AexS - 1), 1)}%`],
+    ["Rotor tip / hub", `Ø${fmt(2 * rt, 1)} / Ø${fmt(2 * rh, 1)} mm`, "turbine Ø58, stock tail cone Ø37.5", `annulus ${fmt(Aan)} vs ${fmt(AanS)} mm²`],
+    ["Beyond the stock nozzle exit", `${fmt(Ltot - R.NOZ_L, 1)} mm`, "ICD: up to 11.75 in (298 mm) for nozzle-end modifications", Ltot - R.NOZ_L <= 298 ? "within the ICD space" : "exceeds the ICD space"],
+  ];
+  $("aftFit").innerHTML = `<thead><tr><th>Item</th><th style="text-align:right">Proposed</th><th>Engine reference</th><th>Comparison</th></tr></thead><tbody>${rows.map(rw => `<tr>${rw.map((c, i) => `<td${i === 1 ? ' class="num" style="white-space:nowrap"' : ' style="text-align:left"'}>${c}</td>`).join("")}</tr>`).join("")}</tbody>`;
+  $("aftFit").querySelectorAll("th").forEach((c, i) => { if (i !== 1) c.style.textAlign = "left"; });
+  legend("lg-fit", [["line", "var(--s1)", "Housing and new nozzle"], ["line", "var(--s2)", "Rotor, cross shaft, generator envelope"], ["dash", "var(--accent)", "Stock nozzle and tail cone"], ["dash", "var(--muted)", "Engine case radius"]]);
+}
 
 buildUnits(); buildForm(); update();
 </script>
