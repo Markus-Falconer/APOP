@@ -152,7 +152,7 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
 <header><div class="wrap">
   <h1>Nozzle Modification</h1>
   <p>JetCat P100-RX · sizing the exhaust nozzle for the 90% corrected speed condition</p>
-  <nav><a href="./">Cycle analysis</a><a href="cycle-v2.html">Cycle analysis V2</a><a href="generator.html">Generator physics</a><a href="nozzle.html" aria-current="page">Nozzle modification</a></nav>
+  <nav><a href="./">Cycle analysis</a><a href="cycle-v2.html">Cycle analysis V2</a><a href="generator.html">Generator physics</a><a href="nozzle.html" aria-current="page">Nozzle modification</a><a href="aft-turbine.html">Aft turbine</a></nav>
 </div></header>
 
 <main class="wrap">
@@ -278,7 +278,7 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
             <li><b>ECU log:</b> rpm, EGT and pump voltage at the highest rate the ECU allows.</li>
             <li><b>Ambient:</b> temperature and pressure next to the intake, logged with every run.</li>
             <li><b>Fuel flow:</b> weigh the fuel tank before and after a timed hold. At about 5 g/s, a 60 s hold uses ~300 g, so a ±1 g scale gives better than 1%.</li>
-            <li><b>Turbine-exit total pressure (P₀₄):</b> a small stainless tube bent to face upstream, about 1.5 mm OD, through the nozzle wall near the inlet with its tip at mid-annulus. Route it through enough tube to cool before a 0–100 kPa gauge transducer. Don't use a plain wall tap here: the flow is near Mach 0.5, so wall static pressure reads close to ambient.</li>
+            <li><b>Turbine-exit total pressure (P₀₄):</b> a small stainless tube bent to face upstream, about 1.5 mm OD, through the nozzle wall near the inlet with its tip at mid-annulus. Route it through enough tube to cool before a 0–100 kPa gauge transducer. Don't use a plain wall tap here: the flow is around Mach <span class="live" id="ph-m4b"></span>, so wall static pressure sits well below P₀₄ and close to ambient.</li>
             <li><b>Optional exit-plane probe:</b> the same kind of probe at the exit. Because P₅ = P<sub>amb</sub>, it gives jet velocity directly. Traversing it across the exit gives the velocity profile and the discharge coefficient.</li>
           </ul></li>
         <li><b>Set the speed correctly.</b> The scored condition is 90% <em>corrected</em> speed: physical rpm = 138,600 × √(T<sub>amb</sub> / 288.15 K). Compute it from the intake temperature before each run.
@@ -421,7 +421,7 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
     const amb = ambient(op.T01, op.P01), Nphys = op.Nc * Math.sqrt(amb.th);
     const c0 = compressor(p, amb, Nphys);
     const m_op = p.m_ref * Math.pow(op.Nc / p.N_ref, p.k) * amb.de / Math.sqrt(amb.th);
-    const P_shaft = op.P_elec / op.eta_gen + op.P_drag, Tf = amb.T01;
+    const P_shaft = op.P_elec / op.eta_gen + op.P_drag, Tf = amb.T01; // core-shaft extraction only; op.P_aft is taken by the aft turbine
     const h1 = AIR.h(amb.T01), s1 = AIR.s(amb.T01, amb.P01);
     const comp = m => {
       const r = c0.r * Math.pow(m / m_op, -p.S), P2 = r * amb.P01;
@@ -443,8 +443,17 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
       const h4s = h03 - (h03 - h04) / p.eta_turb; if (!(h4s > g.h(250))) return { c, T03, bad: true };
       const T4s = g.T_h(h4s, T04);
       const s03 = g.s(T03, P03), P04 = P03 * Math.exp((g.s(T4s, P03) - s03) / g.R);
-      const nz = nozzle(g, T04, P04, amb.P01, p);
-      return { c, P03, nf, g, far, m_f, m_tot, W_c, W_t, T03, T04, P04, s03, nz };
+      // optional free (aft) power turbine between the core turbine exit and the nozzle
+      let T45 = T04, P45 = P04;
+      if (op.P_aft > 0 || p.dp_aft > 0) {
+        const h45 = h04 - (op.P_aft || 0) / m_tot;
+        const h45s = h04 - (h04 - h45) / (p.eta_pt || 1); if (!(h45s > g.h(250))) return { c, T03, bad: true };
+        const s04 = g.s(T04, P04), T45s = g.T_h(h45s, T04);
+        P45 = P04 * Math.exp((g.s(T45s, P04) - s04) / g.R) * (1 - (p.dp_aft || 0));
+        T45 = g.T_h(h45, T04);
+      }
+      const nz = nozzle(g, T45, P45, amb.P01, p);
+      return { c, P03, nf, g, far, m_f, m_tot, W_c, W_t, T03, T04, P04, T45, P45, s03, nz };
     };
     // residual: nozzle capacity minus actual flow. Lower air flow → hotter NGV → more nozzle capacity.
     const resid = m => { const st = state(m); if (!st) return NaN; if (st.bad) return -1; return (st.nz.m - st.m_tot) / st.m_tot; };
@@ -798,10 +807,15 @@ function renderPhysics(stock) {
   $("ph-dTkw").textContent = !o0.failed && !o1.failed ? dT_(o1.EGT - o0.EGT) : "—";
   // turbine-exit annulus (inlet diameter minus tail-cone base)
   const A4 = Math.PI / 4 * (state.Din ** 2 - state.dc ** 2);
-  const rho4 = o.P04 / (g.R * o.T04), V4 = o.m_tot / (rho4 * A4), M4 = V4 / Math.sqrt(g.gamma(o.T04) * g.R * o.T04);
+  // subsonic Mach from the mass-flux function at the turbine-exit annulus (static density, not stagnation)
+  const gm = g.gamma(o.T04), fM = M => Math.sqrt(gm / g.R) * M * Math.pow(1 + (gm - 1) / 2 * M * M, -(gm + 1) / (2 * (gm - 1)));
+  const tgt = o.m_tot * Math.sqrt(o.T04) / (A4 * o.P04); let lo = 0, hi = 1; for (let i = 0; i < 60; i++) { const mm = (lo + hi) / 2; if (fM(mm) < tgt) lo = mm; else hi = mm; }
+  const M4 = (lo + hi) / 2, T4s = o.T04 / (1 + (gm - 1) / 2 * M4 * M4), V4 = M4 * Math.sqrt(gm * g.R * T4s);
+  const rho4 = o.P04 * Math.pow(T4s / o.T04, gm / (gm - 1)) / (g.R * T4s);
   $("ph-a4").textContent = `${fmtS(fromSI("area", A4), 3)} ${un("area")}`;
   $("ph-v4").textContent = `${fmtS(fromSI("velocity", V4), 3)} ${un("velocity")}`;
   $("ph-m4").textContent = fmt(M4, 2);
+  if ($("ph-m4b")) $("ph-m4b").textContent = fmt(M4, 2);
   // sudden expansion to the full area at the end of the tail cone (stock straight wall)
   const xc = Math.min(state.Lc, state.Lstock), R = state.Din / 2 - (state.Din - v2in.D_noz_test) / 2 * xc / state.Lstock;
   const A2 = Math.PI * R * R, V2 = V4 * A4 / A2, dp = A2 > A4 ? 0.5 * rho4 * (V4 - V2) ** 2 : 0;
