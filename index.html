@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P100 Cycle Analysis</title>
+<meta name="description" content="Interactive Brayton cycle analysis of the JetCat P100-RX with shaft power extraction for electrical generation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f4f3ef; --surface:#fcfcfb; --surface-2:#efeee9; --line:#dcdad3; --grid:#e7e5df;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#7a7972;
+  --accent:#c2410c; --s1:#2a78d6; --s2:#eb6834;
+  --good:#1c7c3c; --warn:#a35f00; --bad:#b42318;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+    --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+    --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+    --good:#5cc27f; --warn:#e3a53c; --bad:#f07067;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+  --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+  --good:#5cc27f; --warn:#e3a53c; --bad:#f07067;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+.mono,td.num,.kpi .v{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+header{border-bottom:1px solid var(--line);background:var(--surface)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+header .wrap{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding-top:18px;padding-bottom:16px}
+header h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
+header p{margin:0;color:var(--text-2);font-size:14px}
+nav{margin-left:auto;font-size:14px}
+nav a{color:var(--text-2);text-decoration:none;margin-left:14px}
+nav a[aria-current]{color:var(--text);font-weight:500;border-bottom:2px solid var(--accent)}
+main.wrap{display:grid;grid-template-columns:330px 1fr;gap:20px;padding-top:20px;padding-bottom:40px}
+@media (max-width:900px){main.wrap{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+aside.panel{padding:6px 16px 16px;align-self:start;position:sticky;top:12px}
+@media (max-width:900px){aside.panel{position:static}}
+fieldset{border:0;border-top:1px solid var(--line);margin:0;padding:12px 0 4px}
+fieldset:first-of-type{border-top:0}
+legend{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0}
+.field{display:grid;grid-template-columns:1fr 92px;align-items:center;gap:8px;margin:8px 0}
+.field label{font-size:14px;color:var(--text-2)}
+.field label small{color:var(--muted);display:block;font-size:12px;line-height:1.2}
+.field input[type=number]{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:14px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.field input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent);margin:-2px 0 0}
+.toggle{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--text-2);margin:8px 0}
+.toggle input{accent-color:var(--accent)}
+.btns{display:flex;gap:8px;margin-top:14px}
+button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--muted)}
+section.out{display:flex;flex-direction:column;gap:20px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{padding:12px 14px}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi .v{font-size:26px;font-weight:500;margin:2px 0 0;line-height:1.2}
+.kpi .v span{font-size:14px;color:var(--text-2);margin-left:3px}
+.kpi .c{font-size:12px;color:var(--text-2);margin-top:4px;display:flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.card{padding:16px}
+.card h2{font-size:15px;font-weight:600;margin:0 0 2px}
+.card .sub{font-size:13px;color:var(--text-2);margin:0 0 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:1100px){.grid2{grid-template-columns:1fr}}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-weight:500;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;text-align:right;padding:6px 10px;border-bottom:1px solid var(--line)}
+th:first-child,th:nth-child(2),td:first-child,td:nth-child(2){text-align:left}
+td{padding:7px 10px;border-bottom:1px solid var(--grid)}
+td.num{text-align:right}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:4px 20px;margin-top:14px;font-size:14px}
+.summary div{display:flex;justify-content:space-between;border-bottom:1px dashed var(--grid);padding:4px 0}
+.summary span:first-child{color:var(--text-2)}
+.warn{border-left:3px solid var(--warn);background:var(--surface);padding:10px 14px;border-radius:6px;font-size:14px}
+.warn:empty{display:none}
+svg text{font-family:"IBM Plex Sans",sans-serif}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--text);color:var(--surface);font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity .1s;font-family:"IBM Plex Mono",monospace}
+.notes{font-size:14px;color:var(--text-2)}
+.notes h2{color:var(--text)}
+.notes li{margin:4px 0}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>P100 Cycle Analysis</h1>
+  <p>JetCat P100-RX · single-spool turbojet with shaft power extraction</p>
+  <nav><a href="./" aria-current="page">Cycle analysis</a></nav>
+</div></header>
+
+<main class="wrap">
+  <aside class="panel" aria-label="Inputs">
+    <form id="inputs" onsubmit="return false"></form>
+    <div class="btns"><button type="button" id="reset">Reset to defaults</button><button type="button" id="csv">Copy results (CSV)</button></div>
+  </aside>
+
+  <section class="out">
+    <div class="kpis">
+      <div class="panel kpi"><div class="l">Thrust</div><div class="v" id="k-F"></div><div class="c" id="k-Fc"></div></div>
+      <div class="panel kpi"><div class="l">Exhaust temp</div><div class="v" id="k-T"></div><div class="c" id="k-Tc"></div></div>
+      <div class="panel kpi"><div class="l">Exhaust velocity</div><div class="v" id="k-V"></div><div class="c" id="k-Vc"></div></div>
+      <div class="panel kpi"><div class="l">TSFC</div><div class="v" id="k-S"></div><div class="c" id="k-Sc"></div></div>
+    </div>
+    <div class="warn" id="warn" role="status"></div>
+
+    <div class="panel card">
+      <h2>Station states</h2>
+      <p class="sub">Stagnation states at stations 1–4; static state at the nozzle exit (5).</p>
+      <div class="tablewrap"><table id="stations"></table></div>
+      <div class="summary" id="summary"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel card">
+        <h2>T–s diagram</h2>
+        <p class="sub">Entropy relative to compressor inlet. Combustion jumps from the air to the products curve.</p>
+        <div class="chart" id="ts"></div>
+      </div>
+      <div class="panel card">
+        <h2>Thrust vs electrical power</h2>
+        <p class="sub">Sweep from 0 to 2,000 W at the current inputs. Dashed line: the APOP 1,000 W target.</p>
+        <div class="chart" id="sweep"></div>
+      </div>
+    </div>
+
+    <div class="panel card notes">
+      <h2>Model notes</h2>
+      <ul>
+        <li>Ported from the team's Python script (CoolProp + Cantera). Gas properties use NASA 7-coefficient polynomials (GRI-Mech 3.0) for N₂, O₂, CO₂ and H₂O as ideal-gas mixtures.</li>
+        <li>Combustion is complete lean burning of n-dodecane at constant pressure and enthalpy. This matches Cantera's <span class="mono">equilibrate('HP')</span> closely for lean mixtures, where dissociation is negligible; it is not valid above φ = 1.</li>
+        <li>Mass flow downstream of the combustor is air plus the fuel flow computed from the consumption input, as in the Python. With "compute φ from fuel flow" off, φ is set independently, just as the script does.</li>
+        <li>Generator shaft power = electrical power ÷ generator efficiency, taken from the turbine on top of compressor work. Fuel flow and φ stay fixed, so turbine inlet temperature does not rise. On the real engine the ECU adds fuel to hold speed under load. Raise the fuel flow to study that case.</li>
+        <li>The compressor exit temperature uses constant γ, as in the script; compressor work uses the variable-property enthalpy.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+<script>
+// P100 cycle model — JavaScript port of the Python/CoolProp/Cantera script.
+// Ideal-gas mixtures with NASA 7-coefficient polynomials (GRI-Mech 3.0 data),
+// complete lean combustion of n-dodecane (stands in for Cantera's HP equilibrium).
+(function (root) {
+  const Ru = 8.314462618; // J/mol-K
+  const P0 = 101325;      // reference pressure for entropy (Pa)
+
+  // [Tmid, low coeffs a1..a7, high coeffs a1..a7], MW in g/mol
+  const SP = {
+    N2: { MW: 28.0134, Tm: 1000,
+      lo: [3.298677, 1.4082404e-3, -3.963222e-6, 5.641515e-9, -2.444854e-12, -1020.8999, 3.950372],
+      hi: [2.92664, 1.4879768e-3, -5.68476e-7, 1.0097038e-10, -6.753351e-15, -922.7977, 5.980528] },
+    O2: { MW: 31.9988, Tm: 1000,
+      lo: [3.78245636, -2.99673416e-3, 9.84730201e-6, -9.68129509e-9, 3.24372837e-12, -1063.94356, 3.65767573],
+      hi: [3.28253784, 1.48308754e-3, -7.57966669e-7, 2.09470555e-10, -2.16717794e-14, -1088.45772, 5.45323129] },
+    H2O: { MW: 18.01528, Tm: 1000,
+      lo: [4.19864056, -2.0364341e-3, 6.52040211e-6, -5.48797062e-9, 1.77197817e-12, -30293.7267, -0.849032208],
+      hi: [3.03399249, 2.17691804e-3, -1.64072518e-7, -9.7041987e-11, 1.68200992e-14, -30004.2971, 4.9667701] },
+    CO2: { MW: 44.0095, Tm: 1000,
+      lo: [2.35677352, 8.98459677e-3, -7.12356269e-6, 2.45919022e-9, -1.43699548e-13, -48371.9697, 9.90105222],
+      hi: [3.85746029, 4.41437026e-3, -2.21481404e-6, 5.23490188e-10, -4.72084164e-14, -48759.166, 2.27163806] },
+  };
+  // n-dodecane vapour: ΔHf(298) = -290.9 kJ/mol, mean cp ≈ 320 J/mol-K near 300–500 K
+  const FUEL = { MW: 170.338, hf: -290.9e3, cp: 320 };
+
+  const co = (s, T) => (T < s.Tm ? s.lo : s.hi);
+  const cpR = (s, T) => { const a = co(s, T); return a[0] + T * (a[1] + T * (a[2] + T * (a[3] + T * a[4]))); };
+  const hRT = (s, T) => { const a = co(s, T); return a[0] + T * (a[1] / 2 + T * (a[2] / 3 + T * (a[3] / 4 + T * a[4] / 5))) + a[5] / T; };
+  const sR = (s, T) => { const a = co(s, T); return a[0] * Math.log(T) + T * (a[1] + T * (a[2] / 2 + T * (a[3] / 3 + T * a[4] / 4))) + a[6]; };
+
+  // Mixture defined by mole fractions {name: x}
+  function Mix(x) {
+    const tot = Object.values(x).reduce((p, v) => p + v, 0);
+    this.x = {}; for (const k in x) this.x[k] = x[k] / tot;
+    this.MW = 0; for (const k in this.x) this.MW += this.x[k] * SP[k].MW;
+    this.R = Ru / (this.MW / 1000); // J/kg-K
+  }
+  Mix.prototype.h = function (T) { let v = 0; for (const k in this.x) v += this.x[k] * hRT(SP[k], T) * Ru * T; return v / (this.MW / 1000); };
+  Mix.prototype.cp = function (T) { let v = 0; for (const k in this.x) v += this.x[k] * cpR(SP[k], T) * Ru; return v / (this.MW / 1000); };
+  Mix.prototype.s = function (T, P) {
+    let v = 0;
+    for (const k in this.x) { const xi = this.x[k]; if (xi > 0) v += xi * Ru * (sR(SP[k], T) - Math.log(xi * P / P0)); }
+    return v / (this.MW / 1000);
+  };
+  Mix.prototype.gamma = function (T) { const cp = this.cp(T); return cp / (cp - this.R); };
+  // invert h(T) and s(T,P) with Newton steps
+  Mix.prototype.T_h = function (h, Tg = 1000) { let T = Tg; for (let i = 0; i < 60; i++) { const d = (this.h(T) - h) / this.cp(T); T -= d; if (Math.abs(d) < 1e-7) break; } return T; };
+  Mix.prototype.T_sP = function (s, P, Tg = 1000) { let T = Tg; for (let i = 0; i < 60; i++) { const d = (this.s(T, P) - s) / (this.cp(T) / T); T -= d; if (Math.abs(d) < 1e-7) break; } return T; };
+
+  const AIR = new Mix({ O2: 0.21, N2: 0.79 });
+
+  function run(inp) {
+    const o = { warnings: [] };
+    const m_air = inp.m_dot_air;
+    const m_fuel = inp.rho_fuel * inp.cfl / 1000 / 60;           // kg/s (as in the Python)
+    const m_tot = m_air + m_fuel;
+    const FAR_stoich = (FUEL.MW) / (18.5 / 0.21 * AIR.MW);        // kg fuel per kg air
+    const phi = inp.phiFromFuel ? (m_fuel / m_air) / FAR_stoich : inp.phi;
+    o.m_fuel = m_fuel; o.m_tot = m_tot; o.phi = phi; o.FAR_stoich = FAR_stoich;
+    if (phi > 1) o.warnings.push("Equivalence ratio above 1: the complete-combustion model is only valid for lean mixtures.");
+
+    // 1 → 2 Compressor (ideal-gamma temperature, real enthalpy — same as the Python)
+    const T1 = inp.T01, P1 = inp.P01, P2 = inp.r * P1;
+    const T2s = T1 * Math.pow(inp.r, 1 - 1 / inp.gamma);
+    const T2 = (T2s - T1) / inp.eta_comp + T1;
+    const W_comp = m_air * (AIR.h(T2) - AIR.h(T1));
+
+    // 2 → 3 Combustor: per mol oxidizer, nf mol fuel; complete combustion; constant h
+    const nf = Math.min(phi, 1) * 0.21 / 18.5;
+    const prod = new Mix({ CO2: 12 * nf, H2O: 13 * nf, O2: Math.max(0.21 - 18.5 * nf, 0), N2: 0.79 });
+    const H_react = 0.21 * hRT(SP.O2, T2) * Ru * T2 + 0.79 * hRT(SP.N2, T2) * Ru * T2 + nf * (FUEL.hf + FUEL.cp * (T2 - 298.15)); // J per mol oxidizer
+    const mass_react = (0.21 * SP.O2.MW + 0.79 * SP.N2.MW + nf * FUEL.MW) / 1000; // kg per mol oxidizer
+    const h3 = H_react / mass_react;                              // J/kg (mass conserved)
+    const P3 = (1 - inp.dp_comb) * P2;
+    const T3 = prod.T_h(h3, 1200);
+    const s3 = prod.s(T3, P3);
+
+    // 3 → 4 Turbine: drives compressor + generator shaft power
+    const P_shaft = inp.P_elec / inp.eta_gen;
+    const W_turb = W_comp + P_shaft;
+    const h4 = h3 - W_turb / m_tot;
+    const h4s = h3 - (h3 - h4) / inp.eta_turb;
+    // find P4 such that h(s3, P4) = h4s (bisection; replaces the 10 Pa step loop)
+    let lo = 1000, hi = P3, P4 = NaN;
+    if (prod.h(prod.T_sP(s3, lo, T3)) > h4s) {
+      o.warnings.push("Turbine cannot supply this much work — the expansion would go below 1 kPa.");
+      o.failed = true; return o;
+    }
+    for (let i = 0; i < 80; i++) { const mid = 0.5 * (lo + hi); const hs = prod.h(prod.T_sP(s3, mid, T3)); if (hs > h4s) hi = mid; else lo = mid; }
+    P4 = 0.5 * (lo + hi);
+    const T4 = prod.T_h(h4, T3), s4 = prod.s(T4, P4), g4 = prod.gamma(T4);
+    if (P4 <= inp.P01) { o.warnings.push("Turbine exit pressure is at or below ambient — no pressure left to drive the nozzle. Thrust would be negative or zero."); }
+
+    // 4 → 5 Convergent nozzle with choking check
+    const Pcrit = P4 * Math.pow(2 / (g4 + 1), g4 / (g4 - 1));
+    const P5 = Math.max(inp.P01, Pcrit), choked = Pcrit > inp.P01;
+    const T5s = prod.T_sP(s4, P5, T4), h5s = prod.h(T5s);
+    const h5 = h4 - inp.eta_nozzle * (h4 - h5s);
+    const T5 = prod.T_h(h5, T4), rho5 = P5 / (prod.R * T5);
+    const V5 = Math.sqrt(Math.max(2 * (h4 - h5), 0));
+    const A5 = V5 > 0 ? m_tot / (rho5 * V5) : NaN;
+    const F = m_tot * V5 + (P5 - inp.P01) * A5;
+    const TSFC = m_fuel * 3600 / F; // kg/(N·h)
+
+    Object.assign(o, {
+      st: [
+        { n: "1", name: "Compressor inlet", T: T1, P: P1, s: AIR.s(T1, P1) },
+        { n: "2", name: "Compressor exit", T: T2, P: P2, s: AIR.s(T2, P2) },
+        { n: "3", name: "Turbine inlet", T: T3, P: P3, s: s3 },
+        { n: "4", name: "Turbine exit", T: T4, P: P4, s: s4 },
+        { n: "5", name: "Nozzle exit", T: T5, P: P5, s: prod.s(T5, P5) },
+      ],
+      W_comp, P_shaft, W_turb, choked, V5, A5, F, TSFC, T5, T4, T3, prod,
+    });
+    return o;
+  }
+
+  const api = { run, Mix, SP, AIR };
+  if (typeof module !== "undefined") module.exports = api; else root.CycleModel = api;
+})(this);
+</script>
+<script>
+const FIELDS = [
+  ["Ambient", [
+    ["P01", "Ambient pressure", "Pa", 101325, 70000, 105000, 25],
+    ["T01", "Ambient temperature", "K", 296, 250, 320, 0.5],
+  ]],
+  ["Compressor", [
+    ["r", "Pressure ratio", "", 2.9, 1.5, 4.5, 0.05],
+    ["eta_comp", "Isentropic efficiency", "", 0.75, 0.5, 0.95, 0.01],
+    ["m_dot_air", "Air mass flow", "kg/s", 0.23, 0.1, 0.35, 0.005],
+    ["gamma", "Specific heat ratio, air", "", 1.4, 1.3, 1.45, 0.005],
+  ]],
+  ["Combustor", [
+    ["cfl", "Fuel consumption", "ml/min", 390, 80, 600, 5],
+    ["rho_fuel", "Fuel density", "kg/L", 0.78, 0.7, 0.85, 0.005],
+    ["phi", "Equivalence ratio φ", "", 0.3, 0.1, 1.0, 0.005],
+    ["dp_comb", "Pressure loss fraction", "", 0.05, 0, 0.15, 0.005],
+  ]],
+  ["Turbine & nozzle", [
+    ["eta_turb", "Turbine isentropic efficiency", "", 0.75, 0.5, 0.95, 0.01],
+    ["eta_nozzle", "Nozzle isentropic efficiency", "", 0.75, 0.5, 1.0, 0.01],
+  ]],
+  ["Power extraction", [
+    ["P_elec", "Electrical power out", "W", 0, 0, 2000, 10],
+    ["eta_gen", "Generator + rectifier efficiency", "", 0.85, 0.5, 1.0, 0.01],
+  ]],
+];
+const SPEC = { F: 100, Tmin: 480, Tmax: 720, V: 1565 / 3.6, TSFC: 0.187 };
+const DEFAULTS = {}; FIELDS.forEach(([, fs]) => fs.forEach(f => DEFAULTS[f[0]] = f[3]));
+DEFAULTS.phiFromFuel = false;
+const state = { ...DEFAULTS };
+try { Object.assign(state, JSON.parse(localStorage.getItem("p100-inputs") || "{}")); } catch (e) {}
+
+const form = document.getElementById("inputs");
+function buildForm() {
+  form.innerHTML = "";
+  FIELDS.forEach(([group, fs]) => {
+    const fsEl = document.createElement("fieldset");
+    fsEl.innerHTML = `<legend>${group}</legend>`;
+    fs.forEach(([k, label, unit, , min, max, step]) => {
+      const d = document.createElement("div"); d.className = "field";
+      d.innerHTML = `<label for="n-${k}">${label}${unit ? `<small>${unit}</small>` : ""}</label>
+        <input type="number" id="n-${k}" step="${step}" value="${state[k]}">
+        <input type="range" aria-label="${label}" id="r-${k}" min="${min}" max="${max}" step="${step}" value="${state[k]}">`;
+      fsEl.appendChild(d);
+      if (k === "phi") {
+        const t = document.createElement("label"); t.className = "toggle";
+        t.innerHTML = `<input type="checkbox" id="phiFromFuel" ${state.phiFromFuel ? "checked" : ""}> Compute φ from fuel and air flow`;
+        fsEl.appendChild(t);
+      }
+    });
+    form.appendChild(fsEl);
+  });
+  FIELDS.forEach(([, fs]) => fs.forEach(([k]) => {
+    const n = document.getElementById("n-" + k), r = document.getElementById("r-" + k);
+    n.addEventListener("input", () => { const v = parseFloat(n.value); if (isFinite(v)) { state[k] = v; r.value = v; update(); } });
+    r.addEventListener("input", () => { state[k] = parseFloat(r.value); n.value = r.value; update(); });
+  }));
+  document.getElementById("phiFromFuel").addEventListener("change", e => { state.phiFromFuel = e.target.checked; update(); });
+}
+document.getElementById("reset").onclick = () => { Object.assign(state, DEFAULTS); buildForm(); update(); };
+
+const $ = id => document.getElementById(id);
+const fmt = (v, d = 0) => isFinite(v) ? v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }) : "—";
+function kpi(id, val, unit, note, ok) {
+  $(id).innerHTML = `${val}<span>${unit}</span>`;
+  const col = ok === true ? "var(--good)" : ok === false ? "var(--warn)" : "var(--muted)";
+  const icon = ok === true ? "✓" : ok === false ? "!" : "";
+  $(id + "c").innerHTML = `<span class="dot" style="background:${col}"></span>${icon ? `<span aria-hidden="true">${icon}</span>` : ""}${note}`;
+}
+
+let last = null;
+function update() {
+  try { localStorage.setItem("p100-inputs", JSON.stringify(state)); } catch (e) {}
+  const phiEl = document.getElementById("n-phi"), phiR = document.getElementById("r-phi");
+  const o = CycleModel.run(state);
+  last = o;
+  if (state.phiFromFuel && isFinite(o.phi)) { phiEl.value = o.phi.toFixed(3); phiR.value = o.phi; }
+  phiEl.disabled = phiR.disabled = state.phiFromFuel;
+  $("warn").textContent = o.warnings.join(" ");
+  if (o.failed) {
+    ["k-F", "k-T", "k-V", "k-S"].forEach(id => kpi(id, "—", "", "no solution", false));
+    $("stations").innerHTML = ""; $("summary").innerHTML = ""; drawTS(null); drawSweep(); return;
+  }
+  const EGT = o.T5 - 273.15;
+  kpi("k-F", fmt(o.F, 1), "N", `spec ${SPEC.F} N · ${fmt(o.F / 4.44822, 1)} lbf`, null);
+  kpi("k-T", fmt(EGT), "°C", `spec ${SPEC.Tmin}–${SPEC.Tmax} °C`, EGT >= SPEC.Tmin && EGT <= SPEC.Tmax);
+  kpi("k-V", fmt(o.V5), "m/s", `spec ${fmt(SPEC.V)} m/s`, null);
+  kpi("k-S", fmt(o.TSFC, 3), "kg/N·h", `spec ${SPEC.TSFC} kg/N·h`, null);
+
+  const s0 = o.st[0].s;
+  $("stations").innerHTML = `<thead><tr><th>Stn</th><th>Location</th><th>T (K)</th><th>T (°C)</th><th>P (kPa)</th><th>Δs (J/kg·K)</th></tr></thead><tbody>` +
+    o.st.map(s => `<tr><td class="mono">${s.n}</td><td>${s.name}</td><td class="num">${fmt(s.T)}</td><td class="num">${fmt(s.T - 273.15)}</td><td class="num">${fmt(s.P / 1000, 1)}</td><td class="num">${fmt(s.s - s0)}</td></tr>`).join("") + "</tbody>";
+  const rows = [
+    ["Fuel flow", `${fmt(o.m_fuel * 1000, 2)} g/s`], ["φ used", fmt(o.phi, 3)],
+    ["Compressor work", `${fmt(o.W_comp / 1000, 2)} kW`], ["Generator shaft power", `${fmt(o.P_shaft / 1000, 2)} kW`],
+    ["Turbine work", `${fmt(o.W_turb / 1000, 2)} kW`], ["Nozzle", o.choked ? "choked" : "not choked"],
+    ["Exit area A₅", `${fmt(o.A5 * 1e4, 2)} cm²`], ["Exit diameter", `${fmt(Math.sqrt(4 * o.A5 / Math.PI) * 1000, 1)} mm`],
+  ];
+  $("summary").innerHTML = rows.map(([a, b]) => `<div><span>${a}</span><span class="mono">${b}</span></div>`).join("");
+  drawTS(o); drawSweep();
+}
+
+// ---------- chart helpers ----------
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function ticks(a, b, n = 5) { const span = b - a, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0))); const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= step0); const t = []; for (let v = Math.ceil(a / step) * step; v <= b + 1e-9; v += step) t.push(+v.toFixed(10)); return t; }
+function frame(host, W, H, m, xd, yd, xl, yl) {
+  host.innerHTML = "";
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img" }, host);
+  const x = v => m.l + (v - xd[0]) / (xd[1] - xd[0]) * (W - m.l - m.r);
+  const y = v => H - m.b - (v - yd[0]) / (yd[1] - yd[0]) * (H - m.t - m.b);
+  ticks(...yd).forEach(t => { el("line", { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: "var(--grid)" }, svg); el("text", { x: m.l - 8, y: y(t) + 4, "text-anchor": "end", "font-size": 12, fill: "var(--muted)" }, svg).textContent = fmt(t); });
+  ticks(...xd).forEach(t => { el("text", { x: x(t), y: H - m.b + 17, "text-anchor": "middle", "font-size": 12, fill: "var(--muted)" }, svg).textContent = fmt(t); });
+  el("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: "var(--line)" }, svg);
+  el("text", { x: (m.l + W - m.r) / 2, y: H - 4, "text-anchor": "middle", "font-size": 13, fill: "var(--text-2)" }, svg).textContent = xl;
+  el("text", { x: 12, y: (m.t + H - m.b) / 2, "text-anchor": "middle", "font-size": 13, fill: "var(--text-2)", transform: `rotate(-90 12 ${(m.t + H - m.b) / 2})` }, svg).textContent = yl;
+  const tip = document.createElement("div"); tip.className = "tip"; host.appendChild(tip);
+  return { svg, x, y, tip };
+}
+function showTip(host, tip, svg, px, py, html, W) {
+  const r = svg.getBoundingClientRect(), k = r.width / W;
+  tip.innerHTML = html; tip.style.opacity = 1;
+  let left = px * k + 10; if (left + tip.offsetWidth > r.width) left = px * k - tip.offsetWidth - 10;
+  tip.style.left = left + "px"; tip.style.top = Math.max(0, py * k - tip.offsetHeight - 8) + "px";
+}
+
+function drawTS(o) {
+  const host = $("ts"); if (!o) { host.innerHTML = ""; return; }
+  const W = 440, H = 300, m = { t: 14, r: 16, b: 42, l: 54 };
+  const s0 = o.st[0].s, A = CycleModel.AIR, G = o.prod;
+  // process paths
+  const paths = [];
+  const lin = (a, b, n, f) => Array.from({ length: n + 1 }, (_, i) => f(a + (b - a) * i / n));
+  const [S1, S2, S3, S4, S5] = o.st;
+  paths.push(lin(S1.T, S2.T, 20, T => { const P = S1.P * Math.pow(S2.P / S1.P, (T - S1.T) / (S2.T - S1.T)); return [A.s(T, P) - s0, T]; }));
+  paths.push(lin(S2.T, S3.T, 30, T => { const P = S2.P + (S3.P - S2.P) * (T - S2.T) / (S3.T - S2.T); const fr = (T - S2.T) / (S3.T - S2.T); return [(1 - fr) * (A.s(T, P) - s0) + fr * (G.s(T, P) - s0), T]; }));
+  paths.push(lin(0, 1, 20, f => { const T = S3.T + (S4.T - S3.T) * f, P = S3.P * Math.pow(S4.P / S3.P, f); return [G.s(T, P) - s0, T]; }));
+  paths.push(lin(0, 1, 20, f => { const T = S4.T + (S5.T - S4.T) * f, P = S4.P * Math.pow(S5.P / S4.P, f); return [G.s(T, P) - s0, T]; }));
+  // ambient isobar for reference
+  const iso = lin(S1.T, S3.T * 1.05, 40, T => [G.s(T, o.st[0].P) - s0, T]);
+  const all = paths.flat().concat(iso);
+  const xs = all.map(p => p[0]), ys = all.map(p => p[1]);
+  const xd = [Math.min(0, ...xs) - 40, Math.max(...xs) + 60], yd = [Math.floor((Math.min(...ys) - 60) / 100) * 100, Math.ceil((Math.max(...ys) + 60) / 100) * 100];
+  const { svg, x, y, tip } = frame(host, W, H, m, xd, yd, "Δs (J/kg·K)", "T (K)");
+  svg.setAttribute("aria-label", "Temperature–entropy diagram of the cycle");
+  const d = pts => pts.map((p, i) => (i ? "L" : "M") + x(p[0]).toFixed(1) + "," + y(p[1]).toFixed(1)).join("");
+  el("path", { d: d(iso), fill: "none", stroke: "var(--muted)", "stroke-width": 1, "stroke-dasharray": "3 4" }, svg);
+  const ip = iso[iso.length - 1]; el("text", { x: x(ip[0]) - 4, y: y(ip[1]) - 6, "text-anchor": "end", "font-size": 12, fill: "var(--muted)" }, svg).textContent = "ambient isobar";
+  paths.forEach(p => el("path", { d: d(p), fill: "none", stroke: "var(--s1)", "stroke-width": 2, "stroke-linejoin": "round" }, svg));
+  o.st.forEach(s => {
+    const cx = x(s.s - s0), cy = y(s.T);
+    el("circle", { cx, cy, r: 5, fill: "var(--s1)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+    el("text", { x: cx + 9, y: cy + (s.n === "3" ? -6 : 4), "font-size": 12, "font-weight": 600, fill: "var(--text)" }, svg).textContent = s.n;
+    const hit = el("circle", { cx, cy, r: 14, fill: "transparent", style: "cursor:default" }, svg);
+    hit.addEventListener("mouseenter", () => showTip(host, tip, svg, cx, cy, `${s.n} · ${s.name}<br>${fmt(s.T)} K · ${fmt(s.P / 1000, 1)} kPa`, W));
+    hit.addEventListener("mouseleave", () => tip.style.opacity = 0);
+  });
+}
+
+function drawSweep() {
+  const host = $("sweep");
+  const W = 440, H = 300, m = { t: 14, r: 16, b: 42, l: 54 };
+  const pts = [];
+  for (let p = 0; p <= 2000; p += 50) { const o = CycleModel.run({ ...state, P_elec: p }); if (!o.failed && isFinite(o.F)) pts.push([p, o.F, o]); }
+  if (!pts.length) { host.innerHTML = ""; return; }
+  const Fs = pts.map(p => p[1]);
+  let lo = Math.min(...Fs), hi = Math.max(...Fs); const pad = Math.max((hi - lo) * 0.15, 2);
+  const yd = [Math.floor((lo - pad) / 2) * 2, Math.ceil((hi + pad) / 2) * 2];
+  const { svg, x, y, tip } = frame(host, W, H, m, [0, 2000], yd, "Electrical power (W)", "Thrust (N)");
+  svg.setAttribute("aria-label", "Thrust as a function of extracted electrical power");
+  el("line", { x1: x(1000), x2: x(1000), y1: m.t, y2: H - m.b, stroke: "var(--muted)", "stroke-dasharray": "4 4" }, svg);
+  el("text", { x: x(1000) + 5, y: m.t + 12, "font-size": 12, fill: "var(--muted)" }, svg).textContent = "1,000 W target";
+  el("path", { d: pts.map((p, i) => (i ? "L" : "M") + x(p[0]).toFixed(1) + "," + y(p[1]).toFixed(1)).join(""), fill: "none", stroke: "var(--s1)", "stroke-width": 2 }, svg);
+  const cur = Math.min(state.P_elec, 2000), co = CycleModel.run({ ...state, P_elec: cur });
+  if (!co.failed) el("circle", { cx: x(cur), cy: y(co.F), r: 5, fill: "var(--s1)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+  const cross = el("line", { y1: m.t, y2: H - m.b, stroke: "var(--text-2)", "stroke-width": 1, opacity: 0 }, svg);
+  const mk = el("circle", { r: 5, fill: "var(--s1)", stroke: "var(--surface)", "stroke-width": 2, opacity: 0 }, svg);
+  const ov = el("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent" }, svg);
+  ov.addEventListener("mousemove", e => {
+    const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * W / r.width;
+    const pv = (px - m.l) / (W - m.l - m.r) * 2000;
+    const p = pts.reduce((a, b) => Math.abs(b[0] - pv) < Math.abs(a[0] - pv) ? b : a);
+    cross.setAttribute("x1", x(p[0])); cross.setAttribute("x2", x(p[0])); cross.setAttribute("opacity", 1);
+    mk.setAttribute("cx", x(p[0])); mk.setAttribute("cy", y(p[1])); mk.setAttribute("opacity", 1);
+    showTip(host, tip, svg, x(p[0]), y(p[1]), `${fmt(p[0])} W → ${fmt(p[1], 1)} N<br>EGT ${fmt(p[2].T5 - 273.15)} °C · TSFC ${fmt(p[2].TSFC, 3)}`, W);
+  });
+  ov.addEventListener("mouseleave", () => { cross.setAttribute("opacity", 0); mk.setAttribute("opacity", 0); tip.style.opacity = 0; });
+}
+
+document.getElementById("csv").onclick = () => {
+  if (!last || last.failed) return;
+  const lines = ["input,value", ...Object.entries(state).map(([k, v]) => `${k},${v}`), "", "station,location,T_K,P_kPa",
+    ...last.st.map(s => `${s.n},${s.name},${s.T.toFixed(1)},${(s.P / 1000).toFixed(2)}`), "",
+    `thrust_N,${last.F.toFixed(2)}`, `V5_m_s,${last.V5.toFixed(1)}`, `A5_cm2,${(last.A5 * 1e4).toFixed(3)}`, `TSFC_kg_Nh,${last.TSFC.toFixed(4)}`,
+    `W_comp_W,${last.W_comp.toFixed(0)}`, `P_shaft_W,${last.P_shaft.toFixed(0)}`, `choked,${last.choked}`];
+  navigator.clipboard.writeText(lines.join("\n")).then(() => { const b = document.getElementById("csv"); b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy results (CSV)", 1200); });
+};
+
+buildForm(); update();
+window.addEventListener("resize", () => {});
+</script>
+</body></html>
