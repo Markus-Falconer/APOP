@@ -1,0 +1,754 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P100 Generator Physics</title>
+<meta name="description" content="Interactive physics of a permanent magnet generator on the front shaft of the JetCat P100-RX: field, voltage, torque, losses, rotor stress, and the Option A and B designs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f4f3ef; --surface:#fcfcfb; --surface-2:#efeee9; --line:#dcdad3; --grid:#e7e5df;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#7a7972;
+  --accent:#c2410c; --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --good:#1c7c3c; --warn:#a35f00; --bad:#b42318;
+  --mag-n:#5d5c57; --mag-s:#b9b7ae; --steel:#cfcdc5;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+    --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+    --accent:#f08a4b; --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    --good:#5cc27f; --warn:#e3a53c; --bad:#f07067;
+    --mag-n:#a9a79e; --mag-s:#4a4945; --steel:#3c3b37;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+  --accent:#f08a4b; --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+  --good:#5cc27f; --warn:#e3a53c; --bad:#f07067;
+  --mag-n:#a9a79e; --mag-s:#4a4945; --steel:#3c3b37;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+.mono,td.num,.kpi .v,.eq{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+header{border-bottom:1px solid var(--line);background:var(--surface)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+header .wrap{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding-top:18px;padding-bottom:16px}
+header h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
+header p{margin:0;color:var(--text-2);font-size:14px}
+nav{margin-left:auto;font-size:14px}
+nav a{color:var(--text-2);text-decoration:none;margin-left:14px}
+nav a[aria-current]{color:var(--text);font-weight:500;border-bottom:2px solid var(--accent)}
+main.wrap{display:grid;grid-template-columns:330px 1fr;gap:20px;padding-top:20px;padding-bottom:20px}
+@media (max-width:900px){main.wrap{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+aside.panel{padding:6px 16px 16px;align-self:start;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto}
+@media (max-width:900px){aside.panel{position:static;max-height:none}}
+fieldset{border:0;border-top:1px solid var(--line);margin:0;padding:12px 0 4px}
+fieldset:first-of-type{border-top:0}
+legend{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0}
+.field{display:grid;grid-template-columns:1fr 92px;align-items:center;gap:8px;margin:8px 0}
+.field label{font-size:14px;color:var(--text-2)}
+.field label small{color:var(--muted);display:block;font-size:12px;line-height:1.2}
+.field input[type=number],.field select{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:14px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.field.sel{grid-template-columns:1fr 160px}
+.field select{font-family:"IBM Plex Sans",sans-serif;text-align:left}
+.field input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent);margin:-2px 0 0}
+.btns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button.primary{border-color:var(--accent);color:var(--accent);background:transparent}
+section.out{display:flex;flex-direction:column;gap:20px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{padding:12px 14px;min-width:0}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi .v{font-size:26px;font-weight:500;margin:2px 0 0;line-height:1.2}
+.kpi .v span{font-size:14px;color:var(--text-2);margin-left:3px}
+.kpi .c{font-size:12px;color:var(--text-2);margin-top:4px;display:flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.card{padding:16px;min-width:0}
+.card h2{font-size:15px;font-weight:600;margin:0 0 2px}
+.card .sub{font-size:13px;color:var(--text-2);margin:0 0 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:1100px){.grid2{grid-template-columns:1fr}}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-weight:500;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;text-align:right;padding:6px 10px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+td{padding:7px 10px;border-bottom:1px solid var(--grid)}
+td.num{text-align:right}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:4px 20px;font-size:14px}
+.summary div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--grid);padding:4px 0}
+.summary span:first-child{color:var(--text-2)}
+.summary h3{grid-column:1/-1;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:12px 0 2px}
+.summary h3:first-child{margin-top:0}
+.warn{border-left:3px solid var(--warn);background:var(--surface);padding:10px 14px;border-radius:6px;font-size:14px}
+.warn:empty{display:none}
+.warn p{margin:0}.warn p+p{margin-top:4px}
+svg text{font-family:"IBM Plex Sans",sans-serif}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--text);color:var(--surface);font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity .1s;font-family:"IBM Plex Mono",monospace;z-index:2}
+.physics{font-size:14px;color:var(--text-2);margin-top:12px;border-top:1px solid var(--grid);padding-top:10px}
+.physics p{margin:6px 0}
+.eq{display:block;background:var(--surface-2);border-radius:6px;padding:8px 10px;margin:8px 0;color:var(--text);font-size:13px;overflow-x:auto;white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--text-2);margin:0 0 6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:3px;border-radius:2px;display:inline-block}
+.sw.box{height:10px;width:10px;border-radius:3px}
+.anim-ctrl{display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;font-size:13px;color:var(--text-2)}
+.anim-ctrl input[type=range]{flex:1;min-width:120px;accent-color:var(--accent)}
+.xsec{max-width:360px;margin:0 auto}
+.flow{display:flex;height:28px;gap:2px;border-radius:4px;overflow:hidden;margin:6px 0 10px}
+.flow div{height:100%;min-width:2px}
+.flowleg{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:4px 16px;font-size:13px}
+.flowleg div{display:flex;align-items:center;gap:8px;justify-content:space-between;border-bottom:1px dashed var(--grid);padding:3px 0}
+.flowleg div span:first-child{display:inline-flex;gap:8px;align-items:center;color:var(--text-2)}
+/* options */
+.options{padding-bottom:40px}
+.options>h2{font-size:18px;font-weight:600;margin:10px 0 4px}
+.options>p{color:var(--text-2);font-size:14px;margin:0 0 16px;max-width:860px}
+.opt h3{margin:0;font-size:17px;font-weight:600}
+.opt .tagline{font-size:13px;color:var(--text-2);margin:2px 0 12px}
+.opt .badge{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:99px;border:1px solid var(--accent);color:var(--accent);margin-left:8px;vertical-align:2px}
+.opt .badge.alt{border-color:var(--muted);color:var(--muted)}
+.pc{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+@media (max-width:560px){.pc{grid-template-columns:1fr}}
+.pc h4{margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.pc ul{margin:0;padding-left:18px;font-size:14px;color:var(--text-2)}
+.pc li{margin:3px 0}
+.cost{margin-top:12px;font-size:14px;color:var(--text-2)}
+.cost b{color:var(--text);font-weight:500}
+.rec{margin-top:16px;border-left:3px solid var(--accent);padding:10px 14px}
+.rec p{margin:4px 0;font-size:14px;color:var(--text-2)}
+.rec b{color:var(--text)}
+.notes{font-size:14px;color:var(--text-2)}
+.notes h2{color:var(--text)}
+.notes li{margin:4px 0}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>P100 Generator Physics</h1>
+  <p>Permanent magnet generator on the JetCat P100-RX front shaft</p>
+  <nav><a href="./">Cycle analysis</a><a href="generator.html" aria-current="page">Generator physics</a></nav>
+</div></header>
+
+<main class="wrap">
+  <aside class="panel" aria-label="Generator inputs">
+    <form id="inputs" onsubmit="return false"></form>
+    <div class="btns"><button type="button" id="reset">Reset to Option A (SmCo)</button><button type="button" id="fit" class="primary">Size length for 1.1 kW</button></div>
+  </aside>
+
+  <section class="out">
+    <div class="kpis">
+      <div class="panel kpi"><div class="l">DC power out</div><div class="v" id="k-P"></div><div class="c" id="k-Pc"></div></div>
+      <div class="panel kpi"><div class="l">Efficiency</div><div class="v" id="k-E"></div><div class="c" id="k-Ec"></div></div>
+      <div class="panel kpi"><div class="l">Rotor mass added</div><div class="v" id="k-M"></div><div class="c" id="k-Mc"></div></div>
+      <div class="panel kpi"><div class="l">Sleeve hoop stress</div><div class="v" id="k-S"></div><div class="c" id="k-Sc"></div></div>
+    </div>
+    <div class="warn" id="warn" role="status"></div>
+
+    <div class="grid2">
+      <div class="panel card">
+        <h2>1 · How the rotor makes voltage</h2>
+        <p class="sub">Cross-section to scale, looking at the engine from the front. Slowed from <span id="xs-rpm" class="mono"></span> rpm for viewing.</p>
+        <div class="xsec" id="xsec"></div>
+        <p class="sub" id="xsCap" style="text-align:center;margin:6px 0 0"></p>
+        <div class="anim-ctrl"><button type="button" id="play">Pause</button><label for="ang">Rotor angle</label><input type="range" id="ang" min="0" max="360" step="1" value="0"><span class="mono" id="angv">0°</span></div>
+        <div class="physics">
+          <p>The diametric magnet (N half dark, S half light) spins with the shaft. The arrows in the gap show the radial field the winding sees: outward over the N half, inward over the S half. That pattern sweeps past the six coil bands once per revolution.</p>
+          <p>By Faraday's law each phase's voltage is its rate of change of flux linkage:</p>
+          <span class="eq">e = N·dλ/dt  →  E<sub>pk</sub> = ω · N · k<sub>w</sub> · 2·r<sub>w</sub>·L · B<sub>w</sub></span>
+          <p>Voltage scales with speed ω, turns N, winding radius r<sub>w</sub>, active length L, and the field at the winding B<sub>w</sub>. A 2-pole rotor makes one electrical cycle per revolution, so the frequency is rpm ÷ 60.</p>
+        </div>
+      </div>
+      <div class="panel card">
+        <h2>2 · Three-phase voltage and the rectifier</h2>
+        <p class="sub" id="emfSub"></p>
+        <div class="legend" id="emfLeg"></div>
+        <div class="chart" id="emf"></div>
+        <div class="physics">
+          <p>The three phases are 120° apart. A six-diode bridge connects whichever line-to-line pair is highest, so the DC side sees the top of the line-to-line envelope. It ripples between 87% and 100% of the peak, six times per cycle.</p>
+          <span class="eq">V<sub>dc</sub> ≈ (3√2/π)·V<sub>LL,rms</sub> = 1.35·V<sub>LL,rms</sub>,  V<sub>LL,rms</sub> = √3·E<sub>pk</sub>/√2</span>
+          <p>Turns per phase are picked so the open-circuit voltage matches the DC bus. Fewer turns means more current. Turns change the voltage and current, but not the power: power is set by the magnet, the copper, and the speed.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel card">
+        <h2>3 · Why magnet radius matters</h2>
+        <p class="sub" id="fieldSub"></p>
+        <div class="chart" id="field"></div>
+        <div class="physics">
+          <p>A 2-pole magnet's field falls off roughly as 1/r² outside its surface. The stator back-iron at radius R<sub>y</sub> adds an image term that holds it up near the yoke:</p>
+          <span class="eq">B(r) ≈ (B<sub>r</sub>/2)·r<sub>m</sub><sup>2</sup>·(1/r<sup>2</sup> + 1/R<sub>y</sub><sup>2</sup>)·k<sub>core</sub></span>
+          <p>The sleeve, clearance, and winding together add about 4 mm of non-magnetic gap. Beside a 5 mm magnet that gap is large and much of the field is lost. Beside a 10 mm magnet it is much smaller. That is why small rotors need a much longer active length, as the chart in section 5 shows.</p>
+        </div>
+      </div>
+      <div class="panel card">
+        <h2>4 · Torque, power, and speed</h2>
+        <p class="sub" id="speedSub"></p>
+        <div class="chart" id="speed"></div>
+        <div class="physics">
+          <p>Torque comes from the magnetic shear stress between the rotor field and the winding's current sheet K:</p>
+          <span class="eq">σ = ½·B<sub>w</sub>·K,  K = k<sub>d</sub>·√2·J·t<sub>w</sub>·k<sub>fill</sub>,  T = 2π·r<sub>w</sub><sup>2</sup>·L·σ,  P = T·ω</span>
+          <p>Holding the current density J fixed holds the torque fixed, so power rises in proportion to speed. Windage rises with ω³ and bites at the top end. The 1 kW goal is easiest at full speed.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel card">
+        <h2>5 · Active length vs magnet radius</h2>
+        <p class="sub" id="tradeSub"></p>
+        <div class="chart" id="trade"></div>
+        <div class="physics">
+          <p>For a fixed power target, torque is fixed. A small magnet has to make up for its weak field and small lever arm with length. The rotor's mass stays fairly flat across radii, but a longer rotor sits further from the front bearing. That increases the overhung inertia, which is the main rotordynamics risk.</p>
+        </div>
+      </div>
+      <div class="panel card">
+        <h2>6 · Where the shaft power goes</h2>
+        <p class="sub" id="flowSub"></p>
+        <div class="flow" id="flow" role="img"></div>
+        <div class="flowleg" id="flowLeg"></div>
+        <div class="physics">
+          <span class="eq">P<sub>cu</sub> = ρ<sub>cu</sub>·J<sup>2</sup>·V<sub>cu</sub>   P<sub>wind</sub> ≈ π·C<sub>f</sub>·ρ<sub>air</sub>·ω<sup>3</sup>·r<sup>4</sup>·L</span>
+          <p>"Other" covers rotor eddy currents, back-iron loss, and AC (skin and proximity) loss in the winding at about 2.3 kHz. These are hard to estimate by hand, so it is a percentage input until FEA replaces it. Rotor losses are the dangerous ones: they heat a small magnet that has little cooling.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel card">
+      <h2>Design summary</h2>
+      <p class="sub">Every value updates with the inputs. Stresses use the maximum speed input.</p>
+      <div class="summary" id="summary"></div>
+      <div class="physics">
+        <p><b>Rotor stress.</b> Centrifugal hoop stress in a spinning ring is σ<sub>θ</sub> = ((3+ν)/4)·ρ·ω²·(r<sub>o</sub>² + ((1−ν)/(3+ν))·r<sub>i</sub>²). Sintered magnets are weak in tension, at tens of MPa. The carbon sleeve has to be shrunk on hard enough to keep the magnet in compression at top speed. The sleeve then carries the magnet's centrifugal load:</p>
+        <span class="eq">p = ρ<sub>m</sub>·ω<sup>2</sup>·(r<sub>m</sub><sup>3</sup> − r<sub>i</sub><sup>3</sup>) / (3·r<sub>m</sub>),  σ<sub>sleeve</sub> ≈ p·r<sub>s</sub>/t<sub>s</sub> + ρ<sub>s</sub>·ω<sup>2</sup>·r<sub>s</sub><sup>2</sup></span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<section class="wrap options" id="options">
+  <h2>Design options A and B</h2>
+  <p>Both options use a diametric 2-pole ring magnet on a steel nut-rotor (1/4" left-hand thread) that replaces the front compressor nut, inside a slotless litz stator. Each is sized by this page's model for 1.1 kW DC (10% over the 1 kW target), with the stator at 20 A/mm² for short duty. The specs are computed live, so they stay in step with the model. Treat them as ±30% until FEA. Click a column's button to load that design into the calculator.</p>
+  <div class="grid2">
+    <div class="panel card opt" id="optA"></div>
+    <div class="panel card opt" id="optB"></div>
+  </div>
+  <div class="panel rec">
+    <p><b>Recommendation: Option A.</b> It has the same rotor mass as B, but the rotor is shorter and closer to the front bearing. It also fits the stock Ø36 mm nose. Pick SmCo or NdFeB 42SH from the dummy-rotor temperature test, and keep B as the fallback if sleeve stress or rotordynamics look bad.</p>
+    <p><b>Before buying magnets:</b> run a steel dummy nut-rotor with the same mass and centroid ($150–400). Fit an accelerometer on the housing and put temperature lacquer on the nut.</p>
+  </div>
+
+  <div class="panel card notes" style="margin-top:20px">
+    <h2>Model notes and assumptions</h2>
+    <ul>
+      <li>An analytical slotless model with an ideal 2-pole diametric magnet. The field uses the 2D solution with an infinitely permeable back-iron. A non-magnetic (titanium) core scales the flux by 1 − (r<sub>i</sub>/r<sub>m</sub>)². A steel core acts as a partial flux return, estimated at 1 − 0.2·(r<sub>i</sub>/r<sub>m</sub>)².</li>
+      <li>Torque is divided by the derating factor (default 1.3) to cover end effects, armature reaction, and rectifier current distortion. "Other losses" (default 12% of electromagnetic power) stands in for rotor eddy, back-iron, and AC copper losses.</li>
+      <li>Copper resistivity is taken at about 100 °C. End turns add 20 mm of copper length (10 mm each end), and the stator is 16 mm longer than the active length. Windage uses a constant skin-friction coefficient C<sub>f</sub> = 0.008.</li>
+      <li>Rotor mass includes the magnet, the carbon sleeve, and the threaded core (bore to the 1/4" thread, plus 8 mm for the flats and seat). Added mass is net of the stock 4 g nut. The 220 g total rotor and the 54 g compressor are your measurements.</li>
+      <li>Overhung inertia is mass × (distance from the front bearing)², compared with the compressor's 54 g at about 15 mm. The magnet is assumed to start 5 mm ahead of the compressor's front face, and the compressor height is 29 mm.</li>
+      <li>Compressor power is a rough scaling of 33 kW × (rpm / 155,000)³, from the datasheet pressure ratio and mass flow. For thrust and EGT effects, enter this page's DC power and efficiency as "Electrical power out" and "Generator + rectifier efficiency" on the <a href="./">Cycle analysis</a> page.</li>
+      <li>Voltages are open-circuit. Under load, the winding resistance and inductance and the diode drops pull the DC bus down by a few percent.</li>
+      <li>Costs are prototype-quantity estimates, not quotes.</li>
+    </ul>
+  </div>
+</section>
+
+<script>
+// ---------- generator model (SI internally) ----------
+(function (root) {
+  const MAT = {
+    smco: { name: "SmCo 2:17", Br: 1.05, rho: 8400, Tmax: 300, tens: 35 },
+    ndsh: { name: "NdFeB 42SH", Br: 1.28, rho: 7500, Tmax: 150, tens: 80 },
+    nd42: { name: "NdFeB N42", Br: 1.30, rho: 7500, Tmax: 80, tens: 80 },
+  };
+  const CORE = { steel: { name: "Steel (17-4PH)", rho: 7800, ferro: true }, ti: { name: "Titanium", rho: 4500, ferro: false } };
+  const K = {
+    rThread: 3.15e-3, backIron: 2e-3, housing: 1.5e-3, endCu: 20e-3, endStator: 16e-3, extraCore: 8e-3,
+    rhoCu: 2.1e-8, dCu: 8960, dFe: 7650, dSleeve: 1600, dAir: 1.1, Cf: 0.008, kw: 0.9, kd: 0.955, nu: 0.3,
+    Din: 53.6e-3, hubStock: 36e-3, compMass: 0.054, compArm: 0.015, rotorMass: 0.220, stockNut: 0.004,
+    magStart: 0.034, sleeveAllow: 800e6, neck: 15e-3, housingMass: 0.018, compP155: 33000,
+  };
+  const radii = i => {
+    const rm = i.rm / 1e3, ri = i.ri / 1e3, ts = i.ts / 1e3, clr = i.clr / 1e3, tw = i.tw / 1e3;
+    const rw = rm + ts + clr + tw / 2, Ry = rm + ts + clr + tw;
+    return { rm, ri, ts, clr, tw, rw, Ry };
+  };
+  const kCore = i => { const q = (i.ri / i.rm) ** 2; return CORE[i.core].ferro ? 1 - 0.2 * q : 1 - q; };
+  function B(i, r) { const g = radii(i); return MAT[i.mat].Br / 2 * g.rm * g.rm * (1 / (r * r) + 1 / (g.Ry * g.Ry)) * kCore(i); }
+
+  function run(i) {
+    const m = MAT[i.mat], c = CORE[i.core], g = radii(i);
+    const L = i.L / 1e3, J = i.J * 1e6, w = 2 * Math.PI * i.rpm / 60, wMax = 2 * Math.PI * i.rpmMax / 60;
+    const Bw = B(i, g.rw);
+    const Kpk = K.kd * Math.SQRT2 * J * g.tw * i.fill;
+    const sigma = 0.5 * Bw * Kpk;
+    const Tem = 2 * Math.PI * g.rw * g.rw * L * sigma / i.derate;
+    const Pem = Tem * w;
+    const Vcu = 2 * Math.PI * g.rw * g.tw * i.fill * (L + K.endCu);
+    const Pcu = K.rhoCu * J * J * Vcu;
+    const rs = g.rm + g.ts;
+    const Pw = Math.PI * K.Cf * K.dAir * w ** 3 * rs ** 4 * L;
+    const Pother = i.other / 100 * Pem;
+    const Pac = Pem - Pcu - Pother;
+    const Pdc = Math.max(Pac, 0) * i.etaR;
+    const Prect = Math.max(Pac, 0) - Pdc;
+    const Pshaft = Pem + Pw;
+    const eff = Pshaft > 0 ? Pdc / Pshaft : 0;
+    // electrical
+    const f = i.rpm / 60;
+    const lam1 = K.kw * 2 * g.rw * L * Bw;           // peak flux linkage per turn
+    const Epk1 = w * lam1;                             // peak phase EMF per turn
+    const Vdc1 = 1.35 * Math.sqrt(3) / Math.SQRT2 * Epk1;
+    const N = Math.max(1, Math.round(i.Vdc / Vdc1));
+    const Epk = N * Epk1, Voc = N * Vdc1, VLL = Math.sqrt(3) * Epk / Math.SQRT2;
+    const Idc = Pdc / Voc, Iph = 0.8165 * Idc, aCond = Iph / J * 1e6; // mm²
+    // mass
+    const mMag = Math.PI * (g.rm ** 2 - g.ri ** 2) * L * m.rho;
+    const mCore = Math.PI * Math.max(g.ri ** 2 - K.rThread ** 2, 0) * (L + K.extraCore) * c.rho;
+    const mSleeve = Math.PI * (rs ** 2 - g.rm ** 2) * L * K.dSleeve;
+    const mRot = mMag + mCore + mSleeve;
+    const dCg = K.magStart + L / 2;
+    const Iratio = mRot * dCg ** 2 / (K.compMass * K.compArm ** 2);
+    // stator
+    const statorOD = 2 * (g.Ry + K.backIron + K.housing);
+    const Lst = L + K.endStator;
+    const mCu = 2 * Math.PI * g.rw * g.tw * i.fill * Lst * K.dCu;
+    const mFe = Math.PI * ((g.Ry + K.backIron) ** 2 - g.Ry ** 2) * L * K.dFe;
+    const mStator = mCu + mFe + K.housingMass;
+    const addLen = Math.max(Lst + 4e-3 - K.neck, 0);
+    // stresses at max speed
+    const ringBore = (3 + K.nu) / 4 * m.rho * wMax ** 2 * (g.rm ** 2 + (1 - K.nu) / (3 + K.nu) * g.ri ** 2);
+    const pCont = m.rho * wMax ** 2 * (g.rm ** 3 - g.ri ** 3) / (3 * g.rm);
+    const sSleeve = pCont * (g.rm + g.ts / 2) / g.ts + K.dSleeve * wMax ** 2 * rs ** 2;
+    // inlet + engine
+    const ann = Math.PI / 4 * (K.Din ** 2 - statorOD ** 2), annStock = Math.PI / 4 * (K.Din ** 2 - K.hubStock ** 2);
+    const Pcomp = K.compP155 * (i.rpm / 155000) ** 3;
+    return {
+      g, L, w, wMax, Bw, Kpk, sigma, Tem, Pem, Pcu, Pw, Pother, Pac, Pdc, Prect, Pshaft, eff,
+      f, Epk1, Vdc1, N, Epk, Voc, VLL, Idc, Iph, aCond,
+      mMag, mCore, mSleeve, mRot, mNet: mRot - K.stockNut, dCg, Iratio,
+      statorOD, Lst, mStator, addLen, ringBore, pCont, sSleeve,
+      vSurf: w * rs, vSurfMax: wMax * rs, ann, annStock, Pcomp, shareComp: Pshaft / Pcomp, mat: m,
+    };
+  }
+  // active length (mm) that gives target DC power, everything else fixed. Pdc is linear in L.
+  function lengthFor(i, Pt) {
+    const o = run({ ...i, L: 10 });
+    const a = o.Pem * (1 - i.other / 100) / 0.010;     // W per m (net of "other")
+    const c = o.Pcu / (0.010 + K.endCu);                // W per m of copper length
+    const den = a - c;
+    if (den <= 0) return Infinity;
+    return (Pt / i.etaR + c * K.endCu) / den * 1e3;
+  }
+  const api = { run, lengthFor, B, MAT, CORE, K, radii };
+  if (typeof module !== "undefined") module.exports = api; else root.GenModel = api;
+})(this);
+</script>
+<script>
+// ---------- UI ----------
+const $ = id => document.getElementById(id);
+const G = GenModel;
+// [key, label, unit, default, min, max, step]
+const FIELDS = [
+  ["Operating point", [
+    ["rpm", "Shaft speed", "rpm", 139000, 20000, 160000, 1000],
+    ["rpmMax", "Max speed for stress", "rpm", 155000, 100000, 180000, 1000],
+  ]],
+  ["Magnet and rotor", [
+    ["mat", "Magnet material", "select", "smco", Object.fromEntries(Object.entries(G.MAT).map(([k, v]) => [k, v.name]))],
+    ["core", "Nut-rotor core", "select", "steel", Object.fromEntries(Object.entries(G.CORE).map(([k, v]) => [k, v.name]))],
+    ["rm", "Magnet outer radius", "mm", 10, 5, 14, 0.25],
+    ["ri", "Magnet bore radius", "mm", 5, 3.5, 12, 0.25],
+    ["ts", "Carbon sleeve thickness", "mm", 1.0, 0.5, 3, 0.1],
+    ["L", "Active length", "mm", 15, 4, 120, 0.5],
+  ]],
+  ["Stator", [
+    ["clr", "Mechanical clearance", "mm", 0.5, 0.2, 2, 0.05],
+    ["tw", "Winding thickness", "mm", 2.5, 1, 5, 0.1],
+    ["J", "Current density (rms)", "A/mm²", 20, 4, 30, 0.5],
+    ["fill", "Copper fill factor", "", 0.40, 0.2, 0.6, 0.01],
+  ]],
+  ["Losses and electrical", [
+    ["other", "Other losses", "% of EM power", 12, 0, 30, 0.5],
+    ["derate", "Model derating", "× on torque", 1.3, 1, 2, 0.05],
+    ["etaR", "Rectifier efficiency", "", 0.97, 0.85, 1, 0.005],
+    ["Vdc", "DC bus target", "V", 48, 12, 200, 1],
+  ]],
+];
+const TARGET = 1000, DESIGN = 1100;
+const BASE = {}; FIELDS.forEach(([, fs]) => fs.forEach(f => BASE[f[0]] = f[3]));
+const PRESETS = {
+  A_smco: { mat: "smco", rm: 10, ri: 5 }, A_nd: { mat: "ndsh", rm: 10, ri: 5 },
+  B_smco: { mat: "smco", rm: 7.5, ri: 5 }, B_nd: { mat: "ndsh", rm: 7.5, ri: 5 },
+};
+function presetInputs(k) {
+  const i = { ...BASE, ...PRESETS[k], core: "steel", ts: 1, clr: 0.5, tw: 2.5, J: 20, fill: 0.4, rpm: 139000, rpmMax: 155000 };
+  i.L = Math.round(G.lengthFor(i, DESIGN) * 2) / 2;
+  return i;
+}
+const state = presetInputs("A_smco");
+try { const s = JSON.parse(localStorage.getItem("p100-gen-inputs") || "{}"); for (const k in s) if (k in BASE) state[k] = s[k]; } catch (e) {}
+
+const inputVal = v => String(+(+v).toPrecision(5));
+const form = $("inputs");
+function buildForm() {
+  form.innerHTML = "";
+  FIELDS.forEach(([group, fs]) => {
+    const fsEl = document.createElement("fieldset");
+    fsEl.innerHTML = `<legend>${group}</legend>`;
+    fs.forEach(([k, label, unit, , a, b, step]) => {
+      const d = document.createElement("div");
+      if (unit === "select") {
+        d.className = "field sel";
+        d.innerHTML = `<label for="n-${k}">${label}</label><select id="n-${k}">${Object.entries(a).map(([v, t]) => `<option value="${v}"${state[k] === v ? " selected" : ""}>${t}</option>`).join("")}</select>`;
+      } else {
+        d.className = "field";
+        d.innerHTML = `<label for="n-${k}">${label}${unit ? `<small>${unit}</small>` : ""}</label>
+          <input type="number" id="n-${k}" step="any" value="${inputVal(state[k])}">
+          <input type="range" aria-label="${label}" id="r-${k}" min="${a}" max="${b}" step="${step}" value="${state[k]}">`;
+      }
+      fsEl.appendChild(d);
+    });
+    form.appendChild(fsEl);
+  });
+  FIELDS.forEach(([, fs]) => fs.forEach(([k, , unit]) => {
+    const n = $("n-" + k);
+    if (unit === "select") { n.addEventListener("change", () => { state[k] = n.value; update(); }); return; }
+    const r = $("r-" + k);
+    n.addEventListener("input", () => { const v = parseFloat(n.value); if (isFinite(v)) { state[k] = v; r.value = v; update(); } });
+    r.addEventListener("input", () => { const v = parseFloat(r.value); state[k] = v; n.value = inputVal(v); update(); });
+  }));
+}
+function load(i) { Object.assign(state, i); buildForm(); update(); }
+$("reset").onclick = () => load(presetInputs("A_smco"));
+$("fit").onclick = () => { const L = G.lengthFor(state, DESIGN); if (isFinite(L)) load({ L: Math.round(L * 2) / 2 }); };
+
+// ---------- formatting ----------
+const fmt = (v, d = 0) => isFinite(v) ? v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }) : "—";
+function fmtS(v, sig = 3) { if (!isFinite(v)) return "—"; if (v === 0) return "0"; const d = Math.max(0, Math.min(4, sig - 1 - Math.floor(Math.log10(Math.abs(v))))); return fmt(v, d); }
+function kpi(id, val, unit, note, ok) {
+  $(id).innerHTML = `${val}<span>${unit}</span>`;
+  const col = ok === true ? "var(--good)" : ok === false ? "var(--warn)" : "var(--muted)";
+  const icon = ok === true ? "✓" : ok === false ? "!" : "";
+  $(id + "c").innerHTML = `<span class="dot" style="background:${col}"></span>${icon ? `<span aria-hidden="true">${icon}</span>` : ""}${note}`;
+}
+
+// ---------- chart helpers ----------
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function decimalsOf(step) { let d = 0; while (d < 6 && Math.abs(step * 10 ** d - Math.round(step * 10 ** d)) > 1e-6) d++; return d; }
+function ticks(a, b, n = 5) { const step0 = (b - a) / n, mag = Math.pow(10, Math.floor(Math.log10(step0))); const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= step0 * 0.999); const t = []; for (let v = Math.ceil(a / step - 1e-9) * step; v <= b + step * 1e-9; v += step) t.push(+v.toFixed(10)); return { t, d: decimalsOf(step) }; }
+function frame(host, W, H, m, xd, yd, xl, yl, xfmt) {
+  host.innerHTML = "";
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img" }, host);
+  const x = v => m.l + (v - xd[0]) / (xd[1] - xd[0]) * (W - m.l - m.r);
+  const y = v => H - m.b - (v - yd[0]) / (yd[1] - yd[0]) * (H - m.t - m.b);
+  const yt = ticks(...yd), xt = ticks(...xd);
+  yt.t.forEach(t => { el("line", { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: "var(--grid)" }, svg); el("text", { x: m.l - 8, y: y(t) + 4, "text-anchor": "end", "font-size": 12, fill: "var(--muted)" }, svg).textContent = fmt(t, yt.d); });
+  xt.t.forEach(t => { el("text", { x: x(t), y: H - m.b + 17, "text-anchor": "middle", "font-size": 12, fill: "var(--muted)" }, svg).textContent = xfmt ? xfmt(t) : fmt(t, xt.d); });
+  el("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: "var(--line)" }, svg);
+  el("text", { x: (m.l + W - m.r) / 2, y: H - 4, "text-anchor": "middle", "font-size": 13, fill: "var(--text-2)" }, svg).textContent = xl;
+  el("text", { x: 12, y: (m.t + H - m.b) / 2, "text-anchor": "middle", "font-size": 13, fill: "var(--text-2)", transform: `rotate(-90 12 ${(m.t + H - m.b) / 2})` }, svg).textContent = yl;
+  const tip = document.createElement("div"); tip.className = "tip"; host.appendChild(tip);
+  return { svg, x, y, tip };
+}
+function showTip(tip, svg, px, py, html, W) {
+  const r = svg.getBoundingClientRect(), k = r.width / W;
+  tip.innerHTML = html; tip.style.opacity = 1;
+  let left = px * k + 12; if (left + tip.offsetWidth > r.width) left = px * k - tip.offsetWidth - 12;
+  tip.style.left = Math.max(0, left) + "px"; tip.style.top = Math.max(0, py * k - tip.offsetHeight - 10) + "px";
+}
+const pathD = (pts, x, y) => pts.map((p, i) => (i ? "L" : "M") + x(p[0]).toFixed(1) + "," + y(p[1]).toFixed(1)).join("");
+// crosshair + nearest-point tooltip over a line chart
+function hover(svg, W, H, m, x, y, tip, pts, html, color = "var(--s1)") {
+  const cross = el("line", { y1: m.t, y2: H - m.b, stroke: "var(--text-2)", "stroke-width": 1, opacity: 0 }, svg);
+  const mk = el("circle", { r: 5, fill: color, stroke: "var(--surface)", "stroke-width": 2, opacity: 0 }, svg);
+  const ov = el("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent" }, svg);
+  const move = e => {
+    const r = svg.getBoundingClientRect(), cx = (e.touches ? e.touches[0].clientX : e.clientX), px = (cx - r.left) * W / r.width;
+    const p = pts.reduce((a, b) => Math.abs(x(b[0]) - px) < Math.abs(x(a[0]) - px) ? b : a);
+    cross.setAttribute("x1", x(p[0])); cross.setAttribute("x2", x(p[0])); cross.setAttribute("opacity", 1);
+    mk.setAttribute("cx", x(p[0])); mk.setAttribute("cy", y(p[1])); mk.setAttribute("opacity", 1);
+    showTip(tip, svg, x(p[0]), y(p[1]), html(p), W);
+  };
+  ov.addEventListener("mousemove", move); ov.addEventListener("touchmove", move, { passive: true });
+  ov.addEventListener("mouseleave", () => { cross.setAttribute("opacity", 0); mk.setAttribute("opacity", 0); tip.style.opacity = 0; });
+}
+const dot = (svg, cx, cy, fill = "var(--s1)") => el("circle", { cx, cy, r: 5, fill, stroke: "var(--surface)", "stroke-width": 2 }, svg);
+
+// ---------- 1. cross-section with animation ----------
+const PH = [["A", "var(--s1)"], ["B", "var(--s2)"], ["C", "var(--s3)"]];
+// 60° phase belts in the direction of rotation (clockwise on screen): A+ C- B+ A- C+ B-
+const BELTS = [[0, "+"], [2, "-"], [1, "+"], [0, "-"], [2, "+"], [1, "-"]];
+let angle = 0, playing = !window.matchMedia("(prefers-reduced-motion: reduce)").matches, xs = null;
+function annulus(r1, r2, a0, a1) { // sector of annulus, degrees, clockwise on screen
+  const p = (r, a) => [r * Math.cos(a * Math.PI / 180), r * Math.sin(a * Math.PI / 180)];
+  const big = a1 - a0 > 180 ? 1 : 0;
+  const [x1, y1] = p(r2, a0), [x2, y2] = p(r2, a1), [x3, y3] = p(r1, a1), [x4, y4] = p(r1, a0);
+  return `M${x1},${y1}A${r2},${r2} 0 ${big} 1 ${x2},${y2}L${x3},${y3}A${r1},${r1} 0 ${big} 0 ${x4},${y4}Z`;
+}
+const ring = (r1, r2) => `M${r2},0A${r2},${r2} 0 1 1 ${-r2},0A${r2},${r2} 0 1 1 ${r2},0ZM${r1},0A${r1},${r1} 0 1 0 ${-r1},0A${r1},${r1} 0 1 0 ${r1},0Z`;
+function drawXsec(o) {
+  const g = o.g, mm = v => v * 1e3;
+  const R = mm(o.statorOD / 2), S = R + 4.5;
+  const host = $("xsec"); host.innerHTML = "";
+  const svg = el("svg", { viewBox: `${-S} ${-S} ${2 * S} ${2 * S}`, width: "100%", role: "img", "aria-label": "Generator cross-section with rotating magnet and six phase bands" }, host);
+  const rm = mm(g.rm), ri = mm(g.ri), rt = 3.15, rs = rm + mm(g.ts), Ry = mm(g.Ry), rwi = Ry - mm(g.tw), bi = Ry + 2;
+  const sw = S / 160; // stroke unit
+  el("path", { d: ring(bi, R), fill: "var(--surface-2)", "fill-rule": "evenodd", stroke: "var(--line)", "stroke-width": sw }, svg);
+  el("path", { d: ring(Ry, bi), fill: "var(--steel)", "fill-rule": "evenodd" }, svg);
+  BELTS.forEach(([p, s], k) => {
+    const a0 = k * 60 + 1, a1 = k * 60 + 59;
+    el("path", { d: annulus(rwi, Ry, a0, a1), fill: PH[p][1], "fill-opacity": s === "+" ? 0.9 : 0.4 }, svg);
+    const am = (k * 60 + 30) * Math.PI / 180, lr = R + 2.6;
+    el("text", { x: lr * Math.cos(am), y: lr * Math.sin(am) + 0.9, "text-anchor": "middle", "font-size": S / 14, "font-weight": 600, fill: "var(--text)" }, svg).textContent = PH[p][0] + (s === "+" ? "+" : "−");
+  });
+  const rot = el("g", {}, svg);
+  el("path", { d: ring(rm, rs), fill: "var(--muted)", "fill-opacity": 0.35, "fill-rule": "evenodd" }, rot);
+  // N half (right of the magnetization axis at 0°), S half
+  el("path", { d: annulus(ri, rm, -90, 90), fill: "var(--mag-n)" }, rot);
+  el("path", { d: annulus(ri, rm, 90, 270), fill: "var(--mag-s)" }, rot);
+  el("path", { d: ring(rt, ri), fill: "var(--steel)", stroke: "var(--line)", "stroke-width": sw, "fill-rule": "evenodd" }, rot);
+  const lm = (ri + rm) / 2;
+  el("text", { x: lm, y: 1.2, "text-anchor": "middle", "font-size": Math.min(3.4, (rm - ri) * 0.9), "font-weight": 600, fill: "var(--surface)" }, rot).textContent = "N";
+  el("text", { x: -lm, y: 1.2, "text-anchor": "middle", "font-size": Math.min(3.4, (rm - ri) * 0.9), "font-weight": 600, fill: "var(--text)" }, rot).textContent = "S";
+  // radial field arrows across the magnetic gap (sleeve, clearance, winding); length ∝ |cos(θ − rotor angle)|
+  const defs = el("defs", {}, svg);
+  const mk = el("marker", { id: "ah", viewBox: "0 0 10 10", refX: 8, refY: 5, markerWidth: 3.2, markerHeight: 3.2, orient: "auto-start-reverse" }, defs);
+  el("path", { d: "M0,0L10,5L0,10Z", fill: "var(--text)" }, mk);
+  const arrows = [];
+  for (let k = 0; k < 24; k++) arrows.push(el("line", { stroke: "var(--text)", "stroke-width": sw * 1.3, "stroke-linecap": "round", "marker-end": "url(#ah)" }, svg));
+  xs = { rot, arrows, rIn: rm + 0.3, rOut: Ry - 0.3 };
+  $("xsCap").textContent = `Stator Ø${fmt(mm(o.statorOD), 1)} mm · magnet Ø${fmt(2 * rm, 1)} mm · bore Ø${fmt(2 * ri, 1)} mm on the 1/4" thread. Arrows: radial field crossing the sleeve, clearance and winding.`;
+  setAngle(angle);
+}
+function setAngle(a) {
+  angle = ((a % 360) + 360) % 360;
+  if (!xs) return;
+  xs.rot.setAttribute("transform", `rotate(${angle})`);
+  const gap = xs.rOut - xs.rIn;
+  xs.arrows.forEach((ln, k) => {
+    const th = k * 15, c = Math.cos((th - angle) * Math.PI / 180), t = th * Math.PI / 180;
+    const mid = (xs.rIn + xs.rOut) / 2, half = Math.max(gap / 2 * Math.abs(c), 0.05);
+    const r1 = c >= 0 ? mid - half : mid + half, r2 = c >= 0 ? mid + half : mid - half; // outward over N, inward over S
+    ln.setAttribute("x1", r1 * Math.cos(t)); ln.setAttribute("y1", r1 * Math.sin(t));
+    ln.setAttribute("x2", r2 * Math.cos(t)); ln.setAttribute("y2", r2 * Math.sin(t));
+    ln.setAttribute("opacity", 0.25 + 0.75 * Math.abs(c));
+  });
+  $("ang").value = Math.round(angle); $("angv").textContent = Math.round(angle) + "°";
+  if (emfCursor) emfCursor(angle);
+}
+$("ang").addEventListener("input", e => { playing = false; $("play").textContent = "Play"; setAngle(+e.target.value); });
+$("play").onclick = () => { playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; if (playing) last = null; };
+let last = null;
+function tick(t) { if (playing) { if (last !== null) setAngle(angle + (t - last) * 0.09); last = t; } else last = null; requestAnimationFrame(tick); }
+$("play").textContent = playing ? "Pause" : "Play";
+
+// ---------- 2. EMF waveforms ----------
+let emfCursor = null;
+function drawEMF(o) {
+  const host = $("emf"), W = 440, H = 280, m = { t: 14, r: 16, b: 42, l: 52 };
+  const Tus = 1e6 / o.f, E = o.Epk, VLLpk = Math.sqrt(3) * E;
+  const ph = (th, k) => E * Math.sin((th - k * 120) * Math.PI / 180);
+  const bridge = th => { const v = [0, 1, 2].map(k => ph(th, k)); return Math.max(...v) - Math.min(...v); };
+  const n = 180, th = Array.from({ length: n + 1 }, (_, i) => i * 360 / n);
+  const yd = [-E * 1.15, VLLpk * 1.3];
+  const { svg, x, y, tip } = frame(host, W, H, m, [0, Tus], yd, "Time over one electrical cycle (µs)", "Voltage (V)");
+  svg.setAttribute("aria-label", "Three-phase back-EMF and the rectified bridge output over one electrical cycle");
+  el("line", { x1: m.l, x2: W - m.r, y1: y(0), y2: y(0), stroke: "var(--line)" }, svg);
+  const t = a => a / 360 * Tus;
+  [0, 1, 2].forEach(k => el("path", { d: pathD(th.map(a => [t(a), ph(a, k)]), x, y), fill: "none", stroke: PH[k][1], "stroke-width": 2 }, svg));
+  el("path", { d: pathD(th.map(a => [t(a), bridge(a)]), x, y), fill: "none", stroke: "var(--text)", "stroke-width": 2 }, svg);
+  el("line", { x1: m.l, x2: W - m.r, y1: y(o.Voc), y2: y(o.Voc), stroke: "var(--text-2)", "stroke-dasharray": "4 4" }, svg);
+  el("text", { x: W - m.r - 4, y: y(VLLpk) - 8, "text-anchor": "end", "font-size": 12, fill: "var(--text-2)" }, svg).textContent = `bridge output · dashed = DC avg ${fmtS(o.Voc)} V`;
+  // direct labels at each phase's peak
+  [0, 1, 2].forEach(k => { const a = 90 + k * 120; el("text", { x: x(t(a)), y: y(E) - 6, "text-anchor": "middle", "font-size": 12, "font-weight": 600, fill: "var(--text)" }, svg).textContent = PH[k][0]; });
+  const cur = el("line", { y1: m.t, y2: H - m.b, stroke: "var(--muted)", "stroke-width": 1 }, svg);
+  const dots = [0, 1, 2].map(k => el("circle", { r: 4, fill: PH[k][1], stroke: "var(--surface)", "stroke-width": 1.5 }, svg));
+  const dd = el("circle", { r: 4, fill: "var(--text)", stroke: "var(--surface)", "stroke-width": 1.5 }, svg);
+  emfCursor = a => { const X = x(t(a)); cur.setAttribute("x1", X); cur.setAttribute("x2", X); dots.forEach((d, k) => { d.setAttribute("cx", X); d.setAttribute("cy", y(ph(a, k))); }); dd.setAttribute("cx", X); dd.setAttribute("cy", y(bridge(a))); };
+  const pts = th.map(a => [t(a), bridge(a), a]);
+  hover(svg, W, H, m, x, y, tip, pts, p => `${fmt(p[2])}° · ${fmtS(p[0])} µs<br>A ${fmtS(ph(p[2], 0))} V · B ${fmtS(ph(p[2], 1))} V · C ${fmtS(ph(p[2], 2))} V<br>bridge ${fmtS(p[1])} V`, "var(--text)");
+  emfCursor(angle);
+  $("emfLeg").innerHTML = PH.map(([n, c]) => `<span><i class="sw" style="background:${c}"></i>Phase ${n} (line-neutral)</span>`).join("") + `<span><i class="sw" style="background:var(--text)"></i>Bridge output</span>`;
+  $("emfSub").textContent = `Open-circuit at ${fmt(state.rpm)} rpm: ${fmtS(o.f)} Hz, ${o.N} turns per phase, phase peak ${fmtS(o.Epk)} V, line-to-line ${fmtS(o.VLL)} V rms.`;
+}
+
+// ---------- 3. field falloff ----------
+function drawField(o) {
+  const host = $("field"), W = 440, H = 280, m = { t: 26, r: 16, b: 42, l: 52 };
+  const g = o.g, mm = v => v * 1e3;
+  const r0 = g.rm, r1 = g.Ry;
+  const pts = Array.from({ length: 81 }, (_, k) => { const r = r0 + (r1 - r0) * k / 80; return [mm(r), G.B(state, r)]; });
+  const ymax = Math.max(1.0, pts[0][1] * 1.1);
+  const { svg, x, y, tip } = frame(host, W, H, m, [mm(r0), mm(r1)], [0, ymax], "Radius from shaft centre (mm)", "Radial field B (T)", v => fmt(v, 1));
+  svg.setAttribute("aria-label", "Radial magnetic field versus radius from the magnet surface to the stator back-iron");
+  const bands = [["sleeve", g.rm, g.rm + g.ts], ["clearance", g.rm + g.ts, g.rm + g.ts + g.clr], ["winding", g.Ry - g.tw, g.Ry]];
+  bands.forEach(([n, a, b], k) => {
+    el("rect", { x: x(mm(a)), y: m.t, width: Math.max(x(mm(b)) - x(mm(a)), 0), height: H - m.t - m.b, fill: k === 2 ? "var(--s1)" : "var(--muted)", "fill-opacity": k === 2 ? 0.1 : 0.08 }, svg);
+    el("text", { x: (x(mm(a)) + x(mm(b))) / 2, y: m.t - 8, "text-anchor": "middle", "font-size": 11, fill: "var(--muted)" }, svg).textContent = n;
+  });
+  el("path", { d: pathD(pts, x, y), fill: "none", stroke: "var(--s1)", "stroke-width": 2 }, svg);
+  const X = x(mm(g.rw)), Y = y(o.Bw);
+  dot(svg, X, Y);
+  el("text", { x: X + 8, y: Y - 8, "font-size": 12, fill: "var(--text)" }, svg).textContent = `${fmtS(o.Bw, 2)} T at winding`;
+  hover(svg, W, H, m, x, y, tip, pts, p => `r ${fmt(p[0], 2)} mm → ${fmtS(p[1], 3)} T`);
+  $("fieldSub").textContent = `${o.mat.name}, Br ${o.mat.Br} T, magnet Ø${fmt(2 * state.rm, 1)} mm. Field at the winding centre: ${fmtS(o.Bw, 2)} T, ${fmt(100 * o.Bw / o.mat.Br)}% of Br.`;
+}
+
+// ---------- 4. power vs speed ----------
+function drawSpeed(o) {
+  const host = $("speed"), W = 440, H = 280, m = { t: 14, r: 16, b: 42, l: 56 };
+  const pts = [];
+  for (let r = 20000; r <= 160000; r += 2000) { const q = G.run({ ...state, rpm: r }); pts.push([r / 1000, q.Pdc, q]); }
+  const ymax = Math.max(1300, ...pts.map(p => p[1])) * 1.08;
+  const { svg, x, y, tip } = frame(host, W, H, m, [20, 160], [0, ymax], "Shaft speed (thousand rpm)", "DC power (W)");
+  svg.setAttribute("aria-label", "DC power versus shaft speed at the current design");
+  el("line", { x1: m.l, x2: W - m.r, y1: y(TARGET), y2: y(TARGET), stroke: "var(--muted)", "stroke-dasharray": "4 4" }, svg);
+  el("text", { x: m.l + 6, y: y(TARGET) - 6, "font-size": 12, fill: "var(--muted)" }, svg).textContent = "1 kW target";
+  const mx = x(state.rpmMax / 1000);
+  if (state.rpmMax <= 160000) { el("line", { x1: mx, x2: mx, y1: m.t, y2: H - m.b, stroke: "var(--grid)", "stroke-width": 1.5 }, svg); el("text", { x: mx - 4, y: H - m.b - 8, "text-anchor": "end", "font-size": 11, fill: "var(--muted)" }, svg).textContent = "max"; }
+  el("path", { d: pathD(pts, x, y), fill: "none", stroke: "var(--s1)", "stroke-width": 2 }, svg);
+  dot(svg, x(state.rpm / 1000), y(o.Pdc));
+  hover(svg, W, H, m, x, y, tip, pts, p => `${fmt(p[0] * 1000)} rpm → ${fmt(p[1])} W DC<br>eff ${fmt(100 * p[2].eff, 1)}% · windage ${fmt(p[2].Pw, 1)} W · ${fmtS(p[2].f)} Hz`);
+  $("speedSub").textContent = `Fixed geometry and current density. Torque ${fmtS(o.Tem * 1000)} mN·m, shear stress ${fmtS(o.sigma / 1000)} kPa. The dot is the operating speed.`;
+}
+
+// ---------- 5. length vs radius ----------
+function drawTrade(o) {
+  const host = $("trade"), W = 440, H = 280, m = { t: 14, r: 16, b: 42, l: 56 };
+  const pts = [];
+  for (let rm = 5; rm <= 14.001; rm += 0.25) {
+    const i = { ...state, rm, ri: Math.min(state.ri, rm - 1.5) };
+    const L = G.lengthFor(i, TARGET);
+    if (isFinite(L) && L > 0) { const q = G.run({ ...i, L }); pts.push([rm, Math.min(L, 400), q, L]); }
+  }
+  const Lcur = G.lengthFor(state, TARGET);
+  const ymax = Math.min(Math.max(...pts.map(p => p[1]), 40) * 1.08, 200);
+  const { svg, x, y, tip } = frame(host, W, H, m, [5, 14], [0, ymax], "Magnet outer radius (mm)", "Active length for 1 kW (mm)");
+  svg.setAttribute("aria-label", "Active length needed for 1 kW versus magnet radius");
+  const clip = el("clipPath", { id: "tradeclip" }, el("defs", {}, svg));
+  el("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b }, clip);
+  el("path", { d: pathD(pts, x, y), fill: "none", stroke: "var(--s1)", "stroke-width": 2, "clip-path": "url(#tradeclip)" }, svg);
+  if (isFinite(Lcur) && Lcur <= ymax) { const X = x(state.rm), Y = y(Lcur); dot(svg, X, Y); el("text", { x: X + 8, y: Y - 8, "font-size": 12, fill: "var(--text)" }, svg).textContent = `this design: ${fmt(Lcur, 1)} mm`; }
+  hover(svg, W, H, m, x, y, tip, pts.filter(p => p[3] <= ymax), p => `r ${fmt(p[0], 2)} mm → L ${fmt(p[3], 1)} mm<br>rotor ${fmt(p[2].mRot * 1000)} g · inertia ${fmt(p[2].Iratio, 1)}× comp.<br>sleeve ${fmt(p[2].sSleeve / 1e6)} MPa`);
+  $("tradeSub").textContent = `Length that delivers 1 kW DC with the other inputs held fixed (the bore is kept at least 1.5 mm inside the magnet). Hover for rotor mass and sleeve stress.`;
+}
+
+// ---------- 6. power flow ----------
+function drawFlow(o) {
+  const parts = [
+    ["DC output", o.Pdc, "var(--s1)"],
+    ["Rectifier", o.Prect, "color-mix(in srgb, var(--muted) 90%, transparent)"],
+    ["Other (eddy, iron, AC)", o.Pother, "color-mix(in srgb, var(--muted) 65%, transparent)"],
+    ["Copper (I²R)", o.Pcu, "color-mix(in srgb, var(--muted) 45%, transparent)"],
+    ["Windage", o.Pw, "color-mix(in srgb, var(--muted) 28%, transparent)"],
+  ];
+  const tot = o.Pshaft;
+  $("flow").innerHTML = parts.map(([n, v, c]) => `<div style="flex:${Math.max(v, 0)};background:${c}" title="${n}: ${fmt(v)} W"></div>`).join("");
+  $("flow").setAttribute("aria-label", parts.map(([n, v]) => `${n} ${fmt(v)} W`).join(", "));
+  $("flowLeg").innerHTML = parts.map(([n, v, c]) => `<div><span><i class="sw box" style="background:${c}"></i>${n}</span><span class="mono">${fmt(v)} W · ${fmt(100 * v / tot, 1)}%</span></div>`).join("");
+  $("flowSub").textContent = `Shaft power drawn from the engine: ${fmt(tot)} W, about ${fmt(100 * o.shareComp, 1)}% of the compressor's roughly ${fmtS(o.Pcomp / 1000, 2)} kW at this speed.`;
+}
+
+// ---------- summary + warnings ----------
+function update() {
+  if (state.ri > state.rm - 1.5) { state.ri = Math.max(3.5, state.rm - 1.5); const n = $("n-ri"), r = $("r-ri"); if (n) { n.value = inputVal(state.ri); r.value = state.ri; } }
+  try { localStorage.setItem("p100-gen-inputs", JSON.stringify(state)); } catch (e) {}
+  const o = G.run(state);
+  const L1k = G.lengthFor(state, TARGET);
+  kpi("k-P", fmt(o.Pdc), "W", o.Pdc >= TARGET ? `meets 1 kW (${fmt(o.Pdc - TARGET)} W margin)` : `${fmt(TARGET - o.Pdc)} W short of 1 kW`, o.Pdc >= TARGET);
+  kpi("k-E", fmt(100 * o.eff, 1), "%", `shaft ${fmt(o.Pshaft)} W in`, null);
+  kpi("k-M", fmt(o.mNet * 1000), "g", `+${fmt(100 * o.mNet / G.K.rotorMass)}% of 220 g rotor`, o.mNet < 0.045);
+  kpi("k-S", fmt(o.sSleeve / 1e6), "MPa", `at ${fmt(state.rpmMax / 1000)}k rpm · guide ${fmt(G.K.sleeveAllow / 1e6)} MPa`, o.sSleeve <= G.K.sleeveAllow);
+  const w = [];
+  if (o.statorOD > G.K.hubStock + 1e-6) w.push(`Stator OD ${fmt(o.statorOD * 1e3, 1)} mm is larger than the stock Ø36 mm nose, so the inlet annulus shrinks by ${fmt(100 * (1 - o.ann / o.annStock), 1)}%.`);
+  if (o.sSleeve > G.K.sleeveAllow) w.push(`Sleeve hoop stress ${fmt(o.sSleeve / 1e6)} MPa exceeds the ~${fmt(G.K.sleeveAllow / 1e6)} MPa carbon-fiber design guide. Try a thicker sleeve or a smaller magnet.`);
+  if (state.mat === "nd42") w.push("N42 NdFeB is rated to only about 80 °C. On a shaft-end rotor with internal losses it will likely demagnetize. Use a high-temperature grade or SmCo.");
+  if (o.Iratio > 8) w.push(`Overhung inertia is ${fmt(o.Iratio, 1)}× the compressor's. That is a high rotordynamics risk, so check critical speeds before building.`);
+  if (o.vSurfMax > 230) w.push(`Sleeve surface speed reaches ${fmt(o.vSurfMax)} m/s at max rpm. That is high for a carbon sleeve with this little thickness.`);
+  if (state.J > 22) w.push("Current density above about 22 A/mm² is only workable for short runs with strong intake-air cooling of the stator.");
+  $("warn").innerHTML = w.map(s => `<p>${s}</p>`).join("");
+  const row = (a, b) => `<div><span>${a}</span><span class="mono">${b}</span></div>`;
+  $("summary").innerHTML = [
+    "<h3>Electromagnetic</h3>",
+    row("Field at winding", `${fmtS(o.Bw, 3)} T`), row("Current sheet K (peak)", `${fmtS(o.Kpk / 1000)} kA/m`),
+    row("Shear stress σ", `${fmtS(o.sigma / 1000)} kPa`), row("EM torque", `${fmtS(o.Tem * 1000)} mN·m`),
+    row("Electrical frequency", `${fmtS(o.f)} Hz`), row("Length for 1 kW", isFinite(L1k) ? `${fmt(L1k, 1)} mm` : "not reachable"),
+    "<h3>Electrical</h3>",
+    row("Turns per phase", `${o.N}`), row("DC bus (open-circuit)", `${fmtS(o.Voc)} V`),
+    row("DC current", `${fmtS(o.Idc)} A`), row("Phase current (rms)", `${fmtS(o.Iph)} A`),
+    row("Copper per conductor", `${fmtS(o.aCond)} mm²`), row("Line-line voltage (rms)", `${fmtS(o.VLL)} V`),
+    "<h3>Rotor</h3>",
+    row("Magnet / core / sleeve", `${fmt(o.mMag * 1000)} / ${fmt(o.mCore * 1000)} / ${fmt(o.mSleeve * 1000)} g`), row("Nut-rotor total", `${fmt(o.mRot * 1000)} g`),
+    row("Centroid from front bearing", `${fmt(o.dCg * 1000)} mm`), row("Overhung inertia vs compressor", `${fmt(o.Iratio, 1)}×`),
+    row("Sleeve surface speed", `${fmt(o.vSurf)} m/s (${fmt(o.vSurfMax)} max)`), row("Magnet ring bore stress, free", `${fmt(o.ringBore / 1e6)} MPa`),
+    row("Sleeve contact pressure needed", `${fmt(o.pCont / 1e6)} MPa`), row("Magnet tensile strength (typ.)", `~${o.mat.tens} MPa`),
+    "<h3>Stator and engine</h3>",
+    row("Stator OD × length", `${fmt(o.statorOD * 1000, 1)} × ${fmt(o.Lst * 1000, 1)} mm`), row("Stator mass", `${fmt(o.mStator * 1000)} g`),
+    row("Added engine length", `~${fmt(o.addLen * 1000)} mm`), row("Inlet annulus vs stock", `${o.ann >= o.annStock ? "+" : ""}${fmt(100 * (o.ann / o.annStock - 1), 1)}%`),
+    row("Shaft power vs compressor", `${fmt(100 * o.shareComp, 1)}%`), row("Magnet max temp (typ.)", `~${o.mat.Tmax} °C`),
+  ].join("");
+  $("xs-rpm").textContent = fmt(state.rpm);
+  drawXsec(o); drawEMF(o); drawField(o); drawSpeed(o); drawTrade(o); drawFlow(o);
+}
+
+// ---------- options A and B ----------
+const OPT = {
+  A: {
+    title: "Option A · Ø20 mm magnet", badge: "Lead", tag: "Compact 2-pole slotless. Short rotor, fits the stock Ø36 mm nose.",
+    keys: ["A_smco", "A_nd"], cost: ["$1.3–3.0k", "$1.0–2.5k"],
+    pros: ["Shortest slotless rotor, so the least overhang and the smallest added engine length", "Stator about Ø35 mm keeps the stock Ø36 hub, so no extra inlet blockage", "Strong field at the winding (about 0.6 T) for its size", "2-pole at about 2.3 kHz keeps back-iron and AC losses manageable"],
+    cons: ["Highest surface speed and sleeve stress, near the carbon design limit", "Only about 0.5 mm of radial margin inside the nose. The housing must be thin-walled and integral", "More windage than B", "Needs a precisely designed sleeve interference fit plus an FE stress check"],
+  },
+  B: {
+    title: "Option B · Ø15 mm magnet", badge: "Fallback", tag: "Slender 2-pole slotless. Low stress, but a long rotor.",
+    keys: ["B_smco", "B_nd"], cost: ["$1.2–2.8k", "$0.9–2.3k"],
+    pros: ["Lowest sleeve and magnet stress. The gentlest on the brittle magnet", "Least windage and rotor surface speed", "Stator about Ø30 mm could shrink the hub, adding up to about 25% inlet area", "Slightly cheaper magnet"],
+    cons: ["About twice A's active length, so it adds more engine length", "Centroid further from the bearing: the worst overhung inertia, and the top rotordynamics risk", "Weaker field at the winding (about 0.5 T) and only a 2.5 mm ring wall", "Longer stator: more copper mass in the nose"],
+  },
+};
+function renderOptions() {
+  ["A", "B"].forEach(id => {
+    const d = OPT[id];
+    const cols = d.keys.map(k => { const i = presetInputs(k); return { i, o: G.run(i) }; });
+    const R = (lab, f) => `<tr><td>${lab}</td>${cols.map(c => `<td class="num">${f(c.o, c.i)}</td>`).join("")}</tr>`;
+    $("opt" + id).innerHTML = `<h3>${d.title}<span class="badge${id === "B" ? " alt" : ""}">${d.badge}</span></h3><p class="tagline">${d.tag}</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>At 139k rpm, 1.1 kW DC</th><th>SmCo 2:17</th><th>NdFeB 42SH</th></tr></thead><tbody>
+        ${R("Ring OD / ID × length", (o, i) => `${fmt(2 * i.rm)}/${fmt(2 * i.ri)} × ${fmt(i.L, 1)} mm`)}
+        ${R("Rotor mass (net added)", o => `${fmt(o.mRot * 1000)} g (+${fmt(o.mNet * 1000)})`)}
+        ${R("Overhung inertia vs compressor", o => `${fmt(o.Iratio, 1)}×`)}
+        ${R("Stator OD × length", o => `${fmt(o.statorOD * 1000, 1)} × ${fmt(o.Lst * 1000)} mm`)}
+        ${R("Stator mass", o => `${fmt(o.mStator * 1000)} g`)}
+        ${R("Copper / windage loss", o => `${fmt(o.Pcu)} / ${fmt(o.Pw)} W`)}
+        ${R("Efficiency, shaft to DC", o => `${fmt(100 * o.eff, 1)}%`)}
+        ${R("Field at winding", o => `${fmtS(o.Bw, 2)} T`)}
+        ${R("Sleeve hoop at 155k rpm", o => `${fmt(o.sSleeve / 1e6)} MPa`)}
+        ${R("Ring bore stress at 155k (free)", o => `${fmt(o.ringBore / 1e6)} MPa`)}
+        ${R("Turns per phase at 48 V", o => `${o.N}`)}
+        ${R("Added engine length", o => `~${fmt(o.addLen * 1000)} mm`)}
+        <tr><td>Rough cost</td>${d.cost.map(c => `<td class="num">${c}</td>`).join("")}</tr>
+        <tr><td></td>${d.keys.map(k => `<td class="num"><button type="button" data-k="${k}">Load</button></td>`).join("")}</tr>
+      </tbody></table></div>
+      <div class="pc"><div><h4>Pros</h4><ul>${d.pros.map(p => `<li>${p}</li>`).join("")}</ul></div><div><h4>Cons</h4><ul>${d.cons.map(p => `<li>${p}</li>`).join("")}</ul></div></div>
+      <p class="cost">Costs cover magnet, sleeve, nut-rotor, stator and housing, and balancing. Not included: dummy rotor <b>$150–400</b>, rectifier and electronics <b>$100–250</b>, and possible rebalancing of the full engine rotor.</p>`;
+    $("opt" + id).querySelectorAll("button[data-k]").forEach(b => b.onclick = () => { load(presetInputs(b.dataset.k)); window.scrollTo({ top: 0, behavior: "smooth" }); });
+  });
+}
+
+buildForm(); update(); renderOptions(); requestAnimationFrame(tick);
+</script>
+</body></html>
