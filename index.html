@@ -45,8 +45,10 @@ nav a[aria-current]{color:var(--text);font-weight:500;border-bottom:2px solid va
 main.wrap{display:grid;grid-template-columns:330px 1fr;gap:20px;padding-top:20px;padding-bottom:40px}
 @media (max-width:900px){main.wrap{grid-template-columns:1fr}}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
-aside.panel{padding:6px 16px 16px;align-self:start;position:sticky;top:12px}
-@media (max-width:900px){aside.panel{position:static}}
+aside.panel{padding:6px 16px 16px;align-self:start;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+aside.panel::-webkit-scrollbar{width:8px}
+aside.panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+@media (max-width:900px){aside.panel{position:static;max-height:none;overflow:visible}}
 fieldset{border:0;border-top:1px solid var(--line);margin:0;padding:12px 0 4px}
 fieldset:first-of-type{border-top:0}
 legend{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0}
