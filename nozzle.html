@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nozzle Modification</title>
+<meta name="description" content="Nozzle physics for the JetCat P100-RX, a calibrated nozzle sizing explorer for the 90% corrected speed condition, and the test procedure to get the data a redesign needs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f4f3ef; --surface:#fcfcfb; --surface-2:#efeee9; --line:#dcdad3; --grid:#e7e5df;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#7a7972;
+  --accent:#c2410c; --s1:#2a78d6; --s2:#eb6834;
+  --good:#1c7c3c; --warn:#a35f00; --bad:#b42318; --band:rgba(42,120,214,.08); --pt:#0b0b0b;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+    --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+    --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+    --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+  --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+  --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+.mono,td.num,.kpi .v{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+header{border-bottom:1px solid var(--line);background:var(--surface)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+header .wrap{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding-top:18px;padding-bottom:16px}
+header h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
+header p{margin:0;color:var(--text-2);font-size:14px}
+nav{margin-left:auto;font-size:14px}
+nav a{color:var(--text-2);text-decoration:none;margin-left:14px}
+nav a[aria-current]{color:var(--text);font-weight:500;border-bottom:2px solid var(--accent)}
+main.wrap{display:grid;grid-template-columns:330px 1fr;gap:20px;padding-top:20px;padding-bottom:40px}
+@media (max-width:900px){main.wrap{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+aside.panel{padding:6px 16px 16px;align-self:start;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+aside.panel::-webkit-scrollbar{width:8px}
+aside.panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+@media (max-width:900px){aside.panel{position:static;max-height:none;overflow:visible}}
+fieldset{border:0;border-top:1px solid var(--line);margin:0;padding:12px 0 4px}
+fieldset:first-of-type{border-top:0}
+legend{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0}
+.field{display:grid;grid-template-columns:1fr 92px;align-items:center;gap:8px;margin:8px 0}
+.field label{font-size:14px;color:var(--text-2)}
+.field label small{color:var(--muted);display:block;font-size:12px;line-height:1.2}
+.field input[type=number]{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:14px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.field input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent);margin:-2px 0 0}
+.toggle{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--text-2);margin:8px 0}
+.toggle input{accent-color:var(--accent)}
+.btns{display:flex;gap:8px;margin-top:14px}
+button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--muted)}
+section.out{display:flex;flex-direction:column;gap:20px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{padding:12px 14px}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi .v{font-size:26px;font-weight:500;margin:2px 0 0;line-height:1.2}
+.kpi .v span{font-size:14px;color:var(--text-2);margin-left:3px}
+.kpi .c{font-size:12px;color:var(--text-2);margin-top:4px;display:flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.card{padding:16px}
+.card h2{font-size:15px;font-weight:600;margin:0 0 2px}
+.card .sub{font-size:13px;color:var(--text-2);margin:0 0 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:1100px){.grid2{grid-template-columns:1fr}}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-weight:500;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;text-align:right;padding:6px 10px;border-bottom:1px solid var(--line)}
+th:first-child,th:nth-child(2),td:first-child,td:nth-child(2){text-align:left}
+td{padding:7px 10px;border-bottom:1px solid var(--grid)}
+td.num{text-align:right}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:4px 20px;margin-top:14px;font-size:14px}
+.summary div{display:flex;justify-content:space-between;border-bottom:1px dashed var(--grid);padding:4px 0}
+.summary span:first-child{color:var(--text-2)}
+.warn{border-left:3px solid var(--warn);background:var(--surface);padding:10px 14px;border-radius:6px;font-size:14px}
+.warn:empty{display:none}
+svg text{font-family:"IBM Plex Sans",sans-serif}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--text);color:var(--surface);font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity .1s;font-family:"IBM Plex Mono",monospace}
+.units{padding:12px 0 10px;border-bottom:1px solid var(--line)}
+.units-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.units-l{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;padding:2px;background:var(--surface-2)}
+.seg button{border:0;background:transparent;padding:5px 14px;border-radius:5px;color:var(--text-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 0 0 1px var(--line)}
+details{margin-top:8px}
+summary{cursor:pointer;font-size:13px;color:var(--text-2)}
+.tag{font-size:11px;color:var(--accent);margin-left:4px}
+.unit-grid{display:grid;grid-template-columns:1fr 128px;gap:6px 8px;align-items:center;margin-top:10px;font-size:13px;color:var(--text-2)}
+.unit-grid select{font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);width:100%}
+.hint{font-size:12px;color:var(--muted);margin:-2px 0 8px;line-height:1.35}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 8px}
+.presets button{font-size:12px;padding:3px 9px}
+.tests input,.rotor-in input{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.tests input{min-width:86px}
+.tests input.lbl{text-align:left;font-family:inherit;min-width:120px}
+.tests td{padding:4px 5px;border-bottom:0}
+.tests th{white-space:nowrap}
+.x{border:0;background:transparent;color:var(--muted);font-size:18px;line-height:1;padding:2px 6px}
+.x:hover{color:var(--text)}
+.row-btns{display:flex;gap:8px;margin:10px 0 4px;flex-wrap:wrap;align-items:center}
+.fn{font-size:12px;color:var(--muted);margin:6px 0 0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin:-4px 0 8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:16px;height:0;border-top:2px solid}
+.legend i.dash{border-top-style:dashed}
+.legend i.pt{width:9px;height:9px;border:2px solid var(--text);border-radius:50%;background:var(--surface)}
+.legend i.band{width:14px;height:10px;border:0;background:var(--band)}
+h3{font-size:13px;font-weight:600;margin:16px 0 6px;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em}
+.rotor-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px;margin-bottom:6px}
+.rotor-in label{font-size:12px;color:var(--text-2);display:block;margin-bottom:3px}
+td.ok{color:var(--good)} td.off{color:var(--warn)}
+.toc{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;margin-top:10px}
+.toc a{color:var(--text-2)}
+.prose{font-size:15px;line-height:1.6;color:var(--text)}
+.prose p{margin:8px 0;max-width:78ch}
+.prose li{margin:6px 0;max-width:76ch}
+.prose h2{font-size:17px;margin:4px 0 6px}
+.prose h3{text-transform:none;letter-spacing:0;font-size:15px;color:var(--text);margin:18px 0 4px}
+.eq{font-family:"IBM Plex Mono",monospace;font-size:14px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.live{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;background:var(--surface-2);border-radius:4px;padding:0 4px}
+.pill{display:inline-block;font-size:12px;font-weight:500;padding:1px 8px;border-radius:10px;border:1px solid;white-space:nowrap}
+.pill.have{color:var(--good)} .pill.partial{color:var(--warn)} .pill.need{color:var(--bad)}
+ol.steps{padding-left:22px}
+ol.steps>li{margin:14px 0}
+ol.steps>li>b{display:block;margin-bottom:2px}
+ol.steps ul{margin:4px 0;padding-left:18px}
+.callout{border-left:3px solid var(--accent);background:var(--surface-2);padding:10px 14px;border-radius:6px;margin:12px 0;font-size:14px}
+.rec{font-size:15px;line-height:1.55;margin:0}
+tr.sel td{background:var(--surface-2)}
+td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
+.geo svg text{font-family:"IBM Plex Sans",sans-serif}
+.notes{font-size:14px;color:var(--text-2)}
+.notes h2{color:var(--text)}
+.notes li{margin:4px 0}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>Nozzle Modification</h1>
+  <p>JetCat P100-RX · sizing the exhaust nozzle for the 90% corrected speed condition</p>
+  <nav><a href="./">Cycle analysis</a><a href="cycle-v2.html">Cycle analysis V2</a><a href="generator.html">Generator physics</a><a href="nozzle.html" aria-current="page">Nozzle modification</a></nav>
+</div></header>
+
+<main class="wrap">
+  <aside class="panel" aria-label="Nozzle inputs">
+    <div class="units">
+      <div class="units-row"><span class="units-l">Units</span>
+        <div class="seg" role="group" aria-label="Unit system"><button type="button" data-p="metric">Metric</button><button type="button" data-p="imperial">Imperial</button></div>
+      </div>
+      <details><summary>Customize units <span id="unitTag" class="tag"></span></summary><div id="unitSel" class="unit-grid"></div></details>
+    </div>
+    <form id="inputs" onsubmit="return false"></form>
+    <p class="hint" id="calSrc" style="margin-top:10px"></p>
+    <div class="btns"><button type="button" id="reset">Reset inputs</button></div>
+  </aside>
+
+  <section class="out">
+    <div class="panel card">
+      <h2>Goal</h2>
+      <p class="sub" style="margin-bottom:0">Find the exit area and contour that give the most corrected thrust at 90% corrected speed with 1 kW of electrical power out, without breaking the EGT limit (with margin) in the 90% run <em>or</em> the full-throttle run. Both runs use the same nozzle.</p>
+      <div class="toc"><a href="#physics">1. Nozzle physics</a><a href="#sizing">2. Sizing with your data</a><a href="#geometry">3. Geometry</a><a href="#data">4. Data you have and need</a><a href="#procedure">5. Test procedure</a><a href="#decide">6. Choosing the final nozzle</a></div>
+    </div>
+
+    <div class="kpis">
+      <div class="panel kpi"><div class="l">Thrust at 90%, proposed</div><div class="v" id="k-F"></div><div class="c" id="k-Fc"></div></div>
+      <div class="panel kpi"><div class="l">EGT at 90% + load</div><div class="v" id="k-T9"></div><div class="c" id="k-T9c"></div></div>
+      <div class="panel kpi"><div class="l">EGT at full throttle</div><div class="v" id="k-T1"></div><div class="c" id="k-T1c"></div></div>
+      <div class="panel kpi"><div class="l">Smallest exit within limits</div><div class="v" id="k-D"></div><div class="c" id="k-Dc"></div></div>
+    </div>
+    <div class="warn" id="warn" role="status"></div>
+    <div class="panel card"><p class="rec" id="rec"></p></div>
+
+    <div class="panel card prose" id="physics">
+      <h2>1. Nozzle physics</h2>
+      <h3>What the nozzle does</h3>
+      <p>The turbine leaves the gas above ambient pressure. The nozzle turns that leftover pressure into jet velocity. On a static thrust stand there is no ram drag, so thrust is the jet momentum plus any pressure difference left at the exit:</p>
+      <div class="eq">F = ṁ·V₅ + (P₅ − P<sub>amb</sub>)·A₅</div>
+      <div class="eq">V₅ = √( 2·η<sub>n</sub>·c<sub>p</sub>·T₀₄·[1 − (P₅ / P₀₄)<sup>(γ−1)/γ</sup>] )&nbsp;&nbsp;&nbsp;&nbsp;ṁ = C<sub>d</sub>·ρ₅·V₅·A₅</div>
+      <p>Station 4 is the turbine exit (nozzle inlet); station 5 is the nozzle exit plane. T₀₄ is what the ECU thermocouple reads as EGT.</p>
+
+      <h3>Why the exit pressure is always ambient</h3>
+      <p>A subsonic jet cannot hold a pressure difference at its exit. Pressure waves travel faster than the flow, so the surrounding air sets the exit-plane static pressure: P₅ = P<sub>amb</sub>, and the pressure term in the thrust equation is zero. Only a choked jet (Mach 1 at the exit) can leave above ambient. Choking needs a nozzle pressure ratio of</p>
+      <div class="eq">NPR = P₀₄ / P<sub>amb</sub> ≥ ((γ+1)/2)<sup>γ/(γ−1)</sup> ≈ 1.85&nbsp;&nbsp;(γ ≈ 1.34 for hot products)</div>
+      <p>With the stock nozzle at 90% corrected speed and the generator load set on the left, the model gives NPR <span class="live" id="ph-npr"></span> and exit Mach <span class="live" id="ph-m5"></span>. That is far from choking, and every candidate in the sizing table stays subsonic too. Two consequences follow:</p>
+      <ul>
+        <li><b>Thrust is all momentum, ṁ·V₅.</b> To raise it at fixed speed you need a faster jet, which means more pressure and temperature at the turbine exit.</li>
+        <li><b>A converging-diverging nozzle would not help.</b> A diverging section only adds thrust when the flow is choked with pressure left over. Here it would add length, weight and friction for nothing.</li>
+      </ul>
+
+      <h3>Exit area sets the engine's operating point</h3>
+      <p>At the scored condition the ECU holds corrected speed, not fuel flow. Shrinking the exit area sets off a chain:</p>
+      <ol>
+        <li>Less gas can leave at the old turbine-exit pressure, so pressure backs up behind the turbine and P₀₄ rises.</li>
+        <li>The turbine's expansion ratio P₀₃/P₀₄ falls, so it makes less work per kilogram at the same inlet temperature.</li>
+        <li>The rotor starts to slow, and the ECU adds fuel to hold speed. Turbine inlet temperature T₀₃ rises until the turbine again drives the compressor and the generator.</li>
+        <li>The hotter, higher-pressure gas leaves faster, so V₅ and thrust go up. EGT goes up with it.</li>
+        <li>The turbine nozzle guide vanes are choked (ṁ·√T₀₃/P₀₃ is fixed), so hotter gas means slightly less air. The compressor moves up its speed line, toward surge.</li>
+      </ol>
+      <p>So a smaller nozzle trades EGT margin and surge margin for thrust, paid for with more fuel. It does not create energy.</p>
+
+      <h3>What limits how small you can go</h3>
+      <ul>
+        <li><b>EGT.</b> The ICD says not to exceed about 800 °C and warns specifically that a smaller exit raises EGT. EGT climbs faster with area reduction at full throttle than at 90%, so the full-throttle run usually sets the limit.</li>
+        <li><b>Turbine inlet temperature.</b> T₀₃ rises along with EGT (see the T₀₃ column in the sizing table). The turbine wheel and guide vanes see this temperature, and it is not measured.</li>
+        <li><b>Compressor surge.</b> Each step down in area pushes the compressor toward lower flow and higher pressure ratio. Without a compressor map the model can only report how far it has moved, not where surge is. Watch for popping, rumbling, or rpm and EGT oscillating during tests.</li>
+        <li><b>Generator load.</b> At 90% speed the model adds about <span class="live" id="ph-dTkw"></span> of EGT per kW extracted. Size the nozzle with the generator loaded.</li>
+        <li><b>Hot test day.</b> On a hot day, 90% corrected speed means a higher physical rpm. Set the ambient on the left to the hottest day you expect at the test site.</li>
+        <li><b>The ECU.</b> If the ECU caps EGT or pulls rpm back near its limit, a small nozzle may stop the full-throttle run short of full speed.</li>
+      </ul>
+
+      <h3>Losses and contour</h3>
+      <p>The flow leaves the turbine through an annulus between the outer wall and the inner (tail) cone: about <span class="live" id="ph-a4"></span>, at roughly <span class="live" id="ph-v4"></span> (Mach <span class="live" id="ph-m4"></span>). The stock exit is <em>larger</em> than that annulus, and the area behind a short tail cone is larger still (see the area plot in section 3). The flow slows down, then speeds up again. If it separates off a steep cone, it behaves like a sudden expansion. That costs roughly ½ρ(V₁ − V₂)² of total pressure, about <span class="live" id="ph-dp"></span> out of the <span class="live" id="ph-avail"></span> the nozzle has to work with. The real loss depends on the cone shape, which still has to be measured.</p>
+      <p>At fixed speed, a cleaner nozzle mostly <em>lowers EGT</em> rather than raising thrust, because the ECU then needs less fuel. Try "Nozzle efficiency gain" on the left. That margin can then be spent on a smaller exit, so contour and area work together. Guidelines for the contour:</p>
+      <ul>
+        <li>Make the flow area shrink steadily from the turbine annulus to the exit, or at least avoid a large bulge. A gently tapered tail cone, or an outer wall that converges early, both help.</li>
+        <li>Keep the inside smooth: no steps at joints or insert edges, and a clean, round exit lip. A warped exit changes the area and can skew the jet.</li>
+        <li>Keep it short. Overall length is scored (full marks at 10 in, zero at 15 in), and the ICD allows at most 11.75 in behind the stand.</li>
+        <li>Keep the jet on the engine axis. The ICD requires the exhaust centerline within 2 in of the stock location and parallel to the facility exhaust.</li>
+        <li>Remember thermal growth. A stainless or Inconel exit is about 0.4–0.5 mm larger in diameter at ~650 °C than when measured cold. The calibration used the cold diameter, so stick with cold measurements and similar materials.</li>
+      </ul>
+
+      <h3>A variable-area option</h3>
+      <p>The test sequence lets teams actuate controls before the 1-minute hold at 90% speed, and again for up to a minute before the full-throttle run. A nozzle that is small for the 90% run and opens before full throttle would remove the full-throttle EGT limit. It costs an actuator in a hot zone, weight, radial size and support equipment. A fixed nozzle sized for both runs is the simpler first step.</p>
+    </div>
+
+    <div class="panel card" id="sizing">
+      <h2>2. Sizing with your data</h2>
+      <p class="sub">Calibrated model from Cycle analysis V2. Solid lines use the speed-line slope S set on the left; the shaded bands show S from 0 to 3, the plausible range without a compressor map. Shaded column: diameters within all limits.</p>
+      <div class="grid2" style="margin-top:6px">
+        <div><h3>Corrected thrust vs exit diameter</h3><div class="legend" id="lg-F"></div><div class="chart" id="ch-F"></div></div>
+        <div><h3>EGT vs exit diameter</h3><div class="legend" id="lg-T"></div><div class="chart" id="ch-T"></div></div>
+      </div>
+      <h3>Candidate exit diameters</h3>
+      <div class="tablewrap"><table id="cand"></table></div>
+      <p class="fn">A₅/A₄ compares the exit area with the turbine-exit annulus. Below 1, the nozzle converges overall. Flow shift is the compressor's air flow relative to its normal operating line at that speed; more negative means closer to surge. The "Within limits" column checks EGT with your margin at both conditions and the flow-shift limit you set.</p>
+    </div>
+
+    <div class="panel card geo" id="geometry">
+      <h2>3. Geometry</h2>
+      <p class="sub">Half-section from the turbine exit (left) to the nozzle exit (right), and the flow area along the nozzle. The stock wall is drawn as a straight cone between the measured inlet and exit, and the tail-cone length is a placeholder: measure both and enter them on the left.</p>
+      <div class="grid2">
+        <div><h3>Half-section</h3><div id="geo"></div></div>
+        <div><h3>Flow area along the nozzle</h3><div class="legend" id="lg-A"></div><div class="chart" id="ch-A"></div></div>
+      </div>
+    </div>
+
+    <div class="panel card prose" id="data">
+      <h2>4. Data you have and need</h2>
+      <div class="tablewrap"><table id="dataTable"></table></div>
+    </div>
+
+    <div class="panel card prose" id="procedure">
+      <h2>5. Test procedure for the 90% corrected speed condition</h2>
+      <ol class="steps">
+        <li><b>Measure the stock nozzle properly.</b>
+          <ul>
+            <li>Exit inside diameter at 4 angles (it is warped, so record the spread), inlet inside diameter, overall length and wall thickness.</li>
+            <li>The tail cone: base diameter, length, whether it reaches the exit plane, and its profile. A photo against a scale or a contour gauge is enough.</li>
+            <li>How the nozzle attaches to the engine, and the gap to the turbine wheel.</li>
+          </ul></li>
+        <li><b>Add instrumentation.</b>
+          <ul>
+            <li><b>Thrust:</b> calibrate the load cell with known weights before each session.</li>
+            <li><b>ECU log:</b> rpm, EGT and pump voltage at the highest rate the ECU allows.</li>
+            <li><b>Ambient:</b> temperature and pressure next to the intake, logged with every run.</li>
+            <li><b>Fuel flow:</b> weigh the fuel tank before and after a timed hold. At about 5 g/s, a 60 s hold uses ~300 g, so a ±1 g scale gives better than 1%.</li>
+            <li><b>Turbine-exit total pressure (P₀₄):</b> a small stainless tube bent to face upstream, about 1.5 mm OD, through the nozzle wall near the inlet with its tip at mid-annulus. Route it through enough tube to cool before a 0–100 kPa gauge transducer. Don't use a plain wall tap here: the flow is near Mach 0.5, so wall static pressure reads close to ambient.</li>
+            <li><b>Optional exit-plane probe:</b> the same kind of probe at the exit. Because P₅ = P<sub>amb</sub>, it gives jet velocity directly. Traversing it across the exit gives the velocity profile and the discharge coefficient.</li>
+          </ul></li>
+        <li><b>Set the speed correctly.</b> The scored condition is 90% <em>corrected</em> speed: physical rpm = 138,600 × √(T<sub>amb</sub> / 288.15 K). Compute it from the intake temperature before each run.
+          <div class="tablewrap" style="margin-top:6px"><table id="rpmTable"></table></div></li>
+        <li><b>Baseline the stock nozzle at 90%.</b>
+          <ul>
+            <li>Warm up, then hold the target rpm for 1 minute and average 30 s. That matches the competition sequence.</li>
+            <li>Then go to full throttle and average 30 s.</li>
+            <li>Repeat three times. The scatter tells you the smallest effect you can detect; a 0.5 mm step should change thrust by roughly 0.5–1 lbf.</li>
+            <li>Enter the averages as test points on <a href="cycle-v2.html">Cycle analysis V2</a>. This replaces the model's 90% extrapolation with data.</li>
+          </ul></li>
+        <li><b>Step the exit area down.</b>
+          <ul>
+            <li>Make short exit rings that reduce the diameter in 0.5–0.8 mm steps (about 2–3% of area each), for example 47.6 → 46.8 → 46.0 → 45.4 mm.</li>
+            <li>Use stainless tube or rolled stainless shim with a tapered lead-in, not a sharp step. Clamp or screw them on; never rely on friction at temperature.</li>
+            <li>Run the same sequence as the baseline on each ring, at 90% and full throttle.</li>
+          </ul></li>
+        <li><b>Stop when any limit is reached.</b>
+          <ul>
+            <li>EGT reaches your margin line (800 °C minus the margin) in either run.</li>
+            <li>Signs of surge or stall: popping, rumble, or rpm or EGT oscillating.</li>
+            <li>The ECU can no longer hold the target speed, or the full-throttle run stops short of full speed.</li>
+            <li>The thrust gain per step drops off sharply.</li>
+          </ul></li>
+        <li><b>Update the model after every ring.</b> Enter each result on Cycle analysis V2 with its as-tested diameter. Rings at different areas pin down the compressor speed-line slope S, the main uncertainty in the sizing charts above, so each step makes the next prediction better.</li>
+        <li><b>Run a load test at the chosen size.</b> With the generator, or a dummy load such as a resistive load on a spare motor, hold 90% corrected speed and step electrical power up to 1 kW. Log EGT and thrust at each step to measure the EGT rise per kW directly.</li>
+      </ol>
+    </div>
+
+    <div class="panel card prose" id="decide">
+      <h2>6. Choosing the final nozzle</h2>
+      <p>Pick the <b>smallest exit diameter</b> that meets all of these on the <b>hottest expected test day</b> with the <b>generator at 1 kW</b>:</p>
+      <ul>
+        <li>EGT at 90% corrected speed at or below 800 °C minus your margin.</li>
+        <li>EGT in the full-throttle run at or below the same line. This is usually the tighter one.</li>
+        <li>No surge signs at any step in testing.</li>
+        <li>A thrust gain worth the risk. Each extra lbf at 90% is worth 2 points up to 20 lbf, while power is worth 100. A nozzle that costs a run, or the generator's output, costs far more than it gains.</li>
+      </ul>
+      <p>Then build the final nozzle with a smooth converging contour to that exit diameter, as short as the contour allows. Check it is round and on-axis, and run the full competition sequence once more before calling it done.</p>
+      <div class="callout">The sizing charts are a starting point for testing, not a substitute for it. Close to the tested 47.62 mm nozzle the model is well anchored; each millimetre smaller leans more on the guessed compressor speed-line slope until the ring tests measure it.</div>
+    </div>
+  </section>
+</main>
+<script>
+// P100 cycle model V2: calibrated, fixed-geometry matching model.
+// Ideal-gas mixtures from NASA 7-coefficient polynomials (GRI-Mech 3.0), complete lean combustion
+// of liquid n-dodecane, compressor work from tip speed (Euler: Δh = ψU²), measured nozzle area
+// closes the cycle (fuel is solved so the nozzle passes the flow), components calibrated to test data.
+(function (root) {
+  const Ru = 8.314462618, P0 = 101325, TSTD = 288.15, PSTD = 101325;
+  const SP = {
+    N2: { MW: 28.0134, Tm: 1000,
+      lo: [3.298677, 1.4082404e-3, -3.963222e-6, 5.641515e-9, -2.444854e-12, -1020.8999, 3.950372],
+      hi: [2.92664, 1.4879768e-3, -5.68476e-7, 1.0097038e-10, -6.753351e-15, -922.7977, 5.980528] },
+    O2: { MW: 31.9988, Tm: 1000,
+      lo: [3.78245636, -2.99673416e-3, 9.84730201e-6, -9.68129509e-9, 3.24372837e-12, -1063.94356, 3.65767573],
+      hi: [3.28253784, 1.48308754e-3, -7.57966669e-7, 2.09470555e-10, -2.16717794e-14, -1088.45772, 5.45323129] },
+    H2O: { MW: 18.01528, Tm: 1000,
+      lo: [4.19864056, -2.0364341e-3, 6.52040211e-6, -5.48797062e-9, 1.77197817e-12, -30293.7267, -0.849032208],
+      hi: [3.03399249, 2.17691804e-3, -1.64072518e-7, -9.7041987e-11, 1.68200992e-14, -30004.2971, 4.9667701] },
+    CO2: { MW: 44.0095, Tm: 1000,
+      lo: [2.35677352, 8.98459677e-3, -7.12356269e-6, 2.45919022e-9, -1.43699548e-13, -48371.9697, 9.90105222],
+      hi: [3.85746029, 4.41437026e-3, -2.21481404e-6, 5.23490188e-10, -4.72084164e-14, -48759.166, 2.27163806] },
+  };
+  // liquid n-dodecane: ΔHf(298) = -352.1 kJ/mol (gas -290.9 minus 61.2 vaporisation), cp ≈ 2.21 kJ/kg-K
+  const FUEL = { MW: 170.338, hf: -352.1e3, cp: 2.21e3 * 0.170338 };
+  const co = (s, T) => (T < s.Tm ? s.lo : s.hi);
+  const cpR = (s, T) => { const a = co(s, T); return a[0] + T * (a[1] + T * (a[2] + T * (a[3] + T * a[4]))); };
+  const hRT = (s, T) => { const a = co(s, T); return a[0] + T * (a[1] / 2 + T * (a[2] / 3 + T * (a[3] / 4 + T * a[4] / 5))) + a[5] / T; };
+  const sR = (s, T) => { const a = co(s, T); return a[0] * Math.log(T) + T * (a[1] + T * (a[2] / 2 + T * (a[3] / 3 + T * a[4] / 4))) + a[6]; };
+  const hm = (k, T) => hRT(SP[k], T) * Ru * T; // J/mol
+
+  function Mix(x) {
+    const tot = Object.values(x).reduce((p, v) => p + v, 0);
+    this.x = {}; for (const k in x) if (x[k] > 0) this.x[k] = x[k] / tot;
+    this.MW = 0; for (const k in this.x) this.MW += this.x[k] * SP[k].MW;
+    this.R = Ru / (this.MW / 1000);
+  }
+  Mix.prototype.h = function (T) { let v = 0; for (const k in this.x) v += this.x[k] * hRT(SP[k], T) * Ru * T; return v / (this.MW / 1000); };
+  Mix.prototype.cp = function (T) { let v = 0; for (const k in this.x) v += this.x[k] * cpR(SP[k], T) * Ru; return v / (this.MW / 1000); };
+  Mix.prototype.s = function (T, P) { let v = 0; for (const k in this.x) { const xi = this.x[k]; v += xi * Ru * (sR(SP[k], T) - Math.log(xi * P / P0)); } return v / (this.MW / 1000); };
+  Mix.prototype.gamma = function (T) { const cp = this.cp(T); return cp / (cp - this.R); };
+  Mix.prototype.T_h = function (h, Tg = 1000) { let T = Tg; for (let i = 0; i < 50; i++) { const d = (this.h(T) - h) / this.cp(T); T -= d; if (Math.abs(d) < 1e-6) break; } return T; };
+  Mix.prototype.T_sP = function (s, P, Tg = 1000) { let T = Tg; for (let i = 0; i < 50; i++) { const d = (this.s(T, P) - s) / (this.cp(T) / T); T -= d; if (Math.abs(d) < 1e-6) break; } return T; };
+
+  const AIR = new Mix({ O2: 0.21, N2: 0.79 });
+  const NF_STOICH = 0.21 / 18.5;                       // mol fuel per mol oxidiser at φ = 1
+  const FAR_of = nf => nf * FUEL.MW / AIR.MW;          // kg fuel / kg air
+  const nf_of = far => far * AIR.MW / FUEL.MW;
+  const prodMix = nf => new Mix({ CO2: 12 * nf, H2O: 13 * nf, O2: Math.max(0.21 - 18.5 * nf, 0), N2: 0.79 });
+  const Hox = T => 0.21 * hm("O2", T) + 0.79 * hm("N2", T);
+  const Dp = T => 12 * hm("CO2", T) + 13 * hm("H2O", T) - 18.5 * hm("O2", T);
+  const hfuel = Tf => FUEL.hf + FUEL.cp * (Tf - 298.15);
+  const LHVm = -(Dp(298.15) - FUEL.hf);                // J/mol fuel, liquid fuel, H2O vapour
+  const LHV = LHVm / (FUEL.MW / 1000);                 // J/kg
+  // fuel per mol oxidiser needed to reach T03 from T02 (closed form)
+  const nf_for = (T02, T03, Tf, eta_b) => (Hox(T02) - Hox(T03)) / (Dp(T03) - hfuel(Tf) + (1 - eta_b) * LHVm);
+  // combustion efficiency implied by a known fuel flow
+  const etab_for = (T02, T03, Tf, nf) => 1 - (Hox(T02) + nf * hfuel(Tf) - Hox(T03) - nf * Dp(T03)) / (nf * LHVm);
+
+  function bisect(f, lo, hi, n = 60) {
+    let flo = f(lo);
+    for (let i = 0; i < n; i++) { const m = 0.5 * (lo + hi), fm = f(m); if ((fm > 0) === (flo > 0)) { lo = m; flo = fm; } else hi = m; }
+    return 0.5 * (lo + hi);
+  }
+
+  // ---- components ----
+  function ambient(T01, P01) { return { T01, P01, th: T01 / TSTD, de: P01 / PSTD }; }
+  // compressor work coefficient ψ = Δh0/U² from the reference pressure ratio at the reference corrected speed
+  function psiFrom(p) {
+    const s1 = AIR.s(TSTD, PSTD), T2s = AIR.T_sP(s1, PSTD * p.r_ref, TSTD * 1.4);
+    const dh = (AIR.h(T2s) - AIR.h(TSTD)) / p.eta_comp;
+    const U = Math.PI * p.D_comp * p.N_ref / 60;
+    return dh / (U * U);
+  }
+  function compressor(p, amb, Nphys) {
+    const U = Math.PI * p.D_comp * Nphys / 60, dh = p.psi * U * U;
+    const h1 = AIR.h(amb.T01), T2 = AIR.T_h(h1 + dh, amb.T01 + dh / 1005);
+    const T2s = AIR.T_h(h1 + p.eta_comp * dh, amb.T01 + p.eta_comp * dh / 1005);
+    const P2 = amb.P01 * Math.exp((AIR.s(T2s, amb.P01) - AIR.s(amb.T01, amb.P01)) / AIR.R);
+    return { U, dh, T2, P2, r: P2 / amb.P01 };
+  }
+  function nozzle(g, T04, P04, Pa, p) {
+    const A = Math.PI / 4 * (p.D_noz * p.D_noz - (p.D_cone || 0) ** 2), Aeff = A * p.Cd;
+    if (!(P04 > Pa)) return { m: 0, F: 0, V5: 0, T5: T04, P5: Pa, choked: false };
+    const h04 = g.h(T04), s04 = g.s(T04, P04), gm = g.gamma(T04);
+    const Pcrit = P04 * Math.pow(2 / (gm + 1), gm / (gm - 1));
+    const choked = Pcrit > Pa, P5 = Math.max(Pa, Pcrit);
+    const T5s = g.T_sP(s04, P5, T04), h5 = h04 - p.eta_nozzle * (h04 - g.h(T5s));
+    const V5 = Math.sqrt(Math.max(2 * (h04 - h5), 0)), T5 = g.T_h(h5, T5s), rho5 = P5 / (g.R * T5);
+    const m = rho5 * V5 * Aeff;
+    return { m, F: m * V5 + (P5 - Pa) * A, V5, T5, P5, choked, rho5, A };
+  }
+
+  // ---- forward: predict an operating point ----
+  // Two matching constraints close the cycle: the choked turbine NGV (m·√T03/P03 = Q, calibrated) and the
+  // measured nozzle area. The compressor may slide along its speed line: r = r_op·(m/m_op)^(−S).
+  // p: parameters (incl. calibrated m_ref, k, eta_turb, eta_b, Q_ngv); op: {T01, P01, Nc, P_elec, eta_gen, P_drag}
+  function run(p, op) {
+    const amb = ambient(op.T01, op.P01), Nphys = op.Nc * Math.sqrt(amb.th);
+    const c0 = compressor(p, amb, Nphys);
+    const m_op = p.m_ref * Math.pow(op.Nc / p.N_ref, p.k) * amb.de / Math.sqrt(amb.th);
+    const P_shaft = op.P_elec / op.eta_gen + op.P_drag, Tf = amb.T01;
+    const h1 = AIR.h(amb.T01), s1 = AIR.s(amb.T01, amb.P01);
+    const comp = m => {
+      const r = c0.r * Math.pow(m / m_op, -p.S), P2 = r * amb.P01;
+      const T2s = AIR.T_sP(s1, P2, c0.T2), h2 = h1 + (AIR.h(T2s) - h1) / p.eta_comp;
+      return { r, P2, T2: AIR.T_h(h2, c0.T2), dh: h2 - h1 };
+    };
+    const state = m => {
+      const c = comp(m), P03 = (1 - p.dp_comb) * c.P2;
+      // NGV: m_tot·√T03 / P03 = Q  →  T03
+      const fT = T03 => { const nf = nf_for(c.T2, T03, Tf, p.eta_b); if (!(nf > 0)) return -1; if (nf > 0.95 * NF_STOICH) return 1; return m * (1 + FAR_of(nf)) * Math.sqrt(T03) / P03 - p.Q_ngv; };
+      const lo = c.T2 + 20, hi = 2100;
+      if (fT(lo) > 0 || fT(hi) < 0) return null;
+      const T03 = bisect(fT, lo, hi, 45), nf = nf_for(c.T2, T03, Tf, p.eta_b);
+      const g = prodMix(nf), far = FAR_of(nf), m_f = m * far, m_tot = m + m_f;
+      const W_c = m * c.dh, W_t = W_c + P_shaft;
+      const h03 = g.h(T03), h04 = h03 - W_t / m_tot;
+      if (!(h04 > g.h(amb.T01))) return { c, T03, bad: true };
+      const T04 = g.T_h(h04, T03 - 100);
+      const h4s = h03 - (h03 - h04) / p.eta_turb; if (!(h4s > g.h(250))) return { c, T03, bad: true };
+      const T4s = g.T_h(h4s, T04);
+      const s03 = g.s(T03, P03), P04 = P03 * Math.exp((g.s(T4s, P03) - s03) / g.R);
+      const nz = nozzle(g, T04, P04, amb.P01, p);
+      return { c, P03, nf, g, far, m_f, m_tot, W_c, W_t, T03, T04, P04, s03, nz };
+    };
+    // residual: nozzle capacity minus actual flow. Lower air flow → hotter NGV → more nozzle capacity.
+    const resid = m => { const st = state(m); if (!st) return NaN; if (st.bad) return -1; return (st.nz.m - st.m_tot) / st.m_tot; };
+    const out = { amb, Nphys, m_op, r_op: c0.r, P_shaft, warnings: [] };
+    // scan for a sign change from high flow (resid < 0) to low flow (resid > 0)
+    let a = null, b = null, prev = null;
+    for (let f = 1.6; f >= 0.35; f -= 0.05) {
+      const m = m_op * f, v = resid(m);
+      if (isFinite(v)) { if (prev && prev.v < 0 && v >= 0) { a = prev.m; b = m; break; } prev = { m, v }; }
+    }
+    if (a == null) { out.failed = true; out.warnings.push("No matched operating point: the turbine cannot drive the compressor and generator through this nozzle at this speed."); return out; }
+    const m_air = bisect(m => { const v = resid(m); return isFinite(v) ? v : 1; }, a, b, 45);
+    const st = state(m_air);
+    if (!st || st.bad) { out.failed = true; out.warnings.push("No matched operating point at this condition."); return out; }
+    const { g, nz } = st;
+    Object.assign(out, st, {
+      m_air, flowShift: m_air / m_op - 1, rShift: st.c.r / c0.r - 1, U: c0.U,
+      phi: st.nf / NF_STOICH, F: nz.F, Fc: nz.F / amb.de, V5: nz.V5, T5: nz.T5, P5: nz.P5, choked: nz.choked, A5: nz.A,
+      EGT: st.T04 - p.egt_offset, TSFC: st.m_f * 3600 / nz.F, fuel_mlmin: st.m_f / p.rho_fuel * 60000,
+      st: [
+        { n: "1", name: "Compressor inlet", T: amb.T01, P: amb.P01, s: s1 },
+        { n: "2", name: "Compressor exit", T: st.c.T2, P: st.c.P2, s: AIR.s(st.c.T2, st.c.P2) },
+        { n: "3", name: "Turbine inlet", T: st.T03, P: st.P03, s: st.s03 },
+        { n: "4", name: "Turbine exit", T: st.T04, P: st.P04, s: g.s(st.T04, st.P04) },
+        { n: "5", name: "Nozzle exit (static)", T: nz.T5, P: nz.P5, s: g.s(nz.T5, nz.P5) },
+      ],
+      eta_th: (nz.m * nz.V5 * nz.V5 / 2 + op.P_elec / op.eta_gen) / (st.m_f * LHV),
+    });
+    return out;
+  }
+
+  // ---- inverse: back out the engine from one test point ----
+  // t: {T01, P01, N, F, EGT (K), fuel (ml/min or null)}; returns m_air, eta_turb, (eta_b if fuel given)
+  function backout(p, t, eta_b_guess) {
+    const amb = ambient(t.T01, t.P01), Nc = t.N / Math.sqrt(amb.th), c = compressor(p, amb, t.N);
+    const T04 = t.EGT + p.egt_offset, P03 = (1 - p.dp_comb) * c.P2, Tf = amb.T01;
+    const m_f_known = t.fuel > 0 ? t.fuel * p.rho_fuel / 60000 : null;
+    let far = 0.022, r = null;
+    for (let it = 0; it < 8; it++) {
+      const g = prodMix(nf_of(far));
+      const P04 = bisect(P => nozzle(g, T04, P, amb.P01, p).F - t.F, amb.P01 * 1.0001, amb.P01 * 4, 60);
+      const nz = nozzle(g, T04, P04, amb.P01, p), m_tot = nz.m;
+      const m_air = m_f_known ? m_tot - m_f_known : m_tot / (1 + far);
+      const W_c = m_air * c.dh, h04 = g.h(T04), h03 = h04 + W_c / m_tot, T03 = g.T_h(h03, T04 + 100);
+      const farNew = m_f_known ? m_f_known / m_air : FAR_of(nf_for(c.T2, T03, Tf, eta_b_guess));
+      r = { amb, Nc, c, g, P04, nz, m_tot, m_air, W_c, T03, T04, P03, h03, h04 };
+      if (Math.abs(farNew - far) < 1e-7) { far = farNew; break; }
+      far = farNew;
+    }
+    r.far = far; r.m_f = r.m_air * far;
+    r.mc = r.m_air * Math.sqrt(amb.th) / amb.de;
+    if (!(r.P04 < r.P03)) { r.bad = "This thrust and EGT need more turbine-exit pressure than the compressor delivers. Check the test values or assumptions."; return r; }
+    const s03 = r.g.s(r.T03, r.P03), T4s = r.g.T_sP(s03, r.P04, r.T04);
+    r.eta_turb = (r.h03 - r.h04) / (r.h03 - r.g.h(T4s));
+    r.eta_b = m_f_known ? etab_for(c.T2, r.T03, Tf, nf_of(far)) : null;
+    r.fuel_mlmin = r.m_f / p.rho_fuel * 60000;
+    return r;
+  }
+
+  // fit m_ref, k, eta_turb, eta_b to a list of test points
+  function calibrate(p, tests, opts) {
+    const res = { pts: [], warnings: [] };
+    const withFuel = tests.filter(t => t.fuel > 0), noFuel = tests.filter(t => !(t.fuel > 0));
+    const bf = withFuel.map(t => backout(p, t, 0.9));
+    const ebs = bf.filter(r => !r.bad && isFinite(r.eta_b)).map(r => r.eta_b);
+    res.eta_b = ebs.length ? ebs.reduce((a, b) => a + b, 0) / ebs.length : opts.eta_b_manual;
+    const bn = noFuel.map(t => backout(p, t, res.eta_b));
+    tests.forEach(t => res.pts.push({ t, r: (t.fuel > 0 ? bf[withFuel.indexOf(t)] : bn[noFuel.indexOf(t)]) }));
+    const good = res.pts.filter(q => !q.r.bad && isFinite(q.r.eta_turb));
+    res.pts.filter(q => q.r.bad).forEach(q => res.warnings.push(`${q.t.label || "Test point"}: ${q.r.bad}`));
+    if (!good.length) { res.failed = true; return res; }
+    res.eta_turb = good.reduce((a, q) => a + q.r.eta_turb, 0) / good.length;
+    good.forEach(q => { q.r.Q = q.r.m_tot * Math.sqrt(q.r.T03) / q.r.P03; });
+    res.Q_ngv = good.reduce((a, q) => a + q.r.Q, 0) / good.length;
+    res.Q_spread = good.length > 1 ? (Math.max(...good.map(q => q.r.Q)) / Math.min(...good.map(q => q.r.Q)) - 1) : null;
+    // corrected flow vs corrected speed: ln(mc) = a + k ln(Nc)
+    const xs = good.map(q => Math.log(q.r.Nc)), ys = good.map(q => Math.log(q.r.mc));
+    const xm = xs.reduce((a, b) => a + b, 0) / xs.length, ym = ys.reduce((a, b) => a + b, 0) / ys.length;
+    const sxx = xs.reduce((a, x) => a + (x - xm) ** 2, 0);
+    res.k_fit = sxx > 1e-6 ? xs.reduce((a, x, i) => a + (x - xm) * (ys[i] - ym), 0) / sxx : null;
+    res.k = opts.k_auto && res.k_fit != null ? res.k_fit : opts.k_manual;
+    res.m_ref = Math.exp(ym + res.k * (Math.log(p.N_ref) - xm));
+    return res;
+  }
+
+  const api = { run, backout, calibrate, psiFrom, compressor, ambient, Mix, AIR, LHV, TSTD, PSTD };
+  if (typeof module !== "undefined") module.exports = api; else root.CycleV2 = api;
+})(this);
+</script>
+<script>
+// ---------- units ----------
+// Each unit: [factor, offset] so that SI = value * factor + offset
+const UNITS = {
+  pressure:    { label: "Pressure",          u: { "Pa": [1], "kPa": [1e3], "bar": [1e5], "atm": [101325], "psi": [6894.757293168], "inHg": [3386.389] } },
+  temperature: { label: "Temperature",       u: { "K": [1, 0], "°C": [1, 273.15], "°F": [5 / 9, 459.67 * 5 / 9], "°R": [5 / 9, 0] } },
+  massflow:    { label: "Air mass flow",     u: { "kg/s": [1], "g/s": [1e-3], "lb/s": [0.45359237], "lb/min": [0.45359237 / 60] } },
+  fuelmass:    { label: "Fuel mass flow",    u: { "g/s": [1e-3], "kg/h": [1 / 3600], "lb/h": [0.45359237 / 3600], "lb/min": [0.45359237 / 60] } },
+  fuelflow:    { label: "Fuel volume flow",  u: { "ml/min": [1], "L/h": [1000 / 60], "US gal/h": [3785.411784 / 60], "US fl oz/min": [29.5735295625] } },
+  density:     { label: "Fuel density",      u: { "kg/L": [1], "kg/m³": [1e-3], "lb/US gal": [0.45359237 / 3.785411784], "lb/ft³": [0.45359237 / 28.316846592] } },
+  force:       { label: "Thrust",            u: { "N": [1], "kN": [1e3], "lbf": [4.4482216152605], "kgf": [9.80665] } },
+  velocity:    { label: "Velocity",          u: { "m/s": [1], "km/h": [1 / 3.6], "ft/s": [0.3048], "mph": [0.44704], "kn": [1852 / 3600] } },
+  elec:        { label: "Electrical power",  u: { "W": [1], "kW": [1e3], "hp": [745.69987158227] } },
+  shaft:       { label: "Shaft power / work", u: { "W": [1], "kW": [1e3], "hp": [745.69987158227], "BTU/h": [0.29307107017] } },
+  area:        { label: "Area",              u: { "cm²": [1e-4], "mm²": [1e-6], "m²": [1], "in²": [6.4516e-4] } },
+  length:      { label: "Length",            u: { "mm": [1e-3], "cm": [1e-2], "in": [0.0254] } },
+  tsfc:        { label: "TSFC",              u: { "kg/(N·h)": [1], "g/(kN·s)": [0.0036], "lb/(lbf·h)": [1 / 9.80665] } },
+  entropy:     { label: "Entropy",           u: { "J/(kg·K)": [1], "kJ/(kg·K)": [1e3], "BTU/(lb·°R)": [4186.8] } },
+  mass:        { label: "Mass",              u: { "g": [1e-3], "kg": [1], "oz": [0.028349523125], "lb": [0.45359237] } },
+  inertia:     { label: "Moment of inertia", u: { "kg·mm²": [1e-6], "g·cm²": [1e-7], "kg·m²": [1], "lb·in²": [0.45359237 * 0.00064516] } },
+  energy:      { label: "Energy",            u: { "kJ": [1e3], "J": [1], "BTU": [1055.05585262], "ft·lbf": [1.3558179483] } },
+  torque:      { label: "Torque",            u: { "N·m": [1], "N·mm": [1e-3], "lbf·in": [0.112984829], "lbf·ft": [1.3558179483] } },
+  stress:      { label: "Stress",            u: { "MPa": [1e6], "ksi": [6894757.293168], "psi": [6894.757293168] } },
+};
+const PRESETS = {
+  metric:   { pressure: "kPa", temperature: "K",  massflow: "kg/s", fuelmass: "g/s",  fuelflow: "ml/min",   density: "kg/L",      force: "N",   velocity: "m/s",  elec: "W", shaft: "kW", area: "cm²", length: "mm", tsfc: "kg/(N·h)",   entropy: "J/(kg·K)", mass: "g", inertia: "kg·mm²", energy: "kJ", torque: "N·m", stress: "MPa" },
+  imperial: { pressure: "psi", temperature: "°F", massflow: "lb/s", fuelmass: "lb/h", fuelflow: "US gal/h", density: "lb/US gal", force: "lbf", velocity: "ft/s", elec: "W", shaft: "hp", area: "in²", length: "in", tsfc: "lb/(lbf·h)", entropy: "BTU/(lb·°R)", mass: "oz", inertia: "lb·in²", energy: "BTU", torque: "lbf·in", stress: "ksi" },
+};
+const units = { ...PRESETS.metric };
+try { const s = JSON.parse(localStorage.getItem("p100-units") || "{}"); for (const q in s) if (UNITS[q] && UNITS[q].u[s[q]]) units[q] = s[q]; } catch (e) {}
+
+const uf = q => q === "tdelta" ? [UNITS.temperature.u[units.temperature][0], 0] : UNITS[q].u[units[q]];
+const toSI = (q, v) => { const [f, o = 0] = uf(q); return v * f + o; };
+const fromSI = (q, v) => { const [f, o = 0] = uf(q); return (v - o) / f; };
+const fromSIdelta = (q, v) => v / uf(q)[0];   // differences (no offset)
+const un = q => q === "tdelta" ? units.temperature : units[q];
+function niceStep(x) { const m = Math.pow(10, Math.floor(Math.log10(x))); const r = x / m; return (r < 1.5 ? 1 : r < 3.5 ? 2 : r < 7.5 ? 5 : 10) * m; }
+function decimalsOf(step) { let d = 0; while (d < 6 && Math.abs(step * 10 ** d - Math.round(step * 10 ** d)) > 1e-6) d++; return d; }
+// format with ~sig significant figures
+function fmtS(v, sig = 4) {
+  if (!isFinite(v)) return "—"; if (v === 0) return "0";
+  const d = Math.max(0, Math.min(6, sig - 1 - Math.floor(Math.log10(Math.abs(v)))));
+  return v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+// shared decimals for a table column so numbers align
+function colDec(vals, sig = 4) { const mx = Math.max(...vals.map(v => Math.abs(v)).filter(isFinite)); return mx > 0 ? Math.max(0, Math.min(6, sig - 1 - Math.floor(Math.log10(mx)))) : 0; }
+// value shown in an input box: 5 significant figures, trailing zeros stripped
+const inputVal = v => String(+(+v).toPrecision(5));
+
+// ================= Nozzle Modification: page logic =================
+const N_SCORED = 138600, N_FULL = 154000, LBF = 4.4482216152605;
+const $ = id => document.getElementById(id);
+const fmt = (v, d = 0) => isFinite(v) ? v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }) : "—";
+const load = (key, def) => { try { const v = JSON.parse(localStorage.getItem(key)); return v ?? def; } catch (e) { return def; } };
+const save = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} };
+
+// ---------- calibration source: the V2 page's inputs and test points ----------
+const V2DEF = { D_comp: 0.060, D_noz_test: 0.04762, D_cone: 0, r_ref: 2.9, eta_comp: 0.75, eta_nozzle: 0.95, Cd: 0.97, dp_comb: 0.05, S: 0.5,
+  egt_offset: 0, rho_fuel: 0.80, k_manual: 1.45, eta_b_manual: 0.85, k_auto: true, P_drag: 0 };
+const V2TESTS = [
+  { label: "Full throttle", T01: 288.15, P01: 102130, N: 154100, F: 23.4 * LBF, EGT: 675 + 273.15, fuel: 390 },
+  { label: "90% throttle", T01: 288.15, P01: 102130, N: 149600, F: 20.66 * LBF, EGT: 635 + 273.15, fuel: null },
+];
+const v2in = { ...V2DEF, ...load("p100-v2-inputs", {}) };
+const v2tests = (load("p100-v2-tests", null) || V2TESTS).filter(t => t.T01 > 0 && t.P01 > 0 && t.N > 0 && t.F > 0 && t.EGT > 0);
+const fromV2 = (() => { try { return !!localStorage.getItem("p100-v2-tests"); } catch (e) { return false; } })();
+
+// ---------- inputs ----------
+const F_ = (k, label, q, def, min, max, step, unit) => ({ k, label, q, def, min, max, step, unit });
+const GROUPS = [
+  ["Test conditions", [
+    F_("Nc", "90% corrected speed", null, N_SCORED, 130000, 150000, 100, "rpm"),
+    F_("Nfull", "Full-throttle physical speed", null, N_FULL, 140000, 160000, 100, "rpm"),
+    F_("T01", "Ambient temperature", "temperature", 288.15, 250, 320, 0.5),
+    F_("P01", "Ambient pressure", "pressure", 101325, 80000, 105000, 25),
+    F_("P_elec", "Electrical power out at 90%", "elec", 1000, 0, 3000, 10),
+    F_("eta_gen", "Generator + rectifier efficiency", null, 0.85, 0.5, 1, 0.01),
+  ]],
+  ["Limits", [
+    F_("egtLim", "EGT limit (ICD)", "temperature", 1073.15, 973.15, 1123.15, 1),
+    F_("margin", "EGT margin to keep", "tdelta", 50, 0, 150, 1),
+    F_("flowLim", "Flag compressor flow drop beyond", null, 5, 1, 15, 0.5, "%"),
+  ]],
+  ["Proposed nozzle", [
+    F_("D", "Exit diameter", "length", 0.046, 0.040, 0.050, 0.0001),
+    F_("dEta", "Nozzle efficiency gain (smooth contour)", null, 0, 0, 0.05, 0.005),
+    F_("L", "Nozzle length", "length", 0.0404, 0.02, 0.08, 0.0005),
+  ]],
+  ["Measured geometry", [
+    F_("Din", "Nozzle inlet diameter", "length", 0.0584, 0.05, 0.065, 0.0001),
+    F_("dc", "Tail-cone base diameter", "length", 0.0375, 0.02, 0.045, 0.0005),
+    F_("Lc", "Tail-cone length (measure)", "length", 0.020, 0.005, 0.08, 0.0005),
+    F_("Lstock", "Stock nozzle length", "length", 0.0404, 0.02, 0.08, 0.0005),
+  ]],
+  ["Model", [
+    F_("S", "Compressor speed-line slope S", null, v2in.S, 0, 5, 0.05),
+  ]],
+];
+const FIELDS = GROUPS.flatMap(g => g[1]);
+const DEFAULTS = Object.fromEntries(FIELDS.map(f => [f.k, f.def])); DEFAULTS.band = true;
+const state = { ...DEFAULTS, ...load("p100-nozzle-inputs", {}) };
+
+function activePreset() { for (const p in PRESETS) if (Object.keys(UNITS).every(q => PRESETS[p][q] === units[q])) return p; return null; }
+function buildUnits() {
+  const ap = activePreset();
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === ap ? "true" : "false"));
+  $("unitTag").textContent = ap ? "" : "custom";
+  $("unitSel").innerHTML = Object.entries(UNITS).map(([q, d]) =>
+    `<label for="u-${q}">${d.label}</label><select id="u-${q}" data-q="${q}">${Object.keys(d.u).map(u => `<option${u === units[q] ? " selected" : ""}>${u}</option>`).join("")}</select>`).join("");
+  $("unitSel").querySelectorAll("select").forEach(s => s.addEventListener("change", () => { units[s.dataset.q] = s.value; unitsChanged(); }));
+}
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { Object.assign(units, PRESETS[b.dataset.p]); unitsChanged(); }));
+function unitsChanged() { save("p100-units", units); buildUnits(); buildForm(); schedule(); }
+const disp = (q, v) => q ? fromSI(q, v) : v;
+const tsi = (q, v) => q ? toSI(q, v) : v;
+const ulabel = f => f.q ? un(f.q) : (f.unit || "");
+const L_ = v => `${fmtS(fromSI("length", v), 4)} ${un("length")}`;
+const T_ = v => `${fmt(fromSI("temperature", v))} ${un("temperature")}`;
+const dT_ = v => `${fmt(fromSIdelta("tdelta", v))} ${un("temperature")}`;
+const F__ = v => `${fmtS(fromSI("force", v))} ${un("force")}`;
+
+function buildForm() {
+  const form = $("inputs"); form.innerHTML = "";
+  GROUPS.forEach(([group, fs]) => {
+    const fsEl = document.createElement("fieldset");
+    fsEl.innerHTML = `<legend>${group}</legend>`;
+    fs.forEach(f => {
+      const dStep = f.q ? niceStep(f.step / uf(f.q)[0]) : f.step;
+      const d = document.createElement("div"); d.className = "field";
+      d.innerHTML = `<label for="n-${f.k}">${f.label}${ulabel(f) ? `<small>${ulabel(f)}</small>` : ""}</label>
+        <input type="number" id="n-${f.k}" step="any" value="${inputVal(disp(f.q, state[f.k]))}">
+        <input type="range" aria-label="${f.label}" id="r-${f.k}" min="${disp(f.q, f.min)}" max="${disp(f.q, f.max)}" step="${dStep}" value="${disp(f.q, state[f.k])}">`;
+      fsEl.appendChild(d);
+      if (f.k === "Nfull") { const h = document.createElement("p"); h.className = "hint"; h.textContent = "The ECU limits physical rpm, so the full-throttle run is set in physical, not corrected, speed."; fsEl.appendChild(h); }
+      if (f.k === "S") {
+        const t = document.createElement("label"); t.className = "toggle";
+        t.innerHTML = `<input type="checkbox" id="band" ${state.band ? "checked" : ""}> Show S = 0 to 3 bands`;
+        fsEl.appendChild(t);
+      }
+    });
+    form.appendChild(fsEl);
+  });
+  FIELDS.forEach(f => {
+    const n = $("n-" + f.k), r = $("r-" + f.k);
+    n.addEventListener("input", () => { const v = parseFloat(n.value); if (isFinite(v)) { state[f.k] = tsi(f.q, v); r.value = v; schedule(); } });
+    r.addEventListener("input", () => { const v = parseFloat(r.value); state[f.k] = tsi(f.q, v); n.value = inputVal(v); schedule(); });
+  });
+  $("band").addEventListener("change", e => { state.band = e.target.checked; schedule(); });
+}
+$("reset").onclick = () => { Object.assign(state, DEFAULTS); buildForm(); schedule(); };
+
+// ---------- model ----------
+function calibrated() {
+  const p = { D_comp: v2in.D_comp, N_ref: N_FULL, r_ref: v2in.r_ref, eta_comp: v2in.eta_comp, eta_nozzle: v2in.eta_nozzle, Cd: v2in.Cd,
+    D_noz: v2in.D_noz_test, D_cone: v2in.D_cone, dp_comb: v2in.dp_comb, egt_offset: v2in.egt_offset, rho_fuel: v2in.rho_fuel, S: v2in.S };
+  p.psi = CycleV2.psiFrom(p);
+  const cal = CycleV2.calibrate(p, v2tests, { k_auto: v2in.k_auto, k_manual: v2in.k_manual, eta_b_manual: v2in.eta_b_manual });
+  if (cal.failed) return null;
+  return { ...p, m_ref: cal.m_ref, k: cal.k, eta_turb: cal.eta_turb, eta_b: cal.eta_b, Q_ngv: cal.Q_ngv };
+}
+const PCAL = calibrated();
+// a nozzle variant: exit diameter D (m), with the efficiency gain applied only to non-stock nozzles
+const variant = (D, S, gain) => ({ ...PCAL, D_noz: D, S, eta_nozzle: Math.min(1, PCAL.eta_nozzle + (gain || 0)) });
+const run90 = (q, P) => CycleV2.run(q, { T01: state.T01, P01: state.P01, Nc: state.Nc, P_elec: P ?? state.P_elec, eta_gen: state.eta_gen, P_drag: v2in.P_drag || 0 });
+const run100 = q => CycleV2.run(q, { T01: state.T01, P01: state.P01, Nc: state.Nfull / Math.sqrt(state.T01 / 288.15), P_elec: 0, eta_gen: state.eta_gen, P_drag: v2in.P_drag || 0 });
+const thrustScore = lbf => lbf > 20 ? 20 : lbf < 10 ? 0 : 2 * lbf - 20;
+const isStock = D => Math.abs(D - v2in.D_noz_test) < 1e-6;
+function evalD(D, S) {
+  const q = variant(D, S, isStock(D) ? 0 : state.dEta);
+  const a = run90(q), b = run100(q);
+  return { D, a, b, ok: !a.failed && !b.failed };
+}
+function checks(r) {
+  const lim = state.egtLim - state.margin, fl = -state.flowLim / 100;
+  if (!r.ok) return { pass: false, why: "no solution" };
+  const fails = [];
+  if (r.a.EGT > lim) fails.push("EGT 90%");
+  if (r.b.EGT > lim) fails.push("EGT full");
+  if (r.a.flowShift < fl || r.b.flowShift < fl) fails.push("flow drop");
+  return { pass: !fails.length, why: fails.join(", ") };
+}
+// smallest feasible diameter from a sweep (sorted by D descending), interpolating each constraint's crossing
+function smallestFeasible(rows) {
+  const lim = state.egtLim - state.margin, fl = -state.flowLim / 100;
+  const cons = [["EGT at full throttle", r => lim - r.b.EGT], ["EGT at 90%", r => lim - r.a.EGT], ["compressor flow drop", r => Math.min(r.a.flowShift, r.b.flowShift) - fl]];
+  const good = rows.filter(r => r.ok);
+  if (!good.length) return null;
+  if (cons.some(([, g]) => g(good[0]) < 0)) return { D: null, by: cons.filter(([, g]) => g(good[0]) < 0).map(c => c[0]).join(", ") };
+  let best = { D: good[good.length - 1].D, by: "none within the range shown", open: true };
+  cons.forEach(([name, g]) => {
+    for (let i = 1; i < good.length; i++) {
+      const g0 = g(good[i - 1]), g1 = g(good[i]);
+      if (g0 >= 0 && g1 < 0) { const D = good[i - 1].D + (good[i].D - good[i - 1].D) * g0 / (g0 - g1); if (best.open || D > best.D) best = { D, by: name }; break; }
+    }
+  });
+  return best;
+}
+
+// ---------- update ----------
+let pending = false;
+function schedule() { if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; save("p100-nozzle-inputs", state); update(); }); } }
+
+const DS = []; for (let d = 49.0; d >= 41.99; d -= 0.5) DS.push(+(d / 1000).toFixed(5));
+function update() {
+  $("calSrc").textContent = `Calibration: ${v2tests.length} test point${v2tests.length === 1 ? "" : "s"} ${fromV2 ? "from your Cycle analysis V2 page" : "from the Nov 6 test day (edit them on Cycle analysis V2)"}, tested nozzle ${L_(v2in.D_noz_test)}.`;
+  if (!PCAL) { $("warn").textContent = "Calibration failed. Check the test points on the Cycle analysis V2 page."; return; }
+  const warn = [];
+  const sweep = S => DS.map(D => evalD(D, S));
+  const main = sweep(state.S), lo = state.band ? sweep(0) : null, hi = state.band ? sweep(3) : null;
+  const stock = evalD(v2in.D_noz_test, state.S), prop = evalD(state.D, state.S);
+  if (!stock.ok || !prop.ok) warn.push("The model has no solution for one of the nozzles at these conditions.");
+  if (state.Lc >= state.L) warn.push("The tail cone is as long as the proposed nozzle, so it reaches the exit plane. The sizing above assumes a full circular exit; enter the cone's diameter at the exit on Cycle analysis V2 if that is the real geometry.");
+  $("warn").textContent = warn.join(" ");
+
+  // KPIs
+  const lim = state.egtLim - state.margin;
+  if (prop.ok && stock.ok) {
+    const lbf = prop.a.Fc / LBF, d = prop.a.Fc - stock.a.Fc;
+    kpi("k-F", fmtS(fromSI("force", prop.a.Fc)), un("force"), `${d >= 0 ? "+" : ""}${fmtS(fromSI("force", d), 2)} vs stock · score ≈ ${fmt(thrustScore(lbf), 1)}/20`, lbf >= 20 ? "good" : null);
+    const st = e => e <= lim ? "good" : e <= state.egtLim ? "warn" : "bad";
+    kpi("k-T9", fmt(fromSI("temperature", prop.a.EGT)), un("temperature"), `stock ${T_(stock.a.EGT)} · margin line ${T_(lim)}`, st(prop.a.EGT));
+    kpi("k-T1", fmt(fromSI("temperature", prop.b.EGT)), un("temperature"), `stock ${T_(stock.b.EGT)} · at ${fmt(state.Nfull)} rpm`, st(prop.b.EGT));
+  }
+  const sf = smallestFeasible(main), sfl = lo && smallestFeasible(lo), sfh = hi && smallestFeasible(hi);
+  if (sf && sf.D != null) {
+    const rng = sfl && sfh && sfl.D != null && sfh.D != null ? ` · S 0–3: ${fmtS(fromSI("length", Math.min(sfl.D, sfh.D)), 3)}–${fmtS(fromSI("length", Math.max(sfl.D, sfh.D)), 3)}` : "";
+    kpi("k-D", (sf.open ? "≤ " : "") + fmtS(fromSI("length", sf.D), 3), un("length"), `set by ${sf.by}${rng}`, null);
+  } else kpi("k-D", "—", "", sf ? `stock already fails: ${sf.by}` : "no solution", "bad");
+
+  // recommendation sentence
+  if (sf && sf.D != null && stock.ok) {
+    const at = evalD(sf.D, state.S);
+    const gain = at.ok ? at.a.Fc - stock.a.Fc : NaN;
+    $("rec").innerHTML = `With your limits (EGT ≤ ${T_(lim)} in both runs, compressor flow drop ≤ ${fmt(state.flowLim, 1)}%), ${fmt(fromSI("temperature", state.T01))} ${un("temperature")} ambient and ${fmtS(fromSI("elec", state.P_elec), 3)} ${un("elec")} out, the model allows an exit down to about <b>${L_(sf.D)}</b>, limited by <b>${sf.by}</b>. ` +
+      (at.ok ? `That is worth about <b>${gain >= 0 ? "+" : ""}${F__(gain)}</b> of corrected thrust at 90% (${fmt(thrustScore(stock.a.Fc / LBF), 1)} → ${fmt(thrustScore(at.a.Fc / LBF), 1)} points). ` : "") +
+      `Treat it as the end point of the ring tests in section 5, approached in steps from the stock ${L_(v2in.D_noz_test)}.`;
+  } else $("rec").textContent = sf ? `Even the stock nozzle fails your limits here (${sf.by}). Relax the margin, lower the load or check the ambient conditions.` : "No solution at these conditions.";
+
+  renderPhysics(stock);
+  drawSizing(main, lo, hi, stock, prop, sf);
+  renderTable(main, stock, prop);
+  drawGeometry();
+  renderData();
+  renderRpm();
+}
+
+function kpi(id, val, unit, note, status) {
+  $(id).innerHTML = `${val}<span>${unit}</span>`;
+  const col = { good: "var(--good)", warn: "var(--warn)", bad: "var(--bad)" }[status] || "var(--muted)";
+  const icon = { good: "✓", warn: "!", bad: "✕" }[status] || "";
+  $(id + "c").innerHTML = `<span class="dot" style="background:${col}"></span>${icon ? `<span aria-hidden="true">${icon}</span>` : ""}${note}`;
+}
+
+// ---------- physics numbers (stock nozzle, 90% + load) ----------
+function renderPhysics(stock) {
+  if (!stock.ok) return;
+  const o = stock.a, g = o.g;
+  const a5 = Math.sqrt(g.gamma(o.T5) * g.R * o.T5);
+  $("ph-npr").textContent = fmt(o.P04 / state.P01, 2);
+  $("ph-m5").textContent = fmt(o.V5 / a5, 2);
+  const o0 = run90(variant(v2in.D_noz_test, state.S, 0), 0), o1 = run90(variant(v2in.D_noz_test, state.S, 0), 1000);
+  $("ph-dTkw").textContent = !o0.failed && !o1.failed ? dT_(o1.EGT - o0.EGT) : "—";
+  // turbine-exit annulus (inlet diameter minus tail-cone base)
+  const A4 = Math.PI / 4 * (state.Din ** 2 - state.dc ** 2);
+  const rho4 = o.P04 / (g.R * o.T04), V4 = o.m_tot / (rho4 * A4), M4 = V4 / Math.sqrt(g.gamma(o.T04) * g.R * o.T04);
+  $("ph-a4").textContent = `${fmtS(fromSI("area", A4), 3)} ${un("area")}`;
+  $("ph-v4").textContent = `${fmtS(fromSI("velocity", V4), 3)} ${un("velocity")}`;
+  $("ph-m4").textContent = fmt(M4, 2);
+  // sudden expansion to the full area at the end of the tail cone (stock straight wall)
+  const xc = Math.min(state.Lc, state.Lstock), R = state.Din / 2 - (state.Din - v2in.D_noz_test) / 2 * xc / state.Lstock;
+  const A2 = Math.PI * R * R, V2 = V4 * A4 / A2, dp = A2 > A4 ? 0.5 * rho4 * (V4 - V2) ** 2 : 0;
+  $("ph-dp").textContent = `${fmtS(fromSI("pressure", dp), 2)} ${un("pressure")}`;
+  $("ph-avail").textContent = `${fmtS(fromSI("pressure", o.P04 - state.P01), 3)} ${un("pressure")}`;
+}
+
+// ---------- charts ----------
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function ticks(a, b, n = 5) { const step0 = (b - a) / n, mag = Math.pow(10, Math.floor(Math.log10(step0))); const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= step0 * 0.999); const t = []; for (let v = Math.ceil(a / step - 1e-9) * step; v <= b + step * 1e-9; v += step) t.push(+v.toFixed(10)); return { t, d: decimalsOf(step) }; }
+function showTip(tip, svg, px, py, html, W) {
+  const r = svg.getBoundingClientRect(), k = r.width / W;
+  tip.innerHTML = html; tip.style.opacity = 1;
+  let left = px * k + 10; if (left + tip.offsetWidth > r.width) left = px * k - tip.offsetWidth - 10;
+  tip.style.left = left + "px"; tip.style.top = Math.max(0, py * k - tip.offsetHeight - 8) + "px";
+}
+const padDomain = (vals, lo, hi) => { const a = Math.min(...vals), b = Math.max(...vals), s = (b - a) || Math.abs(a) * 0.1 || 1; return [a - s * lo, b + s * hi]; };
+// o: {xd, xl, yl, series:[{pts:[[x,y,meta]], color, dash}], areas:[{lo, hi, fill}], hlines, vlines, band:[x0,x1], tip, yZero}
+function chart(host, o) {
+  const W = 440, H = 290, m = { t: 14, r: 16, b: 42, l: 58 };
+  host.innerHTML = "";
+  const ys = o.series.flatMap(s => s.pts.map(p => p[1])).concat((o.areas || []).flatMap(a => a.lo.concat(a.hi).map(p => p[1])), (o.hlines || []).map(h => h.y));
+  if (!ys.length) return;
+  let yd = padDomain(ys, 0.08, 0.1); if (o.yZero) yd[0] = 0;
+  const xd = o.xd;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img", "aria-label": o.aria || "" }, host);
+  const x = v => m.l + (v - xd[0]) / (xd[1] - xd[0]) * (W - m.l - m.r);
+  const y = v => H - m.b - (v - yd[0]) / (yd[1] - yd[0]) * (H - m.t - m.b);
+  if (o.band) { const a = Math.max(Math.min(...o.band), xd[0]), b = Math.min(Math.max(...o.band), xd[1]); if (b > a) el("rect", { x: x(a), y: m.t, width: x(b) - x(a), height: H - m.t - m.b, fill: o.bandFill || "var(--band)" }, svg); }
+  const yt = ticks(...yd), xt = ticks(...xd);
+  yt.t.forEach(t => { el("line", { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: "var(--grid)" }, svg); el("text", { x: m.l - 8, y: y(t) + 4, "text-anchor": "end", "font-size": 12, fill: "var(--muted)" }, svg).textContent = fmt(t, yt.d); });
+  xt.t.forEach(t => el("text", { x: x(t), y: H - m.b + 17, "text-anchor": "middle", "font-size": 12, fill: "var(--muted)" }, svg).textContent = fmt(t, xt.d));
+  el("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: "var(--line)" }, svg);
+  el("text", { x: (m.l + W - m.r) / 2, y: H - 4, "text-anchor": "middle", "font-size": 13, fill: "var(--text-2)" }, svg).textContent = o.xl;
+  el("text", { x: 12, y: (m.t + H - m.b) / 2, "text-anchor": "middle", "font-size": 13, fill: "var(--text-2)", transform: `rotate(-90 12 ${(m.t + H - m.b) / 2})` }, svg).textContent = o.yl;
+  (o.areas || []).forEach(a => { if (a.lo.length < 2) return; const d = a.hi.map((p, i) => (i ? "L" : "M") + x(p[0]).toFixed(1) + "," + y(p[1]).toFixed(1)).join("") + a.lo.slice().reverse().map(p => "L" + x(p[0]).toFixed(1) + "," + y(p[1]).toFixed(1)).join("") + "Z"; el("path", { d, fill: a.fill, stroke: "none" }, svg); });
+  (o.hlines || []).forEach(h => { el("line", { x1: m.l, x2: W - m.r, y1: y(h.y), y2: y(h.y), stroke: h.color || "var(--muted)", "stroke-dasharray": "5 4", "stroke-width": 1.25 }, svg);
+    el("text", { x: h.left ? m.l + 4 : W - m.r - 4, y: y(h.y) + (h.below ? 14 : -5), "text-anchor": h.left ? "start" : "end", "font-size": 12, fill: "var(--text-2)" }, svg).textContent = h.label; });
+  (o.vlines || []).forEach(v => { if (v.x < xd[0] || v.x > xd[1]) return; el("line", { x1: x(v.x), x2: x(v.x), y1: m.t, y2: H - m.b, stroke: v.color || "var(--muted)", "stroke-dasharray": "3 4" }, svg);
+    el("text", { x: x(v.x) + (v.right ? -4 : 4), y: m.t + 11 + (v.dy || 0), "text-anchor": v.right ? "end" : "start", "font-size": 12, fill: "var(--text-2)" }, svg).textContent = v.label; });
+  o.series.forEach(s => { if (s.pts.length > 1) el("path", { d: s.pts.map((p, i) => (i ? "L" : "M") + x(p[0]).toFixed(1) + "," + y(p[1]).toFixed(1)).join(""), fill: "none", stroke: s.color, "stroke-width": 2, "stroke-dasharray": s.dash || "", "stroke-linejoin": "round" }, svg); });
+  const tip = document.createElement("div"); tip.className = "tip"; host.appendChild(tip);
+  const S0 = o.series[0];
+  if (S0 && S0.pts.length && o.tip) {
+    const cross = el("line", { y1: m.t, y2: H - m.b, stroke: "var(--text-2)", "stroke-width": 1, opacity: 0 }, svg);
+    const mks = o.series.map(s => el("circle", { r: 4.5, fill: s.color, stroke: "var(--surface)", "stroke-width": 2, opacity: 0 }, svg));
+    const ov = el("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent" }, svg);
+    ov.addEventListener("mousemove", e => {
+      const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * W / r.width;
+      const i = S0.pts.reduce((bi, p, j) => Math.abs(x(p[0]) - px) < Math.abs(x(S0.pts[bi][0]) - px) ? j : bi, 0);
+      const p = S0.pts[i];
+      cross.setAttribute("x1", x(p[0])); cross.setAttribute("x2", x(p[0])); cross.setAttribute("opacity", 1);
+      o.series.forEach((s, k) => { const q = s.pts[i]; if (q) { mks[k].setAttribute("cx", x(q[0])); mks[k].setAttribute("cy", y(q[1])); mks[k].setAttribute("opacity", 1); } });
+      showTip(tip, svg, x(p[0]), y(p[1]), o.tip(i), W);
+    });
+    ov.addEventListener("mouseleave", () => { cross.setAttribute("opacity", 0); mks.forEach(mk => mk.setAttribute("opacity", 0)); tip.style.opacity = 0; });
+  }
+}
+const legend = (id, items) => { $(id).innerHTML = items.map(([kind, color, label]) => kind === "band" ? `<span><i class="band" style="background:${color}"></i>${label}</span>` : `<span><i class="${kind === "dash" ? "dash" : ""}" style="border-color:${color}"></i>${label}</span>`).join(""); };
+const FILL1 = "color-mix(in srgb, var(--s1) 18%, transparent)", FILL2 = "color-mix(in srgb, var(--s2) 18%, transparent)", OKFILL = "color-mix(in srgb, var(--good) 9%, transparent)";
+
+function drawSizing(main, lo, hi, stock, prop, sf) {
+  const Lx = D => fromSI("length", D), ok = rs => rs.filter(r => r.ok);
+  const xd = [Lx(DS[DS.length - 1]), Lx(DS[0])];
+  const lim = state.egtLim - state.margin;
+  const band = sf && sf.D != null ? [Lx(sf.D), Lx(Math.max(v2in.D_noz_test, DS[0]))] : null;
+  const vl = [{ x: Lx(v2in.D_noz_test), label: "stock", right: true }, { x: Lx(state.D), label: "proposed", color: "var(--accent)", dy: 14, right: Lx(state.D) > Lx(v2in.D_noz_test) - 0.15 * (xd[1] - xd[0]) ? true : false }];
+  const ser = (rs, f) => ok(rs).map(r => [Lx(r.D), f(r)]).reverse();
+  // pair the S = 0 and S = 3 runs diameter by diameter, keeping only diameters where both solved
+  const area = (f, fill) => {
+    if (!lo || !hi) return [];
+    const pr = lo.map((a, i) => [a, hi[i]]).filter(([a, b]) => a.ok && b.ok).reverse();
+    return [{ lo: pr.map(([a, b]) => [Lx(a.D), Math.min(f(a), f(b))]), hi: pr.map(([a, b]) => [Lx(a.D), Math.max(f(a), f(b))]), fill }];
+  };
+  const rows = ok(main).slice().reverse();
+  const tip = i => { const r = rows[i]; if (!r) return ""; return `Ø ${L_(r.D)}<br>90%: ${F__(r.a.Fc)} · EGT ${T_(r.a.EGT)}<br>full: ${F__(r.b.Fc)} · EGT ${T_(r.b.EGT)}`; };
+  const xl = `Exit diameter (${un("length")})`;
+  legend("lg-F", [["line", "var(--s1)", "90% corrected + load"], ["line", "var(--s2)", "Full throttle, no load"]].concat(state.band ? [["band", FILL1, "S = 0–3"]] : []).concat([["band", OKFILL, "Within limits"], ["dash", "var(--muted)", "Full-score lines"]]));
+  chart($("ch-F"), { xd, xl, yl: `Corrected thrust (${un("force")})`, aria: "Corrected thrust versus nozzle exit diameter", band, bandFill: OKFILL, vlines: vl,
+    series: [{ pts: ser(main, r => fromSI("force", r.a.Fc)), color: "var(--s1)" }, { pts: ser(main, r => fromSI("force", r.b.Fc)), color: "var(--s2)" }],
+    areas: area(r => fromSI("force", r.a.Fc), FILL1).concat(area(r => fromSI("force", r.b.Fc), FILL2)),
+    hlines: [{ y: fromSI("force", 20 * LBF), label: "20 lbf (90% score)" }, { y: fromSI("force", 19 * LBF), label: "19 lbf (max thrust)", below: true }], tip });
+  legend("lg-T", [["line", "var(--s1)", "90% corrected + load"], ["line", "var(--s2)", "Full throttle, no load"]].concat(state.band ? [["band", FILL1, "S = 0–3"]] : []).concat([["band", OKFILL, "Within limits"], ["dash", "var(--bad)", "EGT limit"], ["dash", "var(--muted)", "Limit minus margin"]]));
+  chart($("ch-T"), { xd, xl, yl: `EGT (${un("temperature")})`, aria: "EGT versus nozzle exit diameter", band, bandFill: OKFILL, vlines: vl,
+    series: [{ pts: ser(main, r => fromSI("temperature", r.a.EGT)), color: "var(--s1)" }, { pts: ser(main, r => fromSI("temperature", r.b.EGT)), color: "var(--s2)" }],
+    areas: area(r => fromSI("temperature", r.a.EGT), FILL1).concat(area(r => fromSI("temperature", r.b.EGT), FILL2)),
+    hlines: [{ y: fromSI("temperature", state.egtLim), label: "limit", color: "var(--bad)", left: true }, { y: fromSI("temperature", lim), label: "limit − margin", left: true }], tip });
+}
+
+function renderTable(main, stock, prop) {
+  const A4 = Math.PI / 4 * (state.Din ** 2 - state.dc ** 2);
+  const pick = [47.0, 46.5, 46.0, 45.5, 45.0, 44.5, 44.0].map(d => main.find(r => Math.abs(r.D * 1000 - d) < 1e-6)).filter(Boolean);
+  const rows = [{ ...stock, tag: "stock" }, ...pick];
+  if (!rows.some(r => Math.abs(r.D - prop.D) < 1e-6)) rows.push({ ...prop, tag: "proposed" });
+  rows.sort((a, b) => b.D - a.D);
+  const pct = v => `${v >= 0 ? "+" : ""}${fmt(v * 100, 1)}%`;
+  $("cand").innerHTML = `<thead><tr><th>Exit Ø (${un("length")})</th><th>Exit area (${un("area")})</th><th>A₅/A₄</th><th>NPR</th><th>Exit Mach</th><th>Thrust 90% (${un("force")})</th><th>Score /20</th><th>EGT 90% (${un("temperature")})</th><th>T₀₃ 90% (${un("temperature")})</th><th>Flow shift 90%</th><th>Thrust full (${un("force")})</th><th>EGT full (${un("temperature")})</th><th>Within limits</th></tr></thead><tbody>` +
+    rows.map(r => {
+      const sel = Math.abs(r.D - prop.D) < 1e-6;
+      if (!r.ok) return `<tr${sel ? ' class="sel"' : ""}><td>${fmtS(fromSI("length", r.D), 4)}${r.tag ? ` (${r.tag})` : ""}</td><td colspan="12">no solution</td></tr>`;
+      const A5 = r.a.A5, a5 = Math.sqrt(r.a.g.gamma(r.a.T5) * r.a.g.R * r.a.T5), c = checks(r);
+      return `<tr${sel ? ' class="sel"' : ""}><td>${fmtS(fromSI("length", r.D), 4)}${r.tag ? ` (${r.tag})` : sel ? " (proposed)" : ""}</td><td class="num">${fmtS(fromSI("area", A5), 3)}</td><td class="num">${fmt(A5 / A4, 2)}</td>
+        <td class="num">${fmt(r.a.P04 / state.P01, 2)}</td><td class="num">${fmt(r.a.V5 / a5, 2)}</td><td class="num">${fmtS(fromSI("force", r.a.Fc))}</td><td class="num">${fmt(thrustScore(r.a.Fc / LBF), 1)}</td>
+        <td class="num">${fmt(fromSI("temperature", r.a.EGT))}</td><td class="num">${fmt(fromSI("temperature", r.a.T03))}</td><td class="num">${pct(r.a.flowShift)}</td>
+        <td class="num">${fmtS(fromSI("force", r.b.Fc))}</td><td class="num">${fmt(fromSI("temperature", r.b.EGT))}</td><td class="${c.pass ? "st-ok" : "st-no"}" style="white-space:nowrap">${c.pass ? "✓ yes" : "✕ " + c.why}</td></tr>`;
+    }).join("") + "</tbody>";
+}
+
+// ---------- geometry ----------
+function profile(Dexit, L) { // outer radius and cone radius along x (m), straight outer wall, conical tail cone
+  const Rin = state.Din / 2, Re = Dexit / 2, rc = state.dc / 2, Lc = state.Lc;
+  return x => { const R = Rin - (Rin - Re) * Math.min(x, L) / L, r = x < Lc ? rc * (1 - x / Lc) : 0; return { R, r, A: Math.PI * (R * R - r * r) }; };
+}
+function drawGeometry() {
+  const host = $("geo"), W = 440, m = { t: 26, r: 22, b: 40, l: 16 }, tw = 34;
+  const Lmax = Math.max(state.L, state.Lstock, state.Lc) * 1.04, Rmax = state.Din / 2 * 1.08;
+  const k = (W - m.l - m.r - tw) / Lmax;                 // px per metre, same on both axes (true scale)
+  const H = Math.round(m.t + m.b + Rmax * k);
+  const x = v => m.l + tw + v * k, y = v => H - m.b - v * k;
+  host.innerHTML = "";
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img", "aria-label": "True-scale half-section of the nozzle: stock and proposed walls with the tail cone" }, host);
+  el("line", { x1: m.l, x2: W - m.r, y1: y(0), y2: y(0), stroke: "var(--muted)", "stroke-dasharray": "8 3 2 3" }, svg);
+  el("rect", { x: m.l, y: y(state.Din / 2), width: tw, height: y(0) - y(state.Din / 2), fill: "var(--surface-2)", stroke: "var(--line)" }, svg);
+  el("text", { x: m.l + tw / 2, y: y(state.Din / 4), "text-anchor": "middle", "font-size": 11, fill: "var(--muted)", transform: `rotate(-90 ${m.l + tw / 2} ${y(state.Din / 4)})` }, svg).textContent = "turbine";
+  el("path", { d: `M${x(0)},${y(state.dc / 2)} L${x(state.Lc)},${y(0)} L${x(0)},${y(0)} Z`, fill: "var(--grid)", stroke: "var(--text-2)", "stroke-width": 1.25 }, svg);
+  el("text", { x: x(0) + 6, y: y(0) - 8, "font-size": 11, fill: "var(--text-2)" }, svg).textContent = "tail cone";
+  const wall = (D, L, color, dash) => el("path", { d: `M${x(0)},${y(state.Din / 2)} L${x(L)},${y(D / 2)}`, stroke: color, "stroke-width": 2.5, fill: "none", "stroke-dasharray": dash || "" }, svg);
+  wall(v2in.D_noz_test, state.Lstock, "var(--muted)", "6 4");
+  wall(state.D, state.L, "var(--s1)");
+  el("line", { x1: x(state.L), x2: x(state.L), y1: y(state.D / 2), y2: y(0), stroke: "var(--s1)", "stroke-width": 1, "stroke-dasharray": "2 3" }, svg);
+  el("text", { x: x(0) - 4, y: y(state.Din / 2) - 8, "text-anchor": "middle", "font-size": 12, "font-weight": 600, fill: "var(--text)" }, svg).textContent = "4";
+  el("text", { x: x(state.L), y: y(state.D / 2) - 8, "text-anchor": "middle", "font-size": 12, "font-weight": 600, fill: "var(--text)" }, svg).textContent = "5";
+  el("text", { x: W - m.r, y: H - 22, "text-anchor": "end", "font-size": 12, fill: "var(--text-2)" }, svg).textContent = `proposed: Ø ${L_(state.D)} × ${L_(state.L)}`;
+  el("text", { x: W - m.r, y: H - 6, "text-anchor": "end", "font-size": 12, fill: "var(--muted)" }, svg).textContent = `stock (dashed): Ø ${L_(v2in.D_noz_test)} × ${L_(state.Lstock)}`;
+  // area chart
+  const n = 60, st = profile(v2in.D_noz_test, state.Lstock), pr = profile(state.D, state.L);
+  const Ls = Array.from({ length: n + 1 }, (_, i) => i / n);
+  const sPts = Ls.map(f => { const xx = f * state.Lstock; return [fromSI("length", xx), fromSI("area", st(xx).A)]; });
+  const pPts = Ls.map(f => { const xx = f * state.L; return [fromSI("length", xx), fromSI("area", pr(xx).A)]; });
+  const A4 = Math.PI / 4 * (state.Din ** 2 - state.dc ** 2);
+  legend("lg-A", [["line", "var(--s1)", "Proposed"], ["dash", "var(--muted)", "Stock"], ["dash", "var(--text-2)", "Turbine-exit annulus"]]);
+  chart($("ch-A"), { xd: [0, fromSI("length", Math.max(state.L, state.Lstock))], xl: `Distance from turbine exit (${un("length")})`, yl: `Flow area (${un("area")})`, aria: "Flow area along the nozzle, stock and proposed",
+    series: [{ pts: pPts, color: "var(--s1)" }, { pts: sPts, color: "var(--muted)", dash: "6 4" }], yZero: false,
+    hlines: [{ y: fromSI("area", A4), label: "turbine annulus", color: "var(--text-2)" }],
+    tip: i => `x ${fmtS(pPts[i][0], 3)} ${un("length")}<br>proposed ${fmtS(pPts[i][1], 3)} ${un("area")}<br>stock ${fmtS(sPts[i] ? sPts[i][1] : NaN, 3)} ${un("area")}` });
+}
+
+// ---------- data checklist and rpm table ----------
+const DATA = [
+  ["have", "Nozzle exit diameter", "Sets the area the whole sizing scales from.", () => `${L_(v2in.D_noz_test)} measured.`],
+  ["partial", "Turbine-exit annulus (nozzle inlet outer and inner diameter)", "Sets the inlet area and the turbine-exit velocity.", () => `${L_(state.Din)} outer; inner warped, 37–38 mm. Confirm the inner part is the tail cone.`],
+  ["need", "Tail-cone profile and length, and whether it reaches the exit", "Controls the area bulge and its loss, and the true exit area.", () => "Measure (step 1)."],
+  ["partial", "Nozzle attachment and wall thickness", "Needed to design rings and the final part.", () => `Length ${L_(state.Lstock)} measured; attachment and thickness not yet.`],
+  ["have", "Thrust and EGT at full throttle, stock nozzle", "Anchors the calibration.", () => `154,100 rpm: ${F__(23.4 * LBF)}, ${T_(948.15)}.`],
+  ["need", "Thrust and EGT at 90% corrected speed, stock nozzle", "Turns the 90% prediction from an extrapolation into a measurement.", () => "Have 97% speed only (149,600 rpm). Step 4."],
+  ["need", "Fuel flow", "Fixes combustion efficiency, fuel flow and TSFC.", () => "Weigh the tank (step 2)."],
+  ["need", "Turbine-exit total pressure P₀₄", "The pressure the nozzle works with; checks the model directly.", () => "Total-pressure probe (step 2)."],
+  ["need", "Thrust and EGT with two or more smaller exits", "Measures the compressor speed-line slope S, the main sizing uncertainty.", () => "Ring tests (step 5)."],
+  ["need", "EGT rise per kW at 90% speed", "The generator load eats EGT margin.", () => "Load test (step 8)."],
+  ["need", "ECU limits: max EGT setting, governor behaviour near limits", "Decides whether a small nozzle still reaches full speed.", () => "Check the ECU/GSU settings."],
+  ["partial", "Rules for nozzle changes", "Allowed envelope and penalties.", () => "ICD: modification allowed, ≤ 11.75 in behind the stand, ~800 °C EGT; length scored 10–15 in."],
+  ["need", "Expected ambient at the test site", "Hot days raise EGT at a given corrected speed.", () => "Check typical temperatures for the test date at WPAFB or Tinker."],
+];
+function renderData() {
+  $("dataTable").innerHTML = `<thead><tr><th>Status</th><th>Data</th><th>Why it matters</th><th>Where it stands</th></tr></thead><tbody>` +
+    DATA.map(([s, what, why, now]) => `<tr><td><span class="pill ${s}">${{ have: "✓ Have", partial: "◐ Partial", need: "○ Need" }[s]}</span></td><td>${what}</td><td>${why}</td><td>${now()}</td></tr>`).join("") + "</tbody>";
+  $("dataTable").querySelectorAll("th").forEach(th => th.style.textAlign = "left");
+  $("dataTable").querySelectorAll("td").forEach(td => td.style.textAlign = "left");
+}
+function renderRpm() {
+  const Ts = [0, 5, 10, 15, 20, 25, 30, 35, 40].map(c => c + 273.15);
+  $("rpmTable").innerHTML = `<thead><tr><th>Intake temperature (${un("temperature")})</th>${Ts.map(T => `<th>${fmt(fromSI("temperature", T))}</th>`).join("")}</tr></thead><tbody><tr><td>Physical rpm for 90% corrected</td>${Ts.map(T => `<td class="num">${fmt(Math.round(state.Nc * Math.sqrt(T / 288.15) / 100) * 100)}</td>`).join("")}</tr></tbody>`;
+}
+
+buildUnits(); buildForm(); update();
+</script>
+</body></html>
