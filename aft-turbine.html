@@ -13,7 +13,7 @@
   --bg:#f4f3ef; --surface:#fcfcfb; --surface-2:#efeee9; --line:#dcdad3; --grid:#e7e5df;
   --text:#0b0b0b; --text-2:#52514e; --muted:#7a7972;
   --accent:#c2410c; --s1:#2a78d6; --s2:#eb6834;
-  --good:#1c7c3c; --warn:#a35f00; --bad:#b42318; --band:rgba(42,120,214,.08); --pt:#0b0b0b;
+  --good:#1c7c3c; --warn:#a35f00; --bad:#b42318; --band:rgba(42,120,214,.08); --pt:#0b0b0b; --s3:#1baf7a;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -21,7 +21,7 @@
     --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
     --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
     --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
-    --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec;
+    --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec; --s3:#199e70;
   }
 }
 :root[data-theme="dark"]{
@@ -29,7 +29,7 @@
   --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
   --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
   --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
-  --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec;
+  --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec; --s3:#199e70;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
@@ -152,7 +152,7 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
 <body>
 <header><div class="wrap">
   <h1>Aft Turbine</h1>
-  <p>JetCat P100-RX · a free power turbine in the exhaust, using a copy of the engine's turbine wheel</p>
+  <p>JetCat P100-RX · a free power turbine in the exhaust, geared to a generator outside the hot flow</p>
   <nav><a href="./">Cycle analysis</a><a href="cycle-v2.html">Cycle analysis V2</a><a href="generator.html">Generator physics</a><a href="nozzle.html">Nozzle modification</a><a href="aft-turbine.html" aria-current="page">Aft turbine</a></nav>
 </div></header>
 
@@ -172,14 +172,14 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
   <section class="out">
     <div class="panel card">
       <h2>The idea</h2>
-      <p class="sub" style="margin-bottom:0">Put a second turbine wheel, a copy of the engine's own, on its own shaft behind the engine. It drives the generator, and a new nozzle encloses it and converges the flow. The core engine is untouched mechanically; the two are coupled only through the gas. This page works out what that costs the engine, how fast the spare wheel would spin, and what the hardware has to survive.</p>
-      <div class="toc"><a href="#layout">1. Layout</a><a href="#energy">2. Energy available</a><a href="#rotor">3. The aft rotor</a><a href="#ngv">4. Why the spare NGV can't be reused</a><a href="#engine">5. Effect on the engine</a><a href="#req">6. Requirements</a><a href="#compare">7. Aft turbine vs front-shaft generator</a><a href="#plan">8. Prototype plan</a></div>
+      <p class="sub" style="margin-bottom:0">A second turbine rotor on its own shaft behind the engine, inside a new housing that ends in a converging nozzle. A gear train carries its power out through a strut to an off-the-shelf brushless motor, used as a generator and mounted outside the exhaust with insulation and active cooling. The core engine is untouched mechanically; the two are coupled only through the gas. Two rotor options are compared: the <b>spare core wheel</b> for early prototyping, and a <b>low-cost rotor</b> designed for 1 kW.</p>
+      <div class="toc"><a href="#layout">1. Layout</a><a href="#energy">2. Energy available</a><a href="#rotor">3. Rotor physics</a><a href="#lowcost">4. A low-cost rotor for 1 kW</a><a href="#ngv">5. Why the spare NGV can't be reused</a><a href="#drive">6. Gear train and generator</a><a href="#engine">7. Effect on the engine</a><a href="#req">8. Requirements</a><a href="#compare">9. Aft turbine vs front-shaft generator</a><a href="#plan">10. Prototype plan</a></div>
     </div>
 
     <div class="kpis">
       <div class="panel kpi"><div class="l">EGT at 90% + load</div><div class="v" id="k-T"></div><div class="c" id="k-Tc"></div></div>
       <div class="panel kpi"><div class="l">Corrected thrust at 90%</div><div class="v" id="k-F"></div><div class="c" id="k-Fc"></div></div>
-      <div class="panel kpi"><div class="l">Aft rotor speed at load</div><div class="v" id="k-N"></div><div class="c" id="k-Nc"></div></div>
+      <div class="panel kpi"><div class="l">Rotor / generator speed</div><div class="v" id="k-N"></div><div class="c" id="k-Nc"></div></div>
       <div class="panel kpi"><div class="l">Runaway at full throttle</div><div class="v" id="k-R"></div><div class="c" id="k-Rc"></div></div>
     </div>
     <div class="warn" id="warn" role="status"></div>
@@ -187,99 +187,101 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
     <div class="panel card prose" id="layout">
       <h2>1. Layout</h2>
       <div id="schem" style="margin:6px 0 4px"></div>
-      <p>Station 4 is the core turbine exit, where the ECU thermocouple sits. Station 45 is the aft turbine exit, and station 5 is the new nozzle exit. The aft wheel needs its own bearings, held in a hub on struts across the hot gas, and the generator has to sit in or next to that hub. The core turbine still drives only the compressor, so the ECU keeps holding corrected speed exactly as it does now.</p>
+      <p>Station 4 is the core turbine exit, where the ECU thermocouple sits. Station 45 is the aft rotor exit, and station 5 is the new nozzle exit. The rotor's bearings and a bevel pinion sit in a hub held on struts in the hot gas. A cross shaft runs out through one hollow strut to a gearbox and the generator outside the housing, where insulation and a cooling flow keep it within its temperature rating. The core turbine still drives only the compressor, so the ECU keeps holding corrected speed exactly as it does now.</p>
     </div>
 
     <div class="panel card prose" id="energy">
       <h2>2. Energy available in the exhaust</h2>
       <p>The gas leaving the core turbine is above ambient pressure. Expanding it all the way to ambient isentropically would release</p>
       <div class="eq">Δh<sub>avail</sub> = c<sub>p</sub>·T₀₄·[1 − (P<sub>amb</sub>/P₀₄)<sup>(γ−1)/γ</sup>]&nbsp;&nbsp;&nbsp;&nbsp;P<sub>avail</sub> = ṁ·Δh<sub>avail</sub></div>
-      <p>With the stock engine at 90% corrected speed, that is <span class="live" id="e-dh"></span>, or <span class="live" id="e-P"></span> of ideal jet power. Today all of it becomes thrust. An aft turbine takes its share first. Delivering the electrical power set on the left takes <span class="live" id="e-Ps"></span> of shaft power. At an aft-turbine efficiency of <span class="live" id="e-eta"></span>, that uses <span class="live" id="e-frac"></span> of the available energy, before the duct and strut losses.</p>
-      <p>So energy is not the problem: the exhaust has plenty. The cost shows up as back-pressure on the core, covered in section 5.</p>
+      <p>With the stock engine at 90% corrected speed that is <span class="live" id="e-dh"></span>, or <span class="live" id="e-P"></span> of ideal jet power, all of which becomes thrust today. Delivering the electrical power set on the left through the gear train needs <span class="live" id="e-Ps"></span> at the rotor. At the selected rotor's efficiency of <span class="live" id="e-eta"></span>, that uses <span class="live" id="e-frac"></span> of the available energy, before duct and strut losses. Energy is not the problem; the cost shows up as back-pressure on the core (section 7).</p>
     </div>
 
     <div class="panel card prose" id="rotor">
-      <h2>3. The aft rotor: Euler equation and velocity triangles</h2>
+      <h2>3. Rotor physics: Euler equation and velocity triangles</h2>
       <p>A turbine's work per kilogram comes from how much it changes the gas's swirl (tangential velocity V<sub>θ</sub>) at blade speed U:</p>
       <div class="eq">w = U·(V<sub>θ1</sub> − V<sub>θ2</sub>)&nbsp;&nbsp;&nbsp;&nbsp;V<sub>θ1</sub> = V<sub>x</sub>·tan α₁&nbsp;&nbsp;&nbsp;&nbsp;V<sub>θ2</sub> = U − V<sub>x</sub>·tan β₂</div>
-      <p>α₁ is the swirl angle of the gas arriving at the wheel (0 with no stator, if the core turbine leaves the gas swirl-free). β₂ is the rotor blade's exit angle, set by the wheel's geometry. Combining them:</p>
+      <p>α₁ is the swirl angle of the gas arriving at the rotor (0 with no stator, if the core turbine leaves the gas swirl-free). β₂ is the rotor blade's exit angle. Combining them:</p>
       <div class="eq">w = U·(C − U)&nbsp;&nbsp;with&nbsp;&nbsp;C = V<sub>x</sub>·(tan α₁ + tan β₂)&nbsp;&nbsp;&nbsp;&nbsp;runaway: U = C&nbsp;&nbsp;&nbsp;&nbsp;peak: w = C²/4 at U = C/2</div>
-      <p>The axial velocity V<sub>x</sub> follows from the mass flow, the gas state and the wheel's annulus area (<span class="live" id="r-A"></span> from the tip and hub diameters on the left): V<sub>x</sub> ≈ <span class="live" id="r-Vx"></span> (Mach <span class="live" id="r-M"></span>) at 90% speed. With β₂ = <span class="live" id="r-b2"></span> and no stator, C = <span class="live" id="r-C"></span>.</p>
-      <p>The generator needs only w = <span class="live" id="r-w"></span> per kilogram. Even without a stator, the wheel could ideally give up to <span class="live" id="r-wmax"></span> (about <span class="live" id="r-Pmax"></span> in total) at half its runaway speed. So at 1 kW it runs <b>lightly loaded, close to its runaway (windmill) speed</b>. That is <span class="live" id="r-Nop"></span> loaded, against a runaway of <span class="live" id="r-Nrun"></span> at 90% and <span class="live" id="r-Nrunf"></span> at full throttle. This simple model holds while the extracted work is small compared with what the flow has, which is the case at 1–2 kW.</p>
+      <p>The axial velocity follows from the mass flow, the gas state and the rotor's annulus area (<span class="live" id="r-A"></span>): V<sub>x</sub> ≈ <span class="live" id="r-Vx"></span>, Mach <span class="live" id="r-M"></span>, at 90% speed. For the <b id="r-name"></b> (β₂ = <span class="live" id="r-b2"></span>, no stator) C = <span class="live" id="r-C"></span>.</p>
+      <p>The generator needs w = <span class="live" id="r-w"></span>. The rotor can ideally give up to <span class="live" id="r-wmax"></span> (about <span class="live" id="r-Pmax"></span> in total) at half its runaway speed, so at 1 kW it runs <b>lightly loaded, close to its runaway (windmill) speed</b>: <span class="live" id="r-Nop"></span> loaded, against a runaway of <span class="live" id="r-Nrun"></span> at 90% and <span class="live" id="r-Nrunf"></span> at full throttle. This simple model holds while the extracted work is small compared with what the flow has, which is the case at 1–2 kW.</p>
       <div class="grid2" style="margin-top:8px">
         <div><h3>Velocity triangles at the operating point</h3><div id="tri"></div><div class="tablewrap"><table id="triTab"></table></div><p class="fn">Axial flow runs left to right; the blade moves up the page. Blue: absolute velocity V. Orange: velocity relative to the blade, W. Grey: blade speed U.</p></div>
-        <div><h3>Aft rotor shaft power vs speed</h3><div class="legend" id="lg-PN"></div><div class="chart" id="ch-PN"></div></div>
+        <div><h3>Rotor shaft power vs speed</h3><div class="legend" id="lg-PN"></div><div class="chart" id="ch-PN"></div></div>
       </div>
-      <h3>Incidence: the copy wheel sees the wrong inflow</h3>
-      <p>In the engine, the guide vanes swirl the gas so it meets the rotor blades nearly head-on. Behind the engine there is no such swirl, and the gas meets the blades at about <span class="live" id="r-b1"></span> from axial. That is roughly <span class="live" id="r-inc"></span> off the direction the blades were designed for. That incidence is why the effective efficiency of the copy wheel back here is likely low (the 0.5 default is a placeholder until the loaded tests measure it).</p>
-      <p>A stator that pre-swirls the gas would fix the incidence, but it also raises C, and with it the runaway speed. Try "Inflow swirl α₁" on the left. Even 20–30° pushes the runaway well past the wheel's rated speed. For 1 kW, the copy wheel is a better fit <em>without</em> a stator. A custom wheel would instead use much less blade turning, which lowers both incidence and runaway speed.</p>
+      <h3>Incidence</h3>
+      <p>The gas meets the selected rotor's blades at about <span class="live" id="r-b1"></span> from axial, roughly <span class="live" id="r-inc"></span> off the direction they were designed for. The spare wheel's blades expect gas that the core's guide vanes have already swirled. Behind the engine there is no swirl, so it runs at large incidence, which is why its effective efficiency here is likely low (0.5 is a placeholder until a loaded test measures it). A stator that pre-swirls the gas would fix the incidence, but it raises C and the runaway speed with it; try "Inflow swirl α₁". The low-cost rotor in section 4 is designed for swirl-free inflow instead.</p>
+    </div>
+
+    <div class="panel card prose" id="lowcost">
+      <h2>4. A low-cost rotor for 1 kW</h2>
+      <p>The spare wheel was built to give about 30 kW to the compressor, and at 1 kW it spins near its free-running speed with large incidence. A rotor designed for the job can turn more slowly, be cheaper to make, and take the gas head-on. Pick a design speed N<sub>d</sub> at the 90% + load condition; with no stator and swirl-free inflow:</p>
+      <div class="eq">U<sub>d</sub> = π·D<sub>m</sub>·N<sub>d</sub>/60&nbsp;&nbsp;&nbsp;&nbsp;C = U<sub>d</sub> + w/U<sub>d</sub>&nbsp;&nbsp;&nbsp;&nbsp;tan β₂ = C/V<sub>x</sub>&nbsp;&nbsp;&nbsp;&nbsp;tan β₁ = U<sub>d</sub>/V<sub>x</sub>&nbsp;&nbsp;(blade inlet angle for zero incidence)</div>
+      <div class="tablewrap"><table id="lowTab"></table></div>
+      <p>The blades only need to turn the flow a few degrees, so they are close to <b>flat plates set at a stagger angle</b>, like a windmill. That makes cheap construction possible:</p>
+      <ul>
+        <li><b>Laser-cut sheet.</b> A disk of Inconel 625 sheet (about 1 mm) with blade tabs cut around the rim, each tab twisted to the stagger angle in a jig, then welded or brazed to a turned hub. Cheapest; balance carefully.</li>
+        <li><b>3D-printed metal.</b> A one-piece wheel in Inconel 718 or 625 from an online metal printing service, with slightly cambered blades, then turned on the bore and tip and balanced. More consistent, and still far cheaper than a custom-machined turbine.</li>
+      </ul>
+      <p>Choose a nickel alloy either way: the rotor sits in gas at about 650–730 °C, and common stainless steels lose most of their strength there. The design speed trades three things against each other. Higher speed gives more power margin and less torque through the gears, but raises the runaway speed and blade stress. Lower speed is safer and easier to gear, but leaves less margin if the blades turn the flow less than intended. 55,000 rpm balances them with the default inputs: about 1.4× power margin and a blade safety factor of about 1.6 at full-throttle runaway. Thin flat blades can also flutter, so check the blade's first natural frequency against the rotor speed and the passing frequency of the struts upstream.</p>
+      <h3>Rough cost of the low-cost route</h3>
+      <div class="tablewrap"><table id="bom"></table></div>
+      <p class="fn">Ballpark hobby and online-service prices to compare routes, not quotes. Check suppliers before ordering.</p>
     </div>
 
     <div class="panel card prose" id="ngv">
-      <h2>4. Why the spare NGV can't be reused</h2>
+      <h2>5. Why the spare NGV can't be reused</h2>
       <p>The engine's nozzle guide vanes are choked, so their throat area sets how much gas they pass at a given inlet pressure and temperature:</p>
       <div class="eq">ṁ = A* · P₀ / √T₀ · √(γ/R) · (2/(γ+1))<sup>(γ+1)/(2(γ−1))</sup></div>
-      <p>The calibration's NGV flow parameter gives a core throat area of about <span class="live" id="n-Acore"></span>. Behind the engine, pressure is about <span class="live" id="n-pr"></span> of the core turbine inlet's, so even a choked aft stator would need at least <span class="live" id="n-Areq"></span> of throat, <span class="live" id="n-ratio"></span> the core's. A copy NGV would pass only about half the flow. Pressure would back up behind the core turbine until the engine surged or over-temperatured.</p>
-      <p>So the prototype uses the spare <em>rotor</em> only, with no stator, or with thin struts aligned to the flow. Any future stator needs its own design with a much larger throat area.</p>
+      <p>The calibration's NGV flow parameter gives a core throat of about <span class="live" id="n-Acore"></span>. Behind the engine, pressure is only about <span class="live" id="n-pr"></span> of the core turbine inlet's, so even a choked aft stator would need at least <span class="live" id="n-Areq"></span> of throat, <span class="live" id="n-ratio"></span> the core's. A copy NGV would pass only about half the flow. Pressure would back up behind the core turbine until the engine surged or over-temperatured. Either rotor runs without a stator, behind thin struts aligned with the flow.</p>
+    </div>
+
+    <div class="panel card prose" id="drive">
+      <h2>6. Gear train and generator</h2>
+      <p>Power flows from the rotor through the gears and the motor to the load bank, losing a little at each step:</p>
+      <div class="eq">P<sub>rotor</sub> = (P<sub>elec</sub> + P<sub>cooling</sub>) / (η<sub>gen</sub>·η<sub>gear</sub>) + P<sub>bearings</sub>&nbsp;&nbsp;&nbsp;&nbsp;N<sub>gen</sub> = N<sub>rotor</sub> / i&nbsp;&nbsp;&nbsp;&nbsp;v<sub>pitch</sub> = π·d<sub>pinion</sub>·N<sub>rotor</sub>/60</div>
+      <div class="tablewrap"><table id="driveTab"></table></div>
+      <ul>
+        <li><b>First stage in the hub.</b> A bevel pinion on the rotor shaft turns the power 90° into a cross shaft through a hollow strut. Pitch-line speeds of 25–60 m/s in a hot hub call for precision-ground gears, a lubrication path and a heat path out. The low-cost rotor's lower speed roughly halves the gear speed.</li>
+        <li><b>Generator outside.</b> A hobby brushless motor run as a generator, with a 3-phase rectifier to 1–200 VDC. Choose its Kv so the rectified voltage lands where you want it, roughly Kv ≈ generator rpm ÷ target volts (the table uses 60 V). It must also survive the <em>runaway</em> generator speed, not just the operating speed.</li>
+        <li><b>Insulation and active cooling.</b> The motor sits next to a housing carrying 650–730 °C gas. Hobby motors' magnets and windings are typically rated for about 100–150 °C, so use a heat shield or air gap, a low-conductivity mount, and a fan or compressed-air flow. A fan powered from the generator comes out of the delivered power; enter it as "Cooling power". A fan or air supply in the support box is support equipment and must be approved at the Milestone 4 review.</li>
+        <li><b>Radial size.</b> A motor beside the housing sticks out past the engine case, and radial distance is scored (15 points at 0 in, −3.75 per inch). Keep the motor tucked close, or align it behind the engine.</li>
+      </ul>
     </div>
 
     <div class="panel card" id="engine">
-      <h2>5. Effect on the engine</h2>
-      <p class="sub">At 90% corrected speed the ECU holds speed. The aft turbine plus its duct and struts take total pressure out of the flow, so the nozzle needs a higher turbine-exit pressure to pass the same gas. That is the same chain as shrinking the nozzle: more fuel and a higher EGT. Taking power off the front of the core shaft instead loads the core turbine directly. Compare the two below, both with the same generator efficiency.</p>
+      <h2>7. Effect on the engine</h2>
+      <p class="sub">At 90% corrected speed the ECU holds speed. The rotor plus its duct and struts take total pressure out of the flow, so the nozzle needs a higher turbine-exit pressure to pass the same gas. That is the same chain as shrinking the nozzle: more fuel and a higher EGT. Taking power off the front of the core shaft instead loads the core turbine directly. The front-shaft case uses the generator efficiency set on the left, with no gearbox.</p>
       <div class="grid2" style="margin-top:6px">
         <div><h3>EGT vs electrical power</h3><div class="legend" id="lg-T"></div><div class="chart" id="ch-T"></div></div>
         <div><h3>Corrected thrust vs electrical power</h3><div class="legend" id="lg-F"></div><div class="chart" id="ch-F"></div></div>
       </div>
       <h3>Configurations compared</h3>
       <div class="tablewrap"><table id="cmp"></table></div>
-      <p class="fn">The EGT is the ECU reading at the core turbine exit (station 4); the aft wheel sees about the same temperature. "Matched nozzle" is the exit diameter that brings the aft configuration's EGT back to the front-shaft value at 90% + load.</p>
+      <p class="fn">The EGT is the ECU reading at the core turbine exit (station 4); the aft rotor sees about the same temperature. "Matched nozzle" is the exit diameter that brings the selected rotor's EGT back to the front-shaft value at 90% + load.</p>
     </div>
 
     <div class="panel card prose" id="req">
-      <h2>6. Requirements</h2>
+      <h2>8. Requirements</h2>
       <div class="tablewrap"><table id="reqTable"></table></div>
     </div>
 
     <div class="panel card prose" id="compare">
-      <h2>7. Aft turbine vs front-shaft generator</h2>
+      <h2>9. Aft turbine vs front-shaft generator</h2>
       <div class="tablewrap"><table id="cmpTable"></table></div>
     </div>
 
     <div class="panel card prose" id="plan">
-      <h2>8. Prototype plan with the spare wheel</h2>
+      <h2>10. Prototype plan</h2>
       <ol class="steps">
-        <li><b>Measure the spare wheel.</b>
-          <ul>
-            <li>Tip and hub diameter, blade count, axial chord (6.4 mm) and mass.</li>
-            <li>Blade inlet and exit angles at mid-span: photograph the blade edge-on against a protractor or use a contour gauge. β₂ sets the runaway speed, so this is the most important number on this page.</li>
-            <li>Check the wheel's balance and condition, and how it was mounted (bore, nut, axial location).</li>
-          </ul></li>
-        <li><b>Design the aft module.</b>
-          <ul>
-            <li>A hub on 3–4 thin struts aligned with the flow, carrying a bearing cartridge, the wheel and the generator rotor.</li>
-            <li>A housing around the wheel with a tip clearance similar to the core's, then a converging nozzle to the exit diameter from section 5.</li>
-            <li>Instrumentation provisions: rotor speed (optical or magnetic pickup), bearing and generator temperature, and total-pressure probes at stations 4 and 45.</li>
-            <li>Containment: the housing must hold a burst wheel (see the stored energy in section 6).</li>
-          </ul></li>
-        <li><b>Balance the rotor assembly</b> (wheel, shaft and generator rotor) and spin it on a bench, if you can, before it goes behind the engine.</li>
-        <li><b>Windmill test, low speeds first.</b>
-          <ul>
-            <li>With a small fixed load or brake always on, never open-circuit, run the engine at idle, 50% and 70% and log aft rotor rpm against engine rpm.</li>
-            <li>Extrapolate to full throttle. If the projected runaway exceeds the wheel's rating, stop and add load or redesign before going higher.</li>
-            <li>This measures C, the effective blade angle.</li>
-          </ul></li>
-        <li><b>Loaded test.</b> Step electrical load at 90% corrected speed while logging power, aft rpm, EGT, thrust and both pressure probes. That gives the real aft-turbine efficiency and duct loss; enter them on the left.</li>
-        <li><b>Compare with the front-shaft option</b> on equal terms: EGT and thrust at 90% + 1 kW, full-throttle EGT, length, weight and risk (section 7).</li>
-        <li><b>Decide on a custom turbine</b> only if the copy wheel shows the layout works:
-          <ul>
-            <li>1 kW at 90% with EGT margin.</li>
-            <li>Runaway under control.</li>
-            <li>A generator that survives the heat.</li>
-            <li>A total score at least as good as the front-shaft option.</li>
-          </ul>
-          A custom wheel would use far less blade turning, sized for about 5–10 kJ/kg at a chosen speed, plus a larger flow area or a matched stator. That cuts the back-pressure, the incidence loss and the runaway speed.</li>
+        <li><b>Measure what you have.</b> On the spare wheel, record tip and hub diameter, blade count, and the blade exit angle at mid-span: photograph the blade edge-on against a protractor. β₂ sets the spare's runaway speed. Also confirm the turbine-exit hub diameter on the engine, which sets the flow area and speed into the rotor.</li>
+        <li><b>Build and bench-test the drivetrain first.</b> Assemble the hub bearings, bevel stage, cross shaft, external motor and rectifier. Drive the input with an electric spindle or air turbine up to the rotor's runaway speed. Measure gear and bearing temperatures, losses and generator output into a resistor. This de-risks the hardest mechanical parts away from the engine.</li>
+        <li><b>Choose the rotor.</b> Use the spare wheel to prove the layout cheaply, or go straight to the low-cost rotor (section 4) if the spare's speed and gear speeds look too high for your drivetrain. Balance the rotor, shaft and pinion together.</li>
+        <li><b>Windmill test, low engine speeds first.</b> Always keep a load connected: a resistor bank with an overspeed trip, never open-circuit. Run at idle, 50% and 70%, and log rotor rpm against engine rpm. Extrapolate to full throttle and stop if the projected runaway exceeds the rotor's or the generator's limit. This measures C, the effective blade angle.</li>
+        <li><b>Loaded test at 90% corrected speed.</b> Step the electrical load up to 1 kW while logging power, rotor rpm, EGT, thrust, generator temperature and total pressure at stations 4 and 45. That gives the real rotor efficiency and duct loss; enter them on the left.</li>
+        <li><b>Compare with the front-shaft option</b> on equal terms: EGT and thrust at 90% + 1 kW, full-throttle EGT, length, radial size, weight, cost and risk (section 9).</li>
+        <li><b>Decide on a custom turbine</b> only if the aft layout works. That means 1 kW at 90% with EGT margin, a controlled runaway, a cool enough generator, and a total score at least as good as the front-shaft option. The low-cost rotor may already be enough. A properly designed custom wheel would add a matched stator and a larger, slower flow area to cut back-pressure further.</li>
       </ol>
-      <div class="callout">The spare wheel is designed to deliver around 30 kW to the compressor. Asking it for about 1 kW is like using a truck engine at idle: it can do it, but it sits far from its design point. Most of the risks on this page come from that mismatch, and most go away with a wheel designed for the job.</div>
     </div>
   </section>
 </main>
@@ -578,10 +580,10 @@ const PCAL = (() => {
   const cal = CycleV2.calibrate(p, v2tests, { k_auto: v2in.k_auto, k_manual: v2in.k_manual, eta_b_manual: v2in.eta_b_manual });
   return cal.failed ? null : { ...p, m_ref: cal.m_ref, k: cal.k, eta_turb: cal.eta_turb, eta_b: cal.eta_b, Q_ngv: cal.Q_ngv };
 })();
+const STD = { T01: 288.15, P01: 101325 };
 
 // ---------- gas dynamics helpers ----------
 const Kchoke = (g, R) => Math.sqrt(g / R) * Math.pow(2 / (g + 1), (g + 1) / (2 * (g - 1)));
-// subsonic Mach, static T and velocity from mass flow through an area at a stagnation state
 function machFrom(m, T0, P0, A, g, R) {
   const f = M => Math.sqrt(g / R) * M * Math.pow(1 + (g - 1) / 2 * M * M, -(g + 1) / (2 * (g - 1)));
   const tgt = m * Math.sqrt(T0) / (A * P0);
@@ -593,30 +595,30 @@ function machFrom(m, T0, P0, A, g, R) {
 const annulus = () => Math.PI / 4 * (state.Dt ** 2 - state.Dh ** 2);
 const Dmean = () => (state.Dt + state.Dh) / 2;
 const rpmOfU = U => U / (Math.PI * Dmean()) * 60;
-// Euler model of the aft wheel at a given engine state and shaft power
-function rotorAt(o, Pshaft, alpha1, beta2) {
-  const g = o.g, gm = g.gamma(o.T04), A = annulus();
-  const k = machFrom(o.m_tot, o.T04, o.P04 * (1 - state.dp_aft), A, gm, g.R);
-  const Vx = k.V, C = Vx * (Math.tan(alpha1 * DEG) + Math.tan(beta2 * DEG));
+const UofRpm = N => Math.PI * Dmean() * N / 60;
+function axialVel(o) { const g = o.g; return machFrom(o.m_tot, o.T04, o.P04 * (1 - state.dp_aft), annulus(), g.gamma(o.T04), g.R); }
+// Euler model of the aft rotor at a given engine state and shaft power
+function rotorAt(o, Pshaft, beta2) {
+  const k = axialVel(o), Vx = k.V, a1 = state.alpha1 * DEG;
+  const C = Vx * (Math.tan(a1) + Math.tan(beta2 * DEG));
   const w = Pshaft / o.m_tot, disc = C * C - 4 * w;
   const U = disc >= 0 ? (C + Math.sqrt(disc)) / 2 : NaN;
-  const b1 = Math.atan((Vx * Math.tan(alpha1 * DEG) - U) / Vx) / DEG;
-  return { Vx, M: k.M, choked: k.choked, C, w, wmax: C * C / 4, U, N: rpmOfU(U), Nrun: rpmOfU(C), b1, m: o.m_tot, Vth1: Vx * Math.tan(alpha1 * DEG) };
+  const b1 = Math.atan((Vx * Math.tan(a1) - U) / Vx) / DEG;
+  return { Vx, M: k.M, choked: k.choked, C, w, wmax: C * C / 4, U, N: rpmOfU(U), Nrun: rpmOfU(C), b1, m: o.m_tot, Vth1: Vx * Math.tan(a1), beta2 };
 }
 
-// ---------- inputs ----------
-const F_ = (k, label, q, def, min, max, step, unit) => ({ k, label, q, def, min, max, step, unit });
-const STD = { T01: 288.15, P01: 101325 };
-// design estimate of the rotor exit angle: zero exit swirl at the full-throttle point
+// design estimate of the spare wheel's exit angle: zero exit swirl at the full-throttle point
 function beta2Estimate(Dt, Dh) {
   if (!PCAL) return 40;
   const o = CycleV2.run(PCAL, { ...STD, Nc: N_FULL, P_elec: 0, eta_gen: 1, P_drag: 0 });
   if (o.failed) return 40;
   const A = Math.PI / 4 * (Dt ** 2 - Dh ** 2), k = machFrom(o.m_tot, o.T04, o.P04, A, o.g.gamma(o.T04), o.g.R);
-  const U = Math.PI * (Dt + Dh) / 2 * o.Nphys / 60;
-  return Math.atan(U / k.V) / DEG;
+  return Math.atan(Math.PI * (Dt + Dh) / 2 * o.Nphys / 60 / k.V) / DEG;
 }
 const B2EST = Math.round(beta2Estimate(0.058, 0.0375) * 2) / 2;
+
+// ---------- inputs ----------
+const F_ = (k, label, q, def, min, max, step, unit, mode) => ({ k, label, q, def, min, max, step, unit, mode });
 const GROUPS = [
   ["Test conditions", [
     F_("Nc", "90% corrected speed", null, N_SCORED, 130000, 150000, 100, "rpm"),
@@ -624,20 +626,31 @@ const GROUPS = [
     F_("T01", "Ambient temperature", "temperature", 288.15, 250, 320, 0.5),
     F_("P01", "Ambient pressure", "pressure", 101325, 80000, 105000, 25),
   ]],
-  ["Generator", [
+  ["Generator and gears", [
     F_("P_elec", "Electrical power out", "elec", 1000, 0, 3000, 10),
+    F_("P_cool", "Cooling power taken from the generator", "elec", 0, 0, 200, 5),
     F_("eta_gen", "Generator + rectifier efficiency", null, 0.85, 0.5, 1, 0.01),
-    F_("loss", "Aft bearing + windage loss", "elec", 50, 0, 300, 5),
+    F_("ratio", "Gear ratio (rotor : generator)", null, 4, 1, 10, 0.1, ": 1"),
+    F_("eta_gear", "Gear train efficiency", null, 0.93, 0.7, 1, 0.01),
+    F_("loss", "Rotor bearing + windage loss", "elec", 50, 0, 300, 5),
+    F_("d_pin", "Bevel pinion pitch diameter", "length", 0.008, 0.004, 0.02, 0.0005),
+    F_("Ngen_max", "Generator max rated speed", null, 40000, 10000, 80000, 500, "rpm"),
+    F_("protr", "Generator protrusion beyond the engine case", "length", 0.04, 0, 0.12, 0.001),
   ]],
-  ["Aft turbine", [
-    F_("eta_pt", "Effective turbine efficiency", null, 0.5, 0.2, 0.9, 0.01),
-    F_("dp_aft", "Duct and strut pressure loss fraction", null, 0.01, 0, 0.05, 0.001),
+  ["Aft rotor", [
+    F_("eta_spare", "Effective efficiency", null, 0.5, 0.2, 0.9, 0.01, "", "spare"),
+    F_("beta2", "Blade exit angle β₂ (measure)", null, B2EST, 20, 60, 0.5, "°", "spare"),
+    F_("Nmax", "Rated wheel speed", null, N_FULL, 100000, 200000, 500, "rpm", "spare"),
+    F_("m_spare", "Wheel mass", "mass", 0.112, 0.05, 0.2, 0.001, "", "spare"),
+    F_("eta_low", "Effective efficiency", null, 0.65, 0.2, 0.9, 0.01, "", "low"),
+    F_("Nd", "Design speed at 90% + load", null, 55000, 30000, 100000, 500, "rpm", "low"),
+    F_("yield", "Blade material yield at temperature", "stress", 330e6, 100e6, 1000e6, 5e6, "", "low"),
+    F_("rho_mat", "Blade material density", "density", 8.44, 7.5, 9, 0.01, "", "low"),
+    F_("m_low", "Rotor mass", "mass", 0.06, 0.02, 0.2, 0.001, "", "low"),
     F_("alpha1", "Inflow swirl α₁ (0 = no stator)", null, 0, -10, 40, 0.5, "°"),
-    F_("beta2", "Rotor blade exit angle β₂ (measure)", null, B2EST, 20, 60, 0.5, "°"),
-    F_("Dt", "Wheel tip diameter", "length", 0.058, 0.04, 0.07, 0.0001),
-    F_("Dh", "Wheel hub diameter (measure)", "length", 0.0375, 0.02, 0.05, 0.0005),
-    F_("Nmax", "Max allowable wheel speed", null, N_FULL, 100000, 200000, 500, "rpm"),
-    F_("m_wheel", "Wheel mass", "mass", 0.112, 0.05, 0.2, 0.001),
+    F_("dp_aft", "Duct and strut pressure loss fraction", null, 0.012, 0, 0.05, 0.001),
+    F_("Dt", "Rotor tip diameter", "length", 0.058, 0.04, 0.07, 0.0001),
+    F_("Dh", "Rotor hub diameter (measure)", "length", 0.0375, 0.02, 0.05, 0.0005),
   ]],
   ["Aft nozzle", [
     F_("D_aft", "Nozzle exit diameter", "length", 0.04762, 0.040, 0.060, 0.0001),
@@ -645,23 +658,24 @@ const GROUPS = [
   ["Packaging (estimates)", [
     F_("L0", "Overall length today", "length", 0.241, 0.2, 0.4, 0.001),
     F_("dL", "Added length at the back", "length", 0.05, 0, 0.15, 0.001),
-    F_("dM", "Added mass of the aft module", "mass", 0.35, 0, 1.5, 0.005),
+    F_("dM", "Added mass of the aft module", "mass", 0.45, 0, 1.5, 0.005),
   ]],
 ];
 const FIELDS = GROUPS.flatMap(g => g[1]);
-const DEFAULTS = Object.fromEntries(FIELDS.map(f => [f.k, f.def]));
-const state = { ...DEFAULTS, ...load("p100-aft-inputs", {}) };
+const DEFAULTS = { ...Object.fromEntries(FIELDS.map(f => [f.k, f.def])), mode: "low" };
+const state = { ...DEFAULTS, ...load("p100-aft-inputs-v2", {}) };
+const visible = f => !f.mode || f.mode === state.mode;
 
 function activePreset() { for (const p in PRESETS) if (Object.keys(UNITS).every(q => PRESETS[p][q] === units[q])) return p; return null; }
 function buildUnits() {
   const ap = activePreset();
-  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === ap ? "true" : "false"));
+  document.querySelectorAll(".units .seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === ap ? "true" : "false"));
   $("unitTag").textContent = ap ? "" : "custom";
   $("unitSel").innerHTML = Object.entries(UNITS).map(([q, d]) =>
     `<label for="u-${q}">${d.label}</label><select id="u-${q}" data-q="${q}">${Object.keys(d.u).map(u => `<option${u === units[q] ? " selected" : ""}>${u}</option>`).join("")}</select>`).join("");
   $("unitSel").querySelectorAll("select").forEach(s => s.addEventListener("change", () => { units[s.dataset.q] = s.value; unitsChanged(); }));
 }
-document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { Object.assign(units, PRESETS[b.dataset.p]); unitsChanged(); }));
+document.querySelectorAll(".units .seg button").forEach(b => b.addEventListener("click", () => { Object.assign(units, PRESETS[b.dataset.p]); unitsChanged(); }));
 function unitsChanged() { save("p100-units", units); buildUnits(); buildForm(); schedule(); }
 const disp = (q, v) => q ? fromSI(q, v) : v;
 const tsi = (q, v) => q ? toSI(q, v) : v;
@@ -669,105 +683,143 @@ const ulabel = f => f.q ? un(f.q) : (f.unit || "");
 const L_ = v => `${fmtS(fromSI("length", v), 4)} ${un("length")}`;
 const T_ = v => `${fmt(fromSI("temperature", v))} ${un("temperature")}`;
 const F__ = v => `${fmtS(fromSI("force", v))} ${un("force")}`;
-const P_ = v => `${fmtS(fromSI("pressure", v))} ${un("pressure")}`;
 const V_ = v => `${fmtS(fromSI("velocity", v), 3)} ${un("velocity")}`;
 const W_ = v => `${fmtS(fromSI("shaft", v), 3)} ${un("shaft")}`;
 const E_ = v => `${fmtS(fromSI("elec", v), 3)} ${un("elec")}`;
 const H_ = v => `${fmtS(v / 1000, 3)} kJ/kg`;
-const R_ = v => `${fmt(Math.round(v / 100) * 100)} rpm`;
+const R_ = v => isFinite(v) ? `${fmt(Math.round(v / 100) * 100)} rpm` : "—";
+const S_ = v => `${fmtS(fromSI("stress", v), 3)} ${un("stress")}`;
 
+const HINTS = {
+  beta2: `Design estimate from the calibrated engine: ${B2EST}° (assumes no exit swirl at full throttle).`,
+  eta_spare: "Placeholder until a loaded test measures it.",
+  eta_low: "Higher than the spare's because the inflow matches the blades; still an estimate.",
+  Nd: "Sets the blade angles; see section 4.",
+  yield: "About 330 MPa for Inconel 625 near 650 °C; check the datasheet for your alloy and temperature.",
+  Nmax: "The core wheel's rating, at a hotter temperature than the aft position sees.",
+  P_cool: "A fan run from the generator output. Battery-powered cooling would be support equipment instead.",
+  protr: "Radial distance is scored from the engine case.",
+  D_aft: "“Match front-shaft EGT” below sizes it for the selected rotor.",
+};
 function buildForm() {
   const form = $("inputs"); form.innerHTML = "";
   GROUPS.forEach(([group, fs]) => {
     const fsEl = document.createElement("fieldset");
     fsEl.innerHTML = `<legend>${group}</legend>`;
-    fs.forEach(f => {
+    if (group === "Aft rotor") {
+      const seg = document.createElement("div"); seg.className = "seg"; seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Rotor option"); seg.style.margin = "4px 0 6px";
+      seg.innerHTML = `<button type="button" data-mode="low" aria-pressed="${state.mode === "low"}">Low-cost rotor</button><button type="button" data-mode="spare" aria-pressed="${state.mode === "spare"}">Spare wheel</button>`;
+      seg.querySelectorAll("button").forEach(b => b.addEventListener("click", () => { state.mode = b.dataset.mode; buildForm(); schedule(); }));
+      fsEl.appendChild(seg);
+    }
+    fs.filter(visible).forEach(f => {
       const dStep = f.q ? niceStep(f.step / uf(f.q)[0]) : f.step;
       const d = document.createElement("div"); d.className = "field";
       d.innerHTML = `<label for="n-${f.k}">${f.label}${ulabel(f) ? `<small>${ulabel(f)}</small>` : ""}</label>
         <input type="number" id="n-${f.k}" step="any" value="${inputVal(disp(f.q, state[f.k]))}">
         <input type="range" aria-label="${f.label}" id="r-${f.k}" min="${disp(f.q, f.min)}" max="${disp(f.q, f.max)}" step="${dStep}" value="${disp(f.q, state[f.k])}">`;
       fsEl.appendChild(d);
-      const hint = { beta2: `Design estimate from the calibrated engine: ${B2EST}° (assumes no exit swirl at full throttle).`, eta_pt: "Placeholder until the loaded test measures it.", Nmax: "The core wheel's rated speed, at a hotter temperature than the aft position sees.", loss: "Two extra bearings and the generator rotor's windage.", D_aft: "Use “Match front-shaft EGT” below to size it." }[f.k];
-      if (hint) { const h = document.createElement("p"); h.className = "hint"; h.textContent = hint; fsEl.appendChild(h); }
+      if (HINTS[f.k]) { const h = document.createElement("p"); h.className = "hint"; h.textContent = HINTS[f.k]; fsEl.appendChild(h); }
     });
     form.appendChild(fsEl);
   });
-  FIELDS.forEach(f => {
+  FIELDS.filter(visible).forEach(f => {
     const n = $("n-" + f.k), r = $("r-" + f.k);
     n.addEventListener("input", () => { const v = parseFloat(n.value); if (isFinite(v)) { state[f.k] = tsi(f.q, v); r.value = v; schedule(); } });
     r.addEventListener("input", () => { const v = parseFloat(r.value); state[f.k] = tsi(f.q, v); n.value = inputVal(v); schedule(); });
   });
 }
-function setField(k, vSI) { const f = FIELDS.find(x => x.k === k); state[k] = vSI; $("n-" + k).value = inputVal(disp(f.q, vSI)); $("r-" + k).value = disp(f.q, vSI); schedule(); }
+function setField(k, vSI) { const f = FIELDS.find(x => x.k === k); state[k] = vSI; const n = $("n-" + k); if (n) { n.value = inputVal(disp(f.q, vSI)); $("r-" + k).value = disp(f.q, vSI); } schedule(); }
 $("reset").onclick = () => { Object.assign(state, DEFAULTS); buildForm(); schedule(); };
 $("match").onclick = () => { if (last && isFinite(last.Dmatch)) setField("D_aft", last.Dmatch); };
 
 // ---------- model runs ----------
 const op90 = x => ({ T01: state.T01, P01: state.P01, Nc: state.Nc, P_elec: 0, eta_gen: state.eta_gen, P_drag: 0, ...x });
 const opFull = x => ({ T01: state.T01, P01: state.P01, Nc: state.Nfull / Math.sqrt(state.T01 / 288.15), P_elec: 0, eta_gen: state.eta_gen, P_drag: 0, ...x });
-const aftP = D => ({ ...PCAL, eta_pt: state.eta_pt, dp_aft: state.dp_aft, D_noz: D ?? state.D_aft });
-const Paft = Pe => Pe / state.eta_gen + state.loss;
+const etaOf = mode => mode === "spare" ? state.eta_spare : state.eta_low;
+const aftP = (mode, D) => ({ ...PCAL, eta_pt: etaOf(mode), dp_aft: state.dp_aft, D_noz: D ?? state.D_aft });
+const Pshaft = Pe => (Pe + state.P_cool) / (state.eta_gen * state.eta_gear) + state.loss;
 const thrustScore = lbf => lbf > 20 ? 20 : lbf < 10 ? 0 : 2 * lbf - 20;
 const lengthScore = inch => inch <= 10 ? 15 : inch >= 15 ? 0 : -3 * inch + 45;
+const radialScore = inch => inch <= 0 ? 15 : inch >= 4 ? 0 : 15 - 3.75 * inch;
+const stressRoot = (N, rho) => rho * 1000 * (Math.PI * state.Dt * N / 60) ** 2 * (1 - (state.Dh / state.Dt) ** 2) / 2;
+
+// everything about one rotor option
+function rotorCase(mode, PA) {
+  const run = CycleV2.run;
+  const o90 = run(aftP(mode), op90({ P_aft: PA }));
+  const oFullIdle = run(aftP(mode), opFull({ P_aft: state.loss }));
+  const oFullLoad = run(aftP(mode), opFull({ P_aft: PA }));
+  const r = { mode, o90, oFullIdle, oFullLoad, name: mode === "spare" ? "spare wheel" : "low-cost rotor" };
+  if (o90.failed) return r;
+  if (mode === "spare") { r.beta2 = state.beta2; r.Nmax = state.Nmax; r.mass = state.m_spare; }
+  else {
+    const Vx = axialVel(o90).V, Ud = UofRpm(state.Nd), w = PA / o90.m_tot, C = Ud + w / Ud;
+    r.beta2 = Math.atan(C / Vx - Math.tan(state.alpha1 * DEG)) / DEG;
+    r.b1design = Math.atan((Vx * Math.tan(state.alpha1 * DEG) - Ud) / Vx) / DEG;
+    r.Ud = Ud; r.Cd = C;
+    const Utip = Math.sqrt(2 * state.yield / 1.5 / (state.rho_mat * 1000 * (1 - (state.Dh / state.Dt) ** 2)));
+    r.Nmax = Utip / (Math.PI * state.Dt) * 60; r.mass = state.m_low;
+  }
+  r.k = rotorAt(o90, PA, r.beta2);
+  if (!oFullIdle.failed) r.kFullIdle = rotorAt(oFullIdle, state.loss, r.beta2);
+  if (!oFullLoad.failed) r.kFullLoad = rotorAt(oFullLoad, PA, r.beta2);
+  return r;
+}
 
 let pending = false, last = null;
-function schedule() { if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; save("p100-aft-inputs", state); update(); }); } }
+function schedule() { if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; save("p100-aft-inputs-v2", state); update(); }); } }
 
 function update() {
   $("calSrc").textContent = `Engine model: calibrated from ${v2tests.length} test point${v2tests.length === 1 ? "" : "s"} ${fromV2 ? "on your Cycle analysis V2 page" : "from the Nov 6 test day (edit on Cycle analysis V2)"}.`;
   if (!PCAL) { $("warn").textContent = "Calibration failed. Check the test points on Cycle analysis V2."; return; }
-  const warn = [];
-  const run = CycleV2.run;
-  const stock = run(PCAL, op90());
-  const front = run(PCAL, op90({ P_elec: state.P_elec, P_drag: v2in.P_drag || 0 }));
-  const PA = Paft(state.P_elec);
-  const aft = run(aftP(), op90({ P_aft: PA }));
-  const aftStockNoz = run(aftP(v2in.D_noz_test), op90({ P_aft: PA }));
-  // nozzle that brings the aft EGT back to the front-shaft EGT
+  const warn = [], run = CycleV2.run;
+  const PA = Pshaft(state.P_elec);
+  const stock = run(PCAL, op90()), front = run(PCAL, op90({ P_elec: state.P_elec, P_drag: v2in.P_drag || 0 }));
+  const fullStock = run(PCAL, opFull());
+  const cases = { spare: rotorCase("spare", PA), low: rotorCase("low", PA) };
+  const A = cases[state.mode];
+  // nozzle that brings the selected rotor's EGT back to the front-shaft EGT
   let Dmatch = NaN;
   if (!front.failed) {
-    const f = D => { const o = run(aftP(D), op90({ P_aft: PA })); return o.failed ? 1 : o.EGT - front.EGT; };
+    const f = D => { const o = run(aftP(state.mode, D), op90({ P_aft: PA })); return o.failed ? 1 : o.EGT - front.EGT; };
     let lo = 0.040, hi = 0.065;
-    if (f(lo) > 0 && f(hi) < 0) { for (let i = 0; i < 22; i++) { const m = (lo + hi) / 2; if (f(m) > 0) lo = m; else hi = m; } Dmatch = (lo + hi) / 2; }
+    if (f(lo) > 0 && f(hi) < 0) { for (let i = 0; i < 18; i++) { const m = (lo + hi) / 2; if (f(m) > 0) lo = m; else hi = m; } Dmatch = (lo + hi) / 2; }
   }
-  const aftMatch = isFinite(Dmatch) ? run(aftP(Dmatch), op90({ P_aft: PA })) : { failed: true };
-  const fullStock = run(PCAL, opFull());
-  const fullIdle = run(aftP(), opFull({ P_aft: state.loss }));
-  const fullLoad = run(aftP(), opFull({ P_aft: PA }));
-  if ([stock, front, aft, fullStock, fullIdle].some(o => o.failed)) warn.push("The engine model has no solution for one of the configurations at these inputs.");
-
-  const kin = !aft.failed ? rotorAt(aft, PA, state.alpha1, state.beta2) : null;
-  const kinFullIdle = !fullIdle.failed ? rotorAt(fullIdle, state.loss, state.alpha1, state.beta2) : null;
-  const kinFullLoad = !fullLoad.failed ? rotorAt(fullLoad, PA, state.alpha1, state.beta2) : null;
-  const kinMatch = !aftMatch.failed ? rotorAt(aftMatch, PA, state.alpha1, state.beta2) : null;
+  const aftMatch = isFinite(Dmatch) ? run(aftP(state.mode, Dmatch), op90({ P_aft: PA })) : { failed: true };
   last = { Dmatch };
 
-  if (kin && !isFinite(kin.U)) warn.push(`In this simple model the wheel cannot deliver ${W_(PA)} at any speed (it peaks at ${W_(kin.wmax * kin.m)}).`);
-  if (kinFullIdle && kinFullIdle.N > state.Nmax) warn.push(`If the generator load is lost at full throttle, the wheel would run away to about ${R_(kinFullIdle.N)}, past its ${R_(state.Nmax)} rating. Keep a load on at all times and add an independent overspeed brake or dump load.`);
+  if ([stock, front, A.o90, fullStock, A.oFullIdle].some(o => o.failed)) warn.push("The engine model has no solution for one of the configurations at these inputs.");
+  const k = A.k, kf = A.kFullIdle;
+  if (k && !isFinite(k.U)) warn.push(`In this simple model the ${A.name} cannot deliver ${W_(PA)} at any speed (it peaks at ${W_(k.wmax * k.m)}). Raise the design speed or the blade angle.`);
+  if (kf && kf.N > A.Nmax) warn.push(`If the generator load is lost at full throttle, the ${A.name} would run away to about ${R_(kf.N)}, past its ${R_(A.Nmax)} limit. Keep a load on at all times and add an independent overspeed trip.`);
+  if (kf && kf.N / state.ratio > state.Ngen_max) warn.push(`At full-throttle runaway the generator would reach ${R_(kf.N / state.ratio)}, past its ${R_(state.Ngen_max)} rating. Raise the gear ratio or pick a faster motor.`);
+  if (k && isFinite(k.N) && k.N / state.ratio > state.Ngen_max) warn.push(`At the operating point the generator spins at ${R_(k.N / state.ratio)}, past its rating.`);
   if (state.alpha1 > 5) warn.push("Pre-swirl raises the runaway speed sharply. Check the full-throttle runaway before considering a stator.");
-  if (kin && kin.M > 0.75) warn.push(`The gas reaches the aft wheel at about Mach ${fmt(kin.M, 2)}. Struts and the hub in flow this fast cost more pressure than the default 1% allows.`);
-  if (kin && kin.choked) warn.push("The wheel's annulus would choke at this flow: the hub diameter may be too large, or the flow too high.");
+  if (k && k.M > 0.75) warn.push(`The gas reaches the rotor at about Mach ${fmt(k.M, 2)}; struts and the hub cost more pressure than usual in flow this fast.`);
+  if (k && k.choked) warn.push("The rotor annulus would choke at this flow: check the hub and tip diameters.");
   $("warn").textContent = warn.join(" ");
 
   // KPIs
   const st = e => e <= EGT_LIM - 50 ? "good" : e <= EGT_LIM ? "warn" : "bad";
-  if (!aft.failed && !front.failed) {
-    kpi("k-T", fmt(fromSI("temperature", aft.EGT)), un("temperature"), `front-shaft ${T_(front.EGT)} · limit ${T_(EGT_LIM)}`, st(aft.EGT));
-    kpi("k-F", fmtS(fromSI("force", aft.Fc)), un("force"), `front-shaft ${F__(front.Fc)} · score ${fmt(thrustScore(aft.Fc / LBF), 1)}/20`, null);
+  if (!A.o90.failed && !front.failed) {
+    kpi("k-T", fmt(fromSI("temperature", A.o90.EGT)), un("temperature"), `front-shaft ${T_(front.EGT)} · limit ${T_(EGT_LIM)}`, st(A.o90.EGT));
+    kpi("k-F", fmtS(fromSI("force", A.o90.Fc)), un("force"), `front-shaft ${F__(front.Fc)} · score ${fmt(thrustScore(A.o90.Fc / LBF), 1)}/20`, null);
   }
-  if (kin && isFinite(kin.N)) kpi("k-N", fmt(Math.round(kin.N / 100) * 100), "rpm", `runaway at 90%: ${R_(kin.Nrun)}`, kin.Nrun <= state.Nmax ? "good" : "warn");
+  if (k && isFinite(k.N)) kpi("k-N", fmt(Math.round(k.N / 100) * 100), "rpm", `generator ${R_(k.N / state.ratio)} · ${A.name}`, k.N / state.ratio <= state.Ngen_max ? "good" : "warn");
   else kpi("k-N", "—", "", "cannot deliver this power", "bad");
-  if (kinFullIdle) { const r = kinFullIdle.N / state.Nmax; kpi("k-R", fmt(Math.round(kinFullIdle.N / 100) * 100), "rpm", `load off · rated ${R_(state.Nmax)}`, r <= 0.95 ? "good" : r <= 1 ? "warn" : "bad"); }
+  if (kf) { const r = Math.max(kf.N / A.Nmax, kf.N / state.ratio / state.Ngen_max); kpi("k-R", fmt(Math.round(kf.N / 100) * 100), "rpm", `load off · limit ${R_(A.Nmax)} · gen ${R_(kf.N / state.ratio)}`, r <= 0.95 ? "good" : r <= 1 ? "warn" : "bad"); }
 
   renderEnergy(stock, PA);
-  renderRotor(kin, kinFullIdle, PA, fullIdle);
+  renderRotor(A, PA);
+  renderLowCost(cases.low, PA);
   renderNGV(stock);
+  renderDrive(cases);
   drawSchematic();
   drawEngineCharts();
-  renderCompare({ stock, front, aft, aftStockNoz, aftMatch, Dmatch, fullStock, fullIdle, fullLoad, kin, kinMatch, kinFullIdle, kinFullLoad, PA });
-  renderRequirements({ aft, front, kin, kinFullIdle, Dmatch, PA, stock, fullIdle, fullLoad });
-  renderComparison({ aft, front, aftMatch, Dmatch, kin, kinFullIdle });
+  renderCompare({ stock, front, cases, A, aftMatch, Dmatch, fullStock, PA });
+  renderRequirements({ A, front, Dmatch, PA });
+  renderComparison({ A, front, aftMatch, Dmatch });
 }
 
 function kpi(id, val, unit, note, status) {
@@ -781,39 +833,31 @@ function kpi(id, val, unit, note, status) {
 function renderEnergy(o, PA) {
   if (o.failed) return;
   const g = o.g, Tis = g.T_sP(g.s(o.T04, o.P04), state.P01, o.T04), dh = g.h(o.T04) - g.h(Tis), Pav = o.m_tot * dh;
-  $("e-dh").textContent = H_(dh);
-  $("e-P").textContent = W_(Pav);
-  $("e-Ps").textContent = W_(PA);
-  $("e-eta").textContent = fmt(state.eta_pt, 2);
-  $("e-frac").textContent = `${fmt(100 * PA / state.eta_pt / Pav, 0)}%`;
+  $("e-dh").textContent = H_(dh); $("e-P").textContent = W_(Pav); $("e-Ps").textContent = W_(PA);
+  $("e-eta").textContent = fmt(etaOf(state.mode), 2);
+  $("e-frac").textContent = `${fmt(100 * PA / etaOf(state.mode) / Pav, 0)}%`;
 }
 
 // ---------- section 3 ----------
-function renderRotor(k, kf, PA, fullIdle) {
+function renderRotor(A, PA) {
   $("r-A").textContent = `${fmtS(fromSI("area", annulus()), 3)} ${un("area")}`;
-  if (!k) return;
-  $("r-Vx").textContent = V_(k.Vx);
-  $("r-M").textContent = fmt(k.M, 2);
-  $("r-b2").textContent = `${fmt(state.beta2, 1)}°`;
-  $("r-C").textContent = V_(k.C);
-  $("r-w").textContent = H_(k.w);
-  $("r-wmax").textContent = H_(k.wmax);
-  $("r-Pmax").textContent = W_(k.wmax * k.m);
-  $("r-Nop").textContent = isFinite(k.N) ? R_(k.N) : "—";
-  $("r-Nrun").textContent = R_(k.Nrun);
-  $("r-Nrunf").textContent = kf ? R_(kf.Nrun) : "—";
+  $("r-name").textContent = A.name;
+  const k = A.k; if (!k) return;
+  $("r-Vx").textContent = V_(k.Vx); $("r-M").textContent = fmt(k.M, 2);
+  $("r-b2").textContent = `${fmt(A.beta2, 1)}°`; $("r-C").textContent = V_(k.C);
+  $("r-w").textContent = H_(k.w); $("r-wmax").textContent = H_(k.wmax); $("r-Pmax").textContent = W_(k.wmax * k.m);
+  $("r-Nop").textContent = R_(k.N); $("r-Nrun").textContent = R_(k.Nrun);
+  $("r-Nrunf").textContent = A.kFullIdle ? R_(A.kFullIdle.Nrun) : "—";
   $("r-b1").textContent = isFinite(k.b1) ? `${fmt(Math.abs(k.b1), 0)}°` : "—";
-  // design inflow of the copy wheel: the core rotor at full throttle, zero exit swirl
-  let inc = NaN;
-  const o = CycleV2.run(PCAL, { ...STD, Nc: N_FULL, P_elec: 0, eta_gen: 1, P_drag: 0 });
-  if (!o.failed && isFinite(k.b1)) {
-    const A = annulus(), kk = machFrom(o.m_tot, o.T04, o.P04, A, o.g.gamma(o.T04), o.g.R);
-    const U = Math.PI * Dmean() * o.Nphys / 60, w = o.W_c / o.m_tot, b1d = Math.atan((w / U - U) / kk.V) / DEG;
-    inc = Math.abs(k.b1 - b1d);
+  // design inflow: the spare's comes from the core at full throttle; the low-cost rotor's from its own design point
+  let b1d = A.b1design;
+  if (A.mode === "spare") {
+    const o = CycleV2.run(PCAL, { ...STD, Nc: N_FULL, P_elec: 0, eta_gen: 1, P_drag: 0 });
+    if (!o.failed) { const kk = machFrom(o.m_tot, o.T04, o.P04, annulus(), o.g.gamma(o.T04), o.g.R), U = UofRpm(o.Nphys); b1d = Math.atan((o.W_c / o.m_tot / U - U) / kk.V) / DEG; }
   }
-  $("r-inc").textContent = isFinite(inc) ? `${fmt(inc, 0)}°` : "—";
+  $("r-inc").textContent = isFinite(k.b1) && isFinite(b1d) ? `${fmt(Math.abs(k.b1 - b1d), 0)}°` : "—";
   drawTriangles(k);
-  drawPowerSpeed(k, kf, PA, fullIdle);
+  drawPowerSpeed(A, PA);
 }
 
 function drawTriangles(k) {
@@ -823,7 +867,7 @@ function drawTriangles(k) {
   const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img", "aria-label": "Inlet and exit velocity triangles of the aft rotor" }, host);
   const defs = el("defs", {}, svg);
   [["a1", "var(--s1)"], ["a2", "var(--s2)"], ["a3", "var(--muted)"]].forEach(([id, c]) => { const mk = el("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, defs); el("path", { d: "M0,0 L10,5 L0,10 z", fill: c }, mk); });
-  const Vx = k.Vx, U = k.U, b2 = state.beta2 * DEG;
+  const Vx = k.Vx, U = k.U, b2 = k.beta2 * DEG;
   const tri = [
     { title: "Inlet (station 4)", n: "1", V: [Vx, k.Vth1], Wv: [Vx, k.Vth1 - U] },
     { title: "Exit (station 45)", n: "2", V: [Vx, U - Vx * Math.tan(b2)], Wv: [Vx, -Vx * Math.tan(b2)] },
@@ -831,15 +875,12 @@ function drawTriangles(k) {
   const ys = tri.flatMap(t => [t.V[1], t.Wv[1], 0]), ymax = Math.max(...ys), ymin = Math.min(...ys);
   const sc = Math.min(150 / Vx, (H - 60) / (ymax - ymin || 1));
   tri.forEach((t, i) => {
-    const ox = 34 + i * 220, oy = 36 + ymax * sc;
-    const P = v => [ox + v[0] * sc, oy - v[1] * sc];
+    const ox = 34 + i * 220, oy = 36 + ymax * sc, P = v => [ox + v[0] * sc, oy - v[1] * sc];
     el("text", { x: ox - 10, y: 16, "font-size": 12, "font-weight": 600, fill: "var(--text)" }, svg).textContent = t.title;
     el("line", { x1: ox - 8, x2: ox + Vx * sc + 16, y1: oy, y2: oy, stroke: "var(--grid)" }, svg);
     const arrow = (a, b, c, id, w = 2) => el("line", { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: c, "stroke-width": w, "marker-end": `url(#${id})` }, svg);
     const pW = P(t.Wv), pV = P(t.V);
-    arrow([ox, oy], pV, "var(--s1)", "a1");
-    arrow([ox, oy], pW, "var(--s2)", "a2");
-    arrow(pW, pV, "var(--muted)", "a3", 1.5);
+    arrow([ox, oy], pV, "var(--s1)", "a1"); arrow([ox, oy], pW, "var(--s2)", "a2"); arrow(pW, pV, "var(--muted)", "a3", 1.5);
     const lab = (p, s, c, dx, dy) => el("text", { x: p[0] + dx, y: p[1] + dy, "font-size": 13, "font-weight": 600, fill: c }, svg).textContent = s;
     lab([(ox + pV[0]) / 2, (oy + pV[1]) / 2], "V" + (t.n === "1" ? "₁" : "₂"), "var(--s1)", -6, t.V[1] >= t.Wv[1] ? -7 : 16);
     lab([(ox + pW[0]) / 2, (oy + pW[1]) / 2], "W" + (t.n === "1" ? "₁" : "₂"), "var(--s2)", -18, t.Wv[1] < t.V[1] ? 16 : -7);
@@ -851,20 +892,49 @@ function drawTriangles(k) {
     tri.map(t => `<tr><td>${t.n === "1" ? "Inlet" : "Exit"}</td><td class="num">${fmtS(fromSI("velocity", mag(t.V)), 3)}</td><td class="num">${fmt(ang(t.V), 0)}°</td><td class="num">${fmtS(fromSI("velocity", mag(t.Wv)), 3)}</td><td class="num">${fmt(ang(t.Wv), 0)}°</td><td class="num">${fmtS(fromSI("velocity", U), 3)}</td></tr>`).join("") + "</tbody>";
 }
 
-function drawPowerSpeed(k, kf, PA, fullIdle) {
-  const Xmax = Math.max(kf ? kf.Nrun : 0, state.Nmax, k.Nrun) * 1.08;
-  const curve = (kk, m) => { const pts = []; for (let i = 0; i <= 80; i++) { const N = Xmax * i / 80, U = Math.PI * Dmean() * N / 60, P = m * U * (kk.C - U); if (P < 0) break; pts.push([N, fromSI("shaft", P)]); } return pts; };
+function drawPowerSpeed(A, PA) {
+  const k = A.k, kf = A.kFullIdle;
+  const Xmax = Math.max(kf ? kf.Nrun : 0, A.Nmax, k.Nrun) * 1.08;
+  const curve = (kk, m) => { const pts = []; for (let i = 0; i <= 80; i++) { const N = Xmax * i / 80, U = UofRpm(N), P = m * U * (kk.C - U); if (P < 0) break; pts.push([N, fromSI("shaft", P)]); } return pts; };
   const s1 = curve(k, k.m), s2 = kf ? curve(kf, kf.m) : [];
-  legend("lg-PN", [["line", "var(--s1)", "90% corrected"], ["line", "var(--s2)", "Full throttle"], ["dash", "var(--text-2)", "Required shaft power"], ["dash", "var(--bad)", "Rated wheel speed"]]);
-  chart($("ch-PN"), { xd: [0, Xmax], xl: "Aft rotor speed (rpm)", yl: `Ideal shaft power (${un("shaft")})`, aria: "Aft rotor ideal shaft power versus speed",
+  legend("lg-PN", [["line", "var(--s1)", "90% corrected"], ["line", "var(--s2)", "Full throttle"], ["dash", "var(--text-2)", "Required rotor power"], ["dash", "var(--bad)", "Rotor speed limit"]]);
+  chart($("ch-PN"), { xd: [0, Xmax], xl: `${A.name[0].toUpperCase() + A.name.slice(1)} speed (rpm)`, yl: `Ideal shaft power (${un("shaft")})`, aria: "Aft rotor ideal shaft power versus speed",
     series: [{ pts: s1, color: "var(--s1)" }, { pts: s2, color: "var(--s2)" }], yZero: true,
     hlines: [{ y: fromSI("shaft", PA), label: `need ${W_(PA)}`, color: "var(--text-2)", left: true }],
-    vlines: [{ x: state.Nmax, label: "rated", color: "var(--bad)", right: true }],
+    vlines: [{ x: A.Nmax, label: "limit", color: "var(--bad)", right: true }],
     cur: isFinite(k.N) ? { x: k.N, y: fromSI("shaft", PA) } : null,
     tip: i => { const p = s1[i]; return p ? `${R_(p[0])}<br>90%: ${fmtS(p[1], 3)} ${un("shaft")}${s2[i] ? `<br>full: ${fmtS(s2[i][1], 3)} ${un("shaft")}` : ""}` : ""; } });
 }
 
 // ---------- section 4 ----------
+function renderLowCost(L, PA) {
+  if (!L.k) { $("lowTab").innerHTML = ""; return; }
+  const k = L.k, kf = L.kFullIdle, b1 = Math.abs(L.b1design), Nrf = kf ? kf.Nrun : NaN;
+  const sig = stressRoot(Nrf, state.rho_mat), Utip = Math.PI * state.Dt * Nrf / 60;
+  const rows = [
+    ["Design speed (90% + load)", R_(state.Nd)], ["Blade speed at mean diameter, U<sub>d</sub>", V_(L.Ud)], ["Required C", V_(L.Cd)],
+    ["Blade inlet angle β₁ (zero incidence)", `${fmt(b1, 1)}°`], ["Blade exit angle β₂", `${fmt(L.beta2, 1)}°`], ["Flow turning", `${fmt(L.beta2 - b1, 1)}°`],
+    ["Runaway at 90% / full throttle", `${R_(k.Nrun)} / ${R_(Nrf)}`], ["Ideal max power at 90% vs needed", `${W_(k.wmax * k.m)} vs ${W_(PA)} (×${fmt(k.wmax * k.m / PA, 2)})`],
+    ["Tip speed at full-throttle runaway", V_(Utip)], ["Blade root stress at that speed", `${S_(sig)} (safety factor ${fmt(state.yield / sig, 2)})`],
+    ["Speed limit at safety factor 1.5", R_(L.Nmax)], ["Bevel pinion pitch-line speed at load", V_(Math.PI * state.d_pin * k.N / 60)],
+  ];
+  $("lowTab").innerHTML = `<tbody>${rows.map(([a, b]) => `<tr><td>${a}</td><td class="num">${b}</td></tr>`).join("")}</tbody>`;
+  $("lowTab").querySelectorAll("td").forEach((c, i) => { if (i % 2 === 0) c.style.textAlign = "left"; });
+  const bom = [
+    ["Rotor", "Laser-cut Inconel 625 sheet, twisted blades, turned hub, welded and balanced", "$60–200", "Or 3D-printed Inconel: about $300–800"],
+    ["Rotor shaft and bearings", "Short stainless shaft, two small high-speed hybrid ceramic bearings", "$60–160", "Rated for the runaway speed"],
+    ["Bevel gear stage and cross shaft", "Precision-ground small-module bevel pair, shaft through a hollow strut", "$60–200", "The most demanding part"],
+    ["Housing, struts and nozzle", "Stainless or Inconel sheet and tube, TIG welded, with containment ring", "$80–250", ""],
+    ["Generator", "1.5–2 kW hobby brushless motor, Kv chosen for ~60 V", "$60–150", "Check its max rpm against runaway"],
+    ["Rectifier and leads", "3-phase bridge rectifier, female EC5", "$20–60", "ICD §4"],
+    ["Thermal", "Heat shield, ceramic-fibre insulation, small fan or air nozzle", "$20–60", ""],
+    ["Instrumentation", "Rotor rpm pickup, thermocouples, two total-pressure probes", "$30–80", ""],
+  ];
+  $("bom").innerHTML = `<thead><tr><th>Item</th><th>Low-cost approach</th><th>Rough cost (USD)</th><th>Note</th></tr></thead><tbody>${bom.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}<tr><td><b>Total</b></td><td></td><td><b>≈ $390–1,160</b></td><td>With a laser-cut rotor</td></tr></tbody>`;
+  $("bom").querySelectorAll("th,td").forEach(c => c.style.textAlign = "left");
+}
+
+// ---------- section 5 ----------
 function renderNGV(o) {
   if (o.failed) return;
   const g = o.g, Acore = PCAL.Q_ngv / Kchoke(g.gamma(o.T03), g.R), Areq = o.m_tot * Math.sqrt(o.T04) / (o.P04 * Kchoke(g.gamma(o.T04), g.R));
@@ -874,21 +944,38 @@ function renderNGV(o) {
   $("n-ratio").textContent = `${fmt(Areq / Acore, 1)}×`;
 }
 
-// ---------- section 5 ----------
+// ---------- section 6 ----------
+function renderDrive(cases) {
+  const col = c => {
+    const k = c.k, kf = c.kFullIdle; if (!k) return Array(9).fill("—");
+    const Pg = (state.P_elec + state.P_cool) / state.eta_gen, Ng = k.N / state.ratio, wg = Ng * 2 * Math.PI / 60;
+    return [R_(k.N), R_(kf ? kf.N : NaN), R_(Ng), R_(kf ? kf.N / state.ratio : NaN), V_(Math.PI * state.d_pin * k.N / 60), V_(kf ? Math.PI * state.d_pin * kf.N / 60 : NaN),
+      `${fmtS(fromSI("torque", Pg / wg), 3)} ${un("torque")}`, `${fmt(Math.round(Ng / 60 / 10) * 10)} rpm/V`, R_(c.Nmax)];
+  };
+  const names = ["Rotor speed at load", "Rotor runaway, full throttle (load off)", "Generator speed at load", "Generator at full-throttle runaway", "Pinion pitch-line speed at load",
+    "Pinion pitch-line speed at runaway", "Generator torque at load", "Suggested Kv for ~60 V", "Rotor speed limit"];
+  const a = col(cases.low), b = col(cases.spare);
+  $("driveTab").innerHTML = `<thead><tr><th></th><th>Low-cost rotor</th><th>Spare wheel</th></tr></thead><tbody>${names.map((n, i) => `<tr><td>${n}</td><td class="num">${a[i]}</td><td class="num">${b[i]}</td></tr>`).join("")}
+    <tr><td>Rotor shaft power needed</td><td class="num" colspan="2" style="text-align:center">${W_(Pshaft(state.P_elec))} for ${E_(state.P_elec)} delivered</td></tr></tbody>`;
+  $("driveTab").querySelectorAll("tbody td:first-child, thead th:first-child").forEach(c => c.style.textAlign = "left");
+}
+
+// ---------- section 7 ----------
 function drawEngineCharts() {
-  const xs = []; for (let P = 0; P <= 3000; P += 200) xs.push(P);
+  const xs = []; for (let P = 0; P <= 3000; P += 250) xs.push(P);
   const fr = xs.map(P => [P, CycleV2.run(PCAL, op90({ P_elec: P, P_drag: v2in.P_drag || 0 }))]).filter(([, o]) => !o.failed);
-  const af = xs.map(P => [P, CycleV2.run(aftP(), op90({ P_aft: Paft(P) }))]).filter(([, o]) => !o.failed);
+  const lo = xs.map(P => [P, CycleV2.run(aftP("low"), op90({ P_aft: Pshaft(P) }))]).filter(([, o]) => !o.failed);
+  const sp = xs.map(P => [P, CycleV2.run(aftP("spare"), op90({ P_aft: Pshaft(P) }))]).filter(([, o]) => !o.failed);
   const X = P => fromSI("elec", P), xd = [0, X(3000)];
-  const tip = (rows, rows2) => i => { const a = rows[i], b = rows2[i]; if (!a) return ""; return `${E_(a[0])}<br>front: EGT ${T_(a[1].EGT)} · ${F__(a[1].Fc)}${b ? `<br>aft: EGT ${T_(b[1].EGT)} · ${F__(b[1].Fc)}` : ""}`; };
-  legend("lg-T", [["line", "var(--s1)", "Front-shaft generator"], ["line", "var(--s2)", `Aft turbine, Ø ${L_(state.D_aft)} nozzle`], ["dash", "var(--bad)", "800 °C limit"]]);
+  const tip = i => { const a = fr[i], b = lo[i], c = sp[i]; if (!a) return ""; return `${E_(a[0])}<br>front: ${T_(a[1].EGT)} · ${F__(a[1].Fc)}${b ? `<br>low-cost: ${T_(b[1].EGT)} · ${F__(b[1].Fc)}` : ""}${c ? `<br>spare: ${T_(c[1].EGT)} · ${F__(c[1].Fc)}` : ""}`; };
+  const ser = f => [{ pts: fr.map(([P, o]) => [X(P), f(o)]), color: "var(--s1)" }, { pts: lo.map(([P, o]) => [X(P), f(o)]), color: "var(--s3, #1baf7a)" }, { pts: sp.map(([P, o]) => [X(P), f(o)]), color: "var(--s2)" }];
+  const lg = extra => [["line", "var(--s1)", "Front-shaft generator"], ["line", "var(--s3, #1baf7a)", "Aft, low-cost rotor"], ["line", "var(--s2)", "Aft, spare wheel"]].concat(extra);
+  legend("lg-T", lg([["dash", "var(--bad)", "800 °C limit"]]));
   chart($("ch-T"), { xd, xl: `Electrical power (${un("elec")})`, yl: `EGT (${un("temperature")})`, aria: "EGT versus electrical power for front-shaft and aft-turbine generation",
-    series: [{ pts: fr.map(([P, o]) => [X(P), fromSI("temperature", o.EGT)]), color: "var(--s1)" }, { pts: af.map(([P, o]) => [X(P), fromSI("temperature", o.EGT)]), color: "var(--s2)" }],
-    hlines: [{ y: fromSI("temperature", EGT_LIM), label: "800 °C", color: "var(--bad)", left: true }], tip: tip(fr, af) });
-  legend("lg-F", [["line", "var(--s1)", "Front-shaft generator"], ["line", "var(--s2)", "Aft turbine"], ["dash", "var(--muted)", "20 lbf full score"]]);
+    series: ser(o => fromSI("temperature", o.EGT)), hlines: [{ y: fromSI("temperature", EGT_LIM), label: "800 °C", color: "var(--bad)", left: true }], tip });
+  legend("lg-F", lg([["dash", "var(--muted)", "20 lbf full score"]]));
   chart($("ch-F"), { xd, xl: `Electrical power (${un("elec")})`, yl: `Corrected thrust (${un("force")})`, aria: "Corrected thrust versus electrical power for front-shaft and aft-turbine generation",
-    series: [{ pts: fr.map(([P, o]) => [X(P), fromSI("force", o.Fc)]), color: "var(--s1)" }, { pts: af.map(([P, o]) => [X(P), fromSI("force", o.Fc)]), color: "var(--s2)" }],
-    hlines: [{ y: fromSI("force", 20 * LBF), label: "20 lbf", left: true }], tip: tip(fr, af) });
+    series: ser(o => fromSI("force", o.Fc)), hlines: [{ y: fromSI("force", 20 * LBF), label: "20 lbf", left: true }], tip });
 }
 
 function renderCompare(r) {
@@ -898,38 +985,40 @@ function renderCompare(r) {
       <td class="num">${fmt(fromSI("temperature", o.EGT))}</td><td class="num">${fmt(fromSI("temperature", o.T03))}</td><td class="num">${fmtS(fromSI("force", o.Fc))}</td>
       <td class="num">${scored ? fmt(thrustScore(o.Fc / LBF), 1) : "—"}</td><td class="num">${fmtS(fromSI("fuelflow", o.fuel_mlmin), 3)}</td><td class="num">${k && isFinite(k.N) ? fmt(Math.round(k.N / 100) * 100) : "—"}</td></tr>`;
   };
-  const pe = E_(state.P_elec);
-  $("cmp").innerHTML = `<thead><tr><th>Configuration</th><th>Exit Ø (${un("length")})</th><th>P₀₄ (${un("pressure")})</th><th>P₀₄₅ (${un("pressure")})</th><th>EGT (${un("temperature")})</th><th>T₀₃ (${un("temperature")})</th><th>Corr. thrust (${un("force")})</th><th>Score /20</th><th>Fuel (${un("fuelflow")})</th><th>Aft rpm</th></tr></thead><tbody>` +
+  const pe = E_(state.P_elec), A = r.A, L = r.cases.low, S = r.cases.spare;
+  const kMatch = !r.aftMatch.failed ? rotorAt(r.aftMatch, r.PA, A.beta2) : null;
+  $("cmp").innerHTML = `<thead><tr><th>Configuration</th><th>Exit Ø (${un("length")})</th><th>P₀₄ (${un("pressure")})</th><th>P₀₄₅ (${un("pressure")})</th><th>EGT (${un("temperature")})</th><th>T₀₃ (${un("temperature")})</th><th>Corr. thrust (${un("force")})</th><th>Score /20</th><th>Fuel (${un("fuelflow")})</th><th>Rotor rpm</th></tr></thead><tbody>` +
     row("90%, stock, no generator", v2in.D_noz_test, r.stock, null, true) +
     row(`90%, front-shaft generator, ${pe}`, v2in.D_noz_test, r.front, null, true) +
-    (Math.abs(state.D_aft - v2in.D_noz_test) > 1e-5 ? row(`90%, aft turbine, ${pe}, stock-size nozzle`, v2in.D_noz_test, r.aftStockNoz, r.aftStockNoz.failed ? null : rotorAt(r.aftStockNoz, r.PA, state.alpha1, state.beta2), true) : "") +
-    row(`90%, aft turbine, ${pe}`, state.D_aft, r.aft, r.kin, true) +
-    row(`90%, aft turbine, ${pe}, matched nozzle`, r.Dmatch, r.aftMatch, r.kinMatch, true) +
+    row(`90%, aft low-cost rotor, ${pe}`, state.D_aft, L.o90, L.k, true) +
+    row(`90%, aft spare wheel, ${pe}`, state.D_aft, S.o90, S.k, true) +
+    row(`90%, aft ${A.name}, ${pe}, matched nozzle`, r.Dmatch, r.aftMatch, kMatch, true) +
     row("Full throttle, stock", v2in.D_noz_test, r.fullStock, null, false) +
-    row("Full throttle, aft installed, load off", state.D_aft, r.fullIdle, r.kinFullIdle, false) +
-    row(`Full throttle, aft installed, ${pe} load kept on`, state.D_aft, r.fullLoad, r.kinFullLoad, false) + "</tbody>";
+    row(`Full throttle, aft ${A.name}, load off`, state.D_aft, A.oFullIdle, A.kFullIdle, false) +
+    row(`Full throttle, aft ${A.name}, ${pe} load kept on`, state.D_aft, A.oFullLoad, A.kFullLoad, false) + "</tbody>";
 }
 
-// ---------- sections 6 and 7 ----------
+// ---------- sections 8 and 9 ----------
 function renderRequirements(r) {
-  const k = r.kin, kf = r.kinFullIdle;
-  const I = 0.45 * state.m_wheel * (state.Dt / 2) ** 2, wR = kf ? kf.N * 2 * Math.PI / 60 : NaN, KE = 0.5 * I * wR * wR;
-  const inch = v => v / 0.0254, L1 = state.L0 + state.dL, s0 = lengthScore(inch(state.L0)), s1 = lengthScore(inch(L1));
-  const lb = state.dM / 0.45359237;
-  const A4 = annulus();
+  const A = r.A, k = A.k, kf = A.kFullIdle;
+  const I = 0.45 * A.mass * (state.Dt / 2) ** 2, wR = kf ? kf.N * 2 * Math.PI / 60 : NaN, KE = 0.5 * I * wR * wR;
+  const inch = v => v / 0.0254, L1 = state.L0 + state.dL, lb = state.dM / 0.45359237;
+  const T45 = A.o90.failed ? "—" : T_(A.o90.T45), T45f = A.oFullLoad.failed ? "—" : T_(A.oFullLoad.T45);
   const rows = [
-    ["Aerodynamic", "Pass the engine's flow with little extra back-pressure", `Aft rotor only, no copy NGV (it would need ${$("n-ratio").textContent} more throat). Strut and duct loss ≲ 1% of P₀₄.`, "Every 1% of P₀₄ lost behind the core costs about 15–20 °C of EGT at 90% (see the table)."],
+    ["Aerodynamic", "Pass the engine's flow with little extra back-pressure", `No copy NGV (it would need ${$("n-ratio").textContent} more throat). Strut, hub and duct loss ≲ ${fmt(100 * state.dp_aft, 1)}% of P₀₄, including the hollow cross-shaft strut.`, "Each 1% of P₀₄ lost behind the core costs roughly 15–20 °C of EGT at 90%."],
     ["Aerodynamic", "Nozzle exit sized for the back-pressure", isFinite(r.Dmatch) ? `≈ ${L_(r.Dmatch)} to match front-shaft EGT (stock ${L_(v2in.D_noz_test)})` : "—", "A bigger exit lowers P₀₄ back toward stock but costs thrust."],
-    ["Aerodynamic", "Smooth, aligned flow into the wheel", `Gas arrives at about Mach ${k ? fmt(k.M, 2) : "—"}. Struts thin and aligned with any residual swirl; annulus matched to the wheel (${fmtS(fromSI("area", A4), 3)} ${un("area")}).`, "Losses scale with dynamic pressure, which is high here."],
-    ["Mechanical", "Wheel speed always below its rating", `Loaded ${k && isFinite(k.N) ? R_(k.N) : "—"}; load-off runaway at full throttle ${kf ? R_(kf.N) : "—"} vs ${R_(state.Nmax)} rated.`, "A free turbine has no governor. If the generator is disconnected it runs to its windmill speed."],
-    ["Mechanical", "Burst containment", `Wheel stored energy at runaway ≈ ${kf ? `${fmtS(fromSI("energy", KE), 3)} ${un("energy")}` : "—"} (${fmtS(fromSI("mass", state.m_wheel), 3)} ${un("mass")} wheel).`, "The housing must hold a failed wheel; the core's casing does this for the core wheel."],
-    ["Mechanical", "Bearings and rotordynamics", `Bearings at ~${k && isFinite(k.N) ? R_(k.N) : "—"}, DN ≈ ${k && isFinite(k.N) ? fmt(6 * k.N / 1e6, 2) : "—"} million (6 mm bore). Balance the wheel, shaft and generator rotor together and check critical speeds.`, "A new free rotor at core-like speeds, sitting in the exhaust."],
-    ["Thermal", "Bearings, generator and wiring survive the exhaust", `Gas around the hub ≈ ${r.aft.failed ? "—" : T_(r.aft.T45)} at 90% + load, up to ${r.fullLoad.failed ? "—" : T_(r.fullLoad.T45)} at full throttle with the load kept on. NdFeB 42SH is rated to about 150 °C, SmCo to about 300–350 °C.`, "The hardest problem on this page: insulation, a heat path out and possibly cooling air (ask whether cooling air is allowed as support equipment)."],
-    ["Thermal", "Lubrication", "A lubrication path for the aft bearings: a small fuel/oil-mix line like the engine's own bearings use, or grease-packed bearings for short tests.", "The engine's bearings are lubricated by the 5% oil in its fuel."],
-    ["Electrical", "Generator matched to the free rotor", `${W_(r.PA)} shaft at ~${k && isFinite(k.N) ? R_(k.N) : "—"}; 1–200 VDC out, ripple under ~20%, female EC5 to the load bank (ICD §4).`, "The rotor's speed is set by the gas and the load, not by the ECU."],
-    ["Electrical", "Never run unloaded", "Keep a load, or a dump resistor with an overspeed trip, connected through the full-throttle run.", "Power isn't scored in the max-thrust run, but the wheel still spins."],
-    ["Rules", "Mounting and envelope", "Everything mounts to the engine; at most 11.75 in of modifications behind the stand; exhaust centerline within 2 in of stock and parallel to the facility exhaust (ICD §3).", "Non-compliant designs are disqualified."],
-    ["Scoring", "Overall length", `${fmtS(fromSI("length", state.L0), 3)} → ${fmtS(fromSI("length", L1), 3)} ${un("length")} (${fmt(inch(L1), 2)} in): length score ${fmt(s0, 1)} → ${fmt(s1, 1)} of 15.`, "Full marks at 10 in or less; −3 points per inch from 10 to 15 in."],
+    ["Aerodynamic", "Smooth, aligned flow into the rotor", `Gas arrives at about Mach ${k ? fmt(k.M, 2) : "—"}. Thin struts aligned with any residual swirl.`, "Losses scale with dynamic pressure, which is high here."],
+    ["Mechanical", "Rotor speed always below its limit", `Loaded ${k ? R_(k.N) : "—"}; load-off runaway at full throttle ${kf ? R_(kf.N) : "—"} vs ${R_(A.Nmax)} limit (${A.name}).`, "A free turbine has no governor. If the load is lost it runs to its windmill speed."],
+    ["Mechanical", "Burst containment", `Rotor stored energy at runaway ≈ ${kf ? `${fmtS(fromSI("energy", KE), 3)} ${un("energy")}` : "—"} (${fmtS(fromSI("mass", A.mass), 3)} ${un("mass")} rotor).`, "The housing must hold a failed rotor."],
+    ["Mechanical", "Gears", `Bevel pinion at ${k ? V_(Math.PI * state.d_pin * k.N / 60) : "—"} pitch-line speed, ${fmt(state.ratio, 1)}:1 total ratio. Precision-ground, with lubrication and a heat path.`, "Gear speed and temperature, not torque, are the challenge: torque at the rotor is under 0.2 N·m."],
+    ["Mechanical", "Bearings and rotordynamics", `Rotor bearings at ${k ? R_(k.N) : "—"}. Balance the rotor, shaft and pinion together, and check critical speeds and blade natural frequencies.`, "A new rotor at high speed in the exhaust."],
+    ["Thermal", "Hub bearings and gears survive", `Gas around the hub ≈ ${T45} at 90% + load, up to ${T45f} at full throttle with the load on. Needs a lubrication path, insulation, and a heat path or cooling through the strut.`, "The engine's own bearings rely on the 5% oil in the fuel and on cool compressor air."],
+    ["Thermal", "Generator kept cool outside the flow", "Heat shield or air gap, low-conductivity mount, active cooling. Hobby motors are typically rated for about 100–150 °C.", "Outside the flow is far easier than in the hub, but the housing next to it is at exhaust temperature."],
+    ["Electrical", "Generator matched to the geared speed", `Generator at ${k ? R_(k.N / state.ratio) : "—"} at load and ${kf ? R_(kf.N / state.ratio) : "—"} at runaway (rated ${R_(state.Ngen_max)}). 1–200 VDC, ripple under ~20%, female EC5 (ICD §4).`, "The ECU does not control this shaft."],
+    ["Electrical", "Never run unloaded", "Keep a load, or a dump resistor with an overspeed trip, connected through the full-throttle run.", "Power isn't scored in the max-thrust run, but the rotor still spins."],
+    ["Rules", "Mounting, envelope and support equipment", "Everything mounts to the engine; ≤ 11.75 in of modifications behind the stand; exhaust centerline within 2 in of stock and parallel. Any cooling fan, air supply or battery is support equipment: in the rigid enclosure, on flexible connections, and reviewed at Milestone 4.", "ICD §3 and §5. Non-compliant designs are disqualified."],
+    ["Scoring", "Overall length", `${fmtS(fromSI("length", state.L0), 3)} → ${fmtS(fromSI("length", L1), 3)} ${un("length")} (${fmt(inch(L1), 2)} in): ${fmt(lengthScore(inch(state.L0)), 1)} → ${fmt(lengthScore(inch(L1)), 1)} of 15.`, "Full marks at 10 in or less; −3 points per inch from 10 to 15 in."],
+    ["Scoring", "Radial distance", `Generator ${fmtS(fromSI("length", state.protr), 3)} ${un("length")} (${fmt(inch(state.protr), 2)} in) beyond the case: ${fmt(radialScore(inch(state.protr)), 1)} of 15.`, "15 points at 0 in, −3.75 per inch, 0 beyond 4 in."],
     ["Scoring", "Weight", `+${fmtS(fromSI("mass", state.dM), 3)} ${un("mass")} (${fmt(lb, 2)} lb): up to ${fmt(7.5 * lb, 1)} points once the total is above 4 lb.`, "The engine alone is 2.38 lb; 30 points below 4 lb total, −7.5 per lb from 4 to 8 lb."],
   ];
   $("reqTable").innerHTML = `<thead><tr><th>Area</th><th>Requirement</th><th>Target / value</th><th>Why</th></tr></thead><tbody>` +
@@ -938,58 +1027,58 @@ function renderRequirements(r) {
 }
 
 function renderComparison(r) {
-  const k = r.kin, kf = r.kinFullIdle;
+  const A = r.A, k = A.k, kf = A.kFullIdle;
   const rows = [
     ["Changes to the core engine", "Adds mass and overhung inertia to the core rotor's front end (see Generator physics).", "None to the core rotor. Replaces the nozzle with a module behind the engine."],
-    ["Generator environment", "Intake air, near ambient temperature.", `Exhaust at about ${r.aft.failed ? "—" : T_(r.aft.T45)}. Needs insulation and cooling.`],
-    ["Generator speed", `Locked to the core: ${R_(state.Nc * Math.sqrt(state.T01 / 288.15))} physical at the scored condition.`, `Set by the gas and the load: about ${k && isFinite(k.N) ? R_(k.N) : "—"} with the copy wheel.`],
+    ["Generator environment", "Intake air, near ambient temperature.", "Outside the exhaust, next to a hot housing: insulated and actively cooled."],
+    ["Generator drive", `Direct, locked to the core: ${R_(state.Nc * Math.sqrt(state.T01 / 288.15))} physical at the scored condition.`, `Geared ${fmt(state.ratio, 1)}:1 from a free rotor at about ${k ? R_(k.N) : "—"} (${A.name}).`],
     ["Overspeed", "The ECU governs the core speed.", `Free rotor: about ${kf ? R_(kf.N) : "—"} at full throttle with the load off.`],
-    ["EGT at 90% + load", r.front.failed ? "—" : T_(r.front.EGT), r.aft.failed ? "—" : `${T_(r.aft.EGT)} with a Ø ${L_(state.D_aft)} nozzle`],
-    ["Corrected thrust at 90% + load", r.front.failed ? "—" : F__(r.front.Fc), `${r.aft.failed ? "—" : F__(r.aft.Fc)}; ${r.aftMatch.failed ? "—" : F__(r.aftMatch.Fc)} with the EGT-matched Ø ${isFinite(r.Dmatch) ? L_(r.Dmatch) : "—"} nozzle`],
-    ["Length", "Adds length at the front.", "Adds length at the back. Both count toward overall length."],
-    ["Parts to make", "Generator rotor on the front nut and a stator in the nose.", "Hub, struts, bearings, shaft, housing with containment, a nozzle and a hot-environment generator. The wheel is the spare."],
-    ["Main risks", "Rotordynamics of the overhung generator rotor; sleeve stress.", "Generator and bearing temperatures, runaway overspeed, low efficiency of the off-design wheel, length."],
+    ["EGT at 90% + load", r.front.failed ? "—" : T_(r.front.EGT), A.o90.failed ? "—" : `${T_(A.o90.EGT)} with a Ø ${L_(state.D_aft)} nozzle`],
+    ["Corrected thrust at 90% + load", r.front.failed ? "—" : F__(r.front.Fc), `${A.o90.failed ? "—" : F__(A.o90.Fc)}; ${r.aftMatch.failed ? "—" : F__(r.aftMatch.Fc)} with the EGT-matched Ø ${isFinite(r.Dmatch) ? L_(r.Dmatch) : "—"} nozzle`],
+    ["Size", "Adds length at the front, inside the case diameter.", "Adds length at the back, and the external generator adds radial distance."],
+    ["Parts to make", "Generator rotor on the front nut and a stator in the nose.", "Rotor, hub, struts, bearings, bevel stage and cross shaft, housing with containment, nozzle, cooling; generator off the shelf."],
+    ["Main risks", "Rotordynamics of the overhung generator rotor; sleeve stress.", "High-speed gears and bearings in a hot hub, runaway overspeed, back-pressure on the core, length and radial score."],
   ];
-  $("cmpTable").innerHTML = `<thead><tr><th>Aspect</th><th>Front-shaft generator</th><th>Aft turbine (copy wheel)</th></tr></thead><tbody>` +
+  $("cmpTable").innerHTML = `<thead><tr><th>Aspect</th><th>Front-shaft generator</th><th>Aft turbine, geared external generator</th></tr></thead><tbody>` +
     rows.map(r => `<tr>${r.map((c, i) => `<td>${i === 0 ? `<b>${c}</b>` : c}</td>`).join("")}</tr>`).join("") + "</tbody>";
   $("cmpTable").querySelectorAll("th,td").forEach(c => c.style.textAlign = "left");
 }
 
 // ---------- schematic ----------
 function drawSchematic() {
-  const host = $("schem"), W = 900, H = 230, cy = 112;
+  const host = $("schem"), W = 900, H = 270, cy = 150;
   host.innerHTML = "";
-  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img", "aria-label": "Layout: core engine, then struts and hub with bearings and generator, the aft wheel on its own shaft, and a converging nozzle" }, host);
-  const box = (x, y, w, h, fill, label, sub) => { el("rect", { x, y, width: w, height: h, rx: 4, fill, stroke: "var(--line)" }, svg); if (label) el("text", { x: x + w / 2, y: y + (sub ? h / 2 - 8 : 22), "text-anchor": "middle", "font-size": 12, fill: "var(--text)" }, svg).textContent = label; if (sub) el("text", { x: x + w / 2, y: y + h / 2 + 8, "text-anchor": "middle", "font-size": 11, fill: "var(--text-2)" }, svg).textContent = sub; };
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img", "aria-label": "Layout: core engine, then a hub on struts with the rotor bearings and a bevel pinion, a cross shaft through a strut to a cooled generator outside the housing, the aft rotor, and a converging nozzle" }, host);
+  const box = (x, y, w, h, fill, label, sub, stroke) => { el("rect", { x, y, width: w, height: h, rx: 4, fill, stroke: stroke || "var(--line)" }, svg); if (label) el("text", { x: x + w / 2, y: y + (sub ? h / 2 - 4 : 22), "text-anchor": "middle", "font-size": 12, fill: "var(--text)" }, svg).textContent = label; if (sub) el("text", { x: x + w / 2, y: y + h / 2 + 11, "text-anchor": "middle", "font-size": 11, fill: "var(--text-2)" }, svg).textContent = sub; };
   el("line", { x1: 10, x2: W - 10, y1: cy, y2: cy, stroke: "var(--muted)", "stroke-dasharray": "8 3 2 3" }, svg);
-  // core engine casing
   el("rect", { x: 20, y: cy - 70, width: 430, height: 140, rx: 10, fill: "none", stroke: "var(--text-2)", "stroke-width": 1.5 }, svg);
   el("text", { x: 30, y: cy - 78, "font-size": 12, fill: "var(--text-2)" }, svg).textContent = "Core engine (unchanged)";
-  box(40, cy - 55, 120, 110, "var(--surface-2)", "Compressor");
-  box(170, cy - 55, 150, 110, "var(--surface-2)", "Combustor");
-  box(330, cy - 55, 50, 110, "var(--surface-2)", "NGV");
-  box(385, cy - 55, 55, 110, "var(--surface-2)", "Turbine");
+  box(40, cy - 55, 120, 110, "var(--surface-2)", "Compressor"); box(170, cy - 55, 150, 110, "var(--surface-2)", "Combustor");
+  box(330, cy - 55, 50, 110, "var(--surface-2)", "NGV"); box(385, cy - 55, 55, 110, "var(--surface-2)", "Turbine");
   el("line", { x1: 60, x2: 440, y1: cy, y2: cy, stroke: "var(--text-2)", "stroke-width": 4 }, svg);
-  el("text", { x: 250, y: cy + 70 + 18, "text-anchor": "middle", "font-size": 11, fill: "var(--muted)" }, svg).textContent = "core shaft: turbine drives compressor, ECU holds speed";
-  // aft module
+  el("text", { x: 235, y: cy + 88, "text-anchor": "middle", "font-size": 11, fill: "var(--muted)" }, svg).textContent = "core shaft: turbine drives compressor, ECU holds speed";
   const x0 = 460;
+  // housing and converging nozzle
   el("path", { d: `M${x0},${cy - 60} L${x0 + 270},${cy - 60} L${x0 + 380},${cy - 42} M${x0},${cy + 60} L${x0 + 270},${cy + 60} L${x0 + 380},${cy + 42}`, fill: "none", stroke: "var(--s1)", "stroke-width": 2 }, svg);
-  el("text", { x: x0 + 2, y: cy - 70, "font-size": 12, fill: "var(--s1)" }, svg).textContent = "New housing and converging nozzle";
-  // struts
-  [cy - 48, cy + 32].forEach(y => el("rect", { x: x0 + 30, y, width: 34, height: 16, fill: "var(--grid)", stroke: "var(--line)" }, svg));
-  el("text", { x: x0 + 47, y: cy - 52, "text-anchor": "middle", "font-size": 11, fill: "var(--text-2)" }, svg).textContent = "struts";
-  // hub with generator and bearings
-  box(x0 + 20, cy - 32, 180, 64, "var(--surface)", "Generator + bearings", "in the hub on its own shaft");
-  el("line", { x1: x0 + 200, x2: x0 + 245, y1: cy, y2: cy, stroke: "var(--s2)", "stroke-width": 4 }, svg);
-  // aft wheel
+  el("text", { x: x0 + 280, y: cy + 82, "font-size": 12, fill: "var(--s1)" }, svg).textContent = "housing + converging nozzle";
+  // hub with bearings and bevel pinion
+  box(x0 + 30, cy - 26, 150, 52, "var(--surface)", "Bearings + bevel pinion", "hub on struts");
+  el("rect", { x: x0 + 40, y: cy + 26, width: 26, height: 34, fill: "var(--grid)", stroke: "var(--line)" }, svg);
+  // hollow strut with cross shaft up to the generator
+  el("rect", { x: x0 + 92, y: cy - 60, width: 26, height: 34, fill: "var(--grid)", stroke: "var(--line)" }, svg);
+  el("line", { x1: x0 + 105, x2: x0 + 105, y1: cy - 26, y2: cy - 112, stroke: "var(--s2)", "stroke-width": 3 }, svg);
+  box(x0 + 40, cy - 146, 130, 34, "var(--surface)", "Gearbox + BLDC generator", "", "var(--s2)");
+  el("text", { x: x0 + 180, y: cy - 132, "font-size": 11, fill: "var(--text-2)" }, svg).textContent = "outside the flow:";
+  el("text", { x: x0 + 180, y: cy - 118, "font-size": 11, fill: "var(--text-2)" }, svg).textContent = "insulated + actively cooled";
+  el("line", { x1: x0 + 30, x2: x0 + 190, y1: cy - 104, y2: cy - 104, stroke: "var(--muted)", "stroke-dasharray": "2 3" }, svg);
+  el("text", { x: x0 + 196, y: cy - 101, "font-size": 10, fill: "var(--muted)" }, svg).textContent = "heat shield";
+  // rotor shaft and rotor
+  el("line", { x1: x0 + 180, x2: x0 + 245, y1: cy, y2: cy, stroke: "var(--s2)", "stroke-width": 4 }, svg);
   el("rect", { x: x0 + 228, y: cy - 58, width: 18, height: 116, rx: 3, fill: "color-mix(in srgb, var(--s2) 25%, var(--surface))", stroke: "var(--s2)", "stroke-width": 1.5 }, svg);
-  el("text", { x: x0 + 237, y: cy + 78, "text-anchor": "middle", "font-size": 12, fill: "var(--s2)" }, svg).textContent = "spare wheel";
-  el("text", { x: x0 + 140, y: cy + 92, "text-anchor": "middle", "font-size": 11, fill: "var(--muted)" }, svg).textContent = "free shaft: no mechanical link to the core";
-  // tail cone
+  el("text", { x: x0 + 237, y: cy + 74, "text-anchor": "middle", "font-size": 12, fill: "var(--s2)" }, svg).textContent = "aft rotor";
+  el("text", { x: x0 + 120, y: cy + 100, "text-anchor": "middle", "font-size": 11, fill: "var(--muted)" }, svg).textContent = "free shaft: no mechanical link to the core";
   el("path", { d: `M${x0 + 246},${cy - 18} L${x0 + 320},${cy} L${x0 + 246},${cy + 18} Z`, fill: "var(--grid)", stroke: "var(--line)" }, svg);
-  // stations
-  [[450, "4"], [x0 + 252, "45"], [x0 + 382, "5"]].forEach(([x, s]) => { el("line", { x1: x, x2: x, y1: cy - 96, y2: cy - 84, stroke: "var(--text)" }, svg); el("text", { x, y: cy - 100, "text-anchor": "middle", "font-size": 12, "font-weight": 600, fill: "var(--text)" }, svg).textContent = s; });
-  // flow arrows
+  [[450, "4"], [x0 + 252, "45"], [x0 + 382, "5"]].forEach(([x, s]) => { el("line", { x1: x, x2: x, y1: cy - 84, y2: cy - 72, stroke: "var(--text)" }, svg); el("text", { x: x + (s === "4" ? -8 : 0), y: cy - 88, "text-anchor": "middle", "font-size": 12, "font-weight": 600, fill: "var(--text)" }, svg).textContent = s; });
   const defs = el("defs", {}, svg); const mk = el("marker", { id: "fa", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto" }, defs); el("path", { d: "M0,0 L10,5 L0,10 z", fill: "var(--muted)" }, mk);
   el("line", { x1: x0 + 330, x2: x0 + 420, y1: cy, y2: cy, stroke: "var(--muted)", "stroke-width": 2, "marker-end": "url(#fa)" }, svg);
   el("text", { x: x0 + 400, y: cy - 8, "text-anchor": "end", "font-size": 11, fill: "var(--muted)" }, svg).textContent = "jet";
