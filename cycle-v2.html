@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cycle Analysis V2</title>
+<meta name="description" content="Calibrated, fixed-geometry cycle model of the JetCat P100-RX: matched to engine test data, with generator load, EGT limit and rotor dynamics.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f4f3ef; --surface:#fcfcfb; --surface-2:#efeee9; --line:#dcdad3; --grid:#e7e5df;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#7a7972;
+  --accent:#c2410c; --s1:#2a78d6; --s2:#eb6834;
+  --good:#1c7c3c; --warn:#a35f00; --bad:#b42318; --band:rgba(42,120,214,.08); --pt:#0b0b0b;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+    --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+    --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+    --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+  --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+  --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+.mono,td.num,.kpi .v{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+header{border-bottom:1px solid var(--line);background:var(--surface)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+header .wrap{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding-top:18px;padding-bottom:16px}
+header h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
+header p{margin:0;color:var(--text-2);font-size:14px}
+nav{margin-left:auto;font-size:14px}
+nav a{color:var(--text-2);text-decoration:none;margin-left:14px}
+nav a[aria-current]{color:var(--text);font-weight:500;border-bottom:2px solid var(--accent)}
+main.wrap{display:grid;grid-template-columns:330px 1fr;gap:20px;padding-top:20px;padding-bottom:40px}
+@media (max-width:900px){main.wrap{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+aside.panel{padding:6px 16px 16px;align-self:start;position:sticky;top:12px}
+@media (max-width:900px){aside.panel{position:static}}
+fieldset{border:0;border-top:1px solid var(--line);margin:0;padding:12px 0 4px}
+fieldset:first-of-type{border-top:0}
+legend{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0}
+.field{display:grid;grid-template-columns:1fr 92px;align-items:center;gap:8px;margin:8px 0}
+.field label{font-size:14px;color:var(--text-2)}
+.field label small{color:var(--muted);display:block;font-size:12px;line-height:1.2}
+.field input[type=number]{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:14px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.field input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent);margin:-2px 0 0}
+.toggle{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--text-2);margin:8px 0}
+.toggle input{accent-color:var(--accent)}
+.btns{display:flex;gap:8px;margin-top:14px}
+button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--muted)}
+section.out{display:flex;flex-direction:column;gap:20px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{padding:12px 14px}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi .v{font-size:26px;font-weight:500;margin:2px 0 0;line-height:1.2}
+.kpi .v span{font-size:14px;color:var(--text-2);margin-left:3px}
+.kpi .c{font-size:12px;color:var(--text-2);margin-top:4px;display:flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.card{padding:16px}
+.card h2{font-size:15px;font-weight:600;margin:0 0 2px}
+.card .sub{font-size:13px;color:var(--text-2);margin:0 0 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:1100px){.grid2{grid-template-columns:1fr}}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-weight:500;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;text-align:right;padding:6px 10px;border-bottom:1px solid var(--line)}
+th:first-child,th:nth-child(2),td:first-child,td:nth-child(2){text-align:left}
+td{padding:7px 10px;border-bottom:1px solid var(--grid)}
+td.num{text-align:right}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:4px 20px;margin-top:14px;font-size:14px}
+.summary div{display:flex;justify-content:space-between;border-bottom:1px dashed var(--grid);padding:4px 0}
+.summary span:first-child{color:var(--text-2)}
+.warn{border-left:3px solid var(--warn);background:var(--surface);padding:10px 14px;border-radius:6px;font-size:14px}
+.warn:empty{display:none}
+svg text{font-family:"IBM Plex Sans",sans-serif}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--text);color:var(--surface);font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity .1s;font-family:"IBM Plex Mono",monospace}
+.units{padding:12px 0 10px;border-bottom:1px solid var(--line)}
+.units-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.units-l{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;padding:2px;background:var(--surface-2)}
+.seg button{border:0;background:transparent;padding:5px 14px;border-radius:5px;color:var(--text-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 0 0 1px var(--line)}
+details{margin-top:8px}
+summary{cursor:pointer;font-size:13px;color:var(--text-2)}
+.tag{font-size:11px;color:var(--accent);margin-left:4px}
+.unit-grid{display:grid;grid-template-columns:1fr 128px;gap:6px 8px;align-items:center;margin-top:10px;font-size:13px;color:var(--text-2)}
+.unit-grid select{font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);width:100%}
+.hint{font-size:12px;color:var(--muted);margin:-2px 0 8px;line-height:1.35}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 8px}
+.presets button{font-size:12px;padding:3px 9px}
+.tests input,.rotor-in input{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.tests input{min-width:86px}
+.tests input.lbl{text-align:left;font-family:inherit;min-width:120px}
+.tests td{padding:4px 5px;border-bottom:0}
+.tests th{white-space:nowrap}
+.x{border:0;background:transparent;color:var(--muted);font-size:18px;line-height:1;padding:2px 6px}
+.x:hover{color:var(--text)}
+.row-btns{display:flex;gap:8px;margin:10px 0 4px;flex-wrap:wrap;align-items:center}
+.fn{font-size:12px;color:var(--muted);margin:6px 0 0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin:-4px 0 8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:16px;height:0;border-top:2px solid}
+.legend i.dash{border-top-style:dashed}
+.legend i.pt{width:9px;height:9px;border:2px solid var(--text);border-radius:50%;background:var(--surface)}
+.legend i.band{width:14px;height:10px;border:0;background:var(--band)}
+h3{font-size:13px;font-weight:600;margin:16px 0 6px;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em}
+.rotor-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px;margin-bottom:6px}
+.rotor-in label{font-size:12px;color:var(--text-2);display:block;margin-bottom:3px}
+td.ok{color:var(--good)} td.off{color:var(--warn)}
+.notes{font-size:14px;color:var(--text-2)}
+.notes h2{color:var(--text)}
+.notes li{margin:4px 0}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>Cycle Analysis V2</h1>
+  <p>JetCat P100-RX · calibrated to engine test data · fixed-geometry matching</p>
+  <nav><a href="./">Cycle analysis</a><a href="cycle-v2.html" aria-current="page">Cycle analysis V2</a><a href="generator.html">Generator physics</a></nav>
+</div></header>
+
+<main class="wrap">
+  <aside class="panel" aria-label="Inputs">
+    <div class="units">
+      <div class="units-row"><span class="units-l">Units</span>
+        <div class="seg" role="group" aria-label="Unit system"><button type="button" data-p="metric">Metric</button><button type="button" data-p="imperial">Imperial</button></div>
+      </div>
+      <details><summary>Customize units <span id="unitTag" class="tag"></span></summary><div id="unitSel" class="unit-grid"></div></details>
+    </div>
+    <form id="inputs" onsubmit="return false"></form>
+    <div class="btns"><button type="button" id="reset">Reset inputs</button><button type="button" id="csv">Copy results (CSV)</button></div>
+  </aside>
+
+  <section class="out">
+    <div class="kpis">
+      <div class="panel kpi"><div class="l">Corrected thrust</div><div class="v" id="k-F"></div><div class="c" id="k-Fc"></div></div>
+      <div class="panel kpi"><div class="l">EGT (ECU reading)</div><div class="v" id="k-T"></div><div class="c" id="k-Tc"></div></div>
+      <div class="panel kpi"><div class="l">Fuel flow</div><div class="v" id="k-Q"></div><div class="c" id="k-Qc"></div></div>
+      <div class="panel kpi"><div class="l">Power at 800 °C EGT</div><div class="v" id="k-P"></div><div class="c" id="k-Pc"></div></div>
+    </div>
+    <div class="warn" id="warn" role="status"></div>
+
+    <div class="grid2">
+      <div class="panel card">
+        <h2>EGT vs electrical power</h2>
+        <p class="sub" id="sub-egtP"></p>
+        <div class="legend" id="lg-egtP"></div>
+        <div class="chart" id="ch-egtP"></div>
+      </div>
+      <div class="panel card">
+        <h2>Corrected thrust vs electrical power</h2>
+        <p class="sub" id="sub-fP"></p>
+        <div class="legend" id="lg-fP"></div>
+        <div class="chart" id="ch-fP"></div>
+      </div>
+    </div>
+
+    <div class="panel card">
+      <h2>Calibration to test data</h2>
+      <p class="sub">Each test point is run backwards through the model: the measured nozzle, thrust and EGT give the air flow, turbine inlet state and turbine efficiency. Edit the values or add points as you run more tests.</p>
+      <div class="tablewrap"><table class="tests" id="tests"></table></div>
+      <div class="row-btns"><button type="button" id="addTest">Add test point</button><button type="button" id="resetTests">Restore test-day data</button></div>
+      <p class="fn">Fuel flow is optional. The full-throttle value is JetCat's 390 ml/min spec, not a measurement. It only sets the combustion efficiency, so it changes the predicted fuel flow and TSFC but not thrust or EGT.</p>
+      <h3>What each point implies</h3>
+      <div class="tablewrap"><table id="backout"></table></div>
+      <h3>Fitted engine</h3>
+      <div class="summary" id="fitted"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel card">
+        <h2>Corrected thrust vs speed</h2>
+        <p class="sub">Standard day (15 °C, 101.325 kPa). Test points corrected to standard day. Shaded: the tested speed range.</p>
+        <div class="legend" id="lg-fN"></div>
+        <div class="chart" id="ch-fN"></div>
+      </div>
+      <div class="panel card">
+        <h2>EGT vs speed</h2>
+        <p class="sub">Standard day. Outside the shaded range the model is extrapolating; it is not reliable much below ~130,000 rpm.</p>
+        <div class="legend" id="lg-tN"></div>
+        <div class="chart" id="ch-tN"></div>
+      </div>
+    </div>
+
+    <div class="panel card">
+      <h2>Station states at the operating point</h2>
+      <p class="sub">Stagnation states at stations 1–4; static state at the nozzle exit (5). The ECU thermocouple sits at the turbine exit, so its EGT reading corresponds to station 4.</p>
+      <div class="tablewrap"><table id="stations"></table></div>
+      <div class="summary" id="summary"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel card">
+        <h2>T–s diagram</h2>
+        <p class="sub">Entropy relative to compressor inlet, at the operating point.</p>
+        <div class="chart" id="ts"></div>
+      </div>
+      <div class="panel card">
+        <h2>Rotor and shaft</h2>
+        <p class="sub">From your measured parts. Inertia sets how fast the rotor slows when the generator load comes on before the ECU adds fuel.</p>
+        <div class="rotor-in" id="rotorIn"></div>
+        <div class="summary" id="rotorOut"></div>
+      </div>
+    </div>
+
+    <div class="panel card notes">
+      <h2>How this model works</h2>
+      <ul>
+        <li><b>Compressor.</b> Work comes from tip speed, Δh₀ = ψU², using your 60 mm impeller. ψ is set so the pressure ratio is JetCat's 2.9 at 154,000 rpm, so pressure ratio rises with speed squared. Air flow follows corrected speed as m ∝ N<sup>k</sup>, with k fitted from the test points. Under load the compressor can slide along its speed line, r ∝ m<sup>−S</sup>: lower flow and higher pressure ratio, toward surge.</li>
+        <li><b>Combustor.</b> Liquid n-dodecane at ambient temperature, complete lean combustion. A combustion efficiency (which also covers heat lost through the casing) comes from the fuel flow, plus a pressure-loss fraction.</li>
+        <li><b>Turbine.</b> Drives the compressor plus the generator shaft power (electrical ÷ efficiency, plus any extra drag). Bearing losses are folded into the calibrated turbine efficiency. The nozzle guide vanes are treated as choked, so m·√T₀₃/P₀₃ is fixed. The two test points agree on this value to within about 1.3%, which supports the assumption.</li>
+        <li><b>Nozzle.</b> Your measured 47.62 mm exit (minus any tail cone at the exit plane) with a discharge coefficient. The NGV and nozzle together fix the operating point: the model solves for the air flow and fuel flow that satisfy both.</li>
+        <li><b>Corrected values.</b> θ = T<sub>amb</sub>/288.15 K and δ = P<sub>amb</sub>/101.325 kPa. Corrected speed is N/√θ and corrected thrust is F/δ. The 90% scored condition is 138,600 rpm corrected, about 139,000 rpm in the scoring criteria.</li>
+        <li><b>Thermodynamics.</b> Ideal-gas mixtures with NASA 7-coefficient polynomials (GRI-Mech 3.0) for N₂, O₂, CO₂ and H₂O, which are variable-property throughout.</li>
+      </ul>
+      <h2>Limits of the calibration</h2>
+      <ul>
+        <li>Both test points are at 97–100% speed. Predictions at 90% speed are an extrapolation of about 10% in speed; a run at 138,600 rpm will tighten them more than anything else.</li>
+        <li>Fuel flow was not measured. That leaves predicted fuel flow and TSFC uncertain, but not thrust or EGT.</li>
+        <li>The speed-line slope S is a guess without a compressor map. It hardly affects results with the stock nozzle, but it matters once the nozzle diameter is changed from the tested one.</li>
+        <li>η<sub>c</sub>, η<sub>n</sub>, C<sub>d</sub> and the pressure ratio are assumed. Each one trades against the calibrated turbine efficiency and air flow, so the predictions barely move when you change them. Changing them shifts the fitted values instead.</li>
+      </ul>
+      <h2>Next tests that would help most</h2>
+      <ul>
+        <li>Hold 138,600 rpm and log thrust and EGT. Enter it as a third test point.</li>
+        <li>Measure fuel flow at each point. Weigh the tank before and after a timed hold, or use the ECU's logged consumption if it records one.</li>
+        <li>Check whether the inner cone reaches the nozzle exit plane. If it does, enter its diameter there.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+<script>
+// P100 cycle model V2: calibrated, fixed-geometry matching model.
+// Ideal-gas mixtures from NASA 7-coefficient polynomials (GRI-Mech 3.0), complete lean combustion
+// of liquid n-dodecane, compressor work from tip speed (Euler: Δh = ψU²), measured nozzle area
+// closes the cycle (fuel is solved so the nozzle passes the flow), components calibrated to test data.
+(function (root) {
+  const Ru = 8.314462618, P0 = 101325, TSTD = 288.15, PSTD = 101325;
+  const SP = {
+    N2: { MW: 28.0134, Tm: 1000,
+      lo: [3.298677, 1.4082404e-3, -3.963222e-6, 5.641515e-9, -2.444854e-12, -1020.8999, 3.950372],
+      hi: [2.92664, 1.4879768e-3, -5.68476e-7, 1.0097038e-10, -6.753351e-15, -922.7977, 5.980528] },
+    O2: { MW: 31.9988, Tm: 1000,
+      lo: [3.78245636, -2.99673416e-3, 9.84730201e-6, -9.68129509e-9, 3.24372837e-12, -1063.94356, 3.65767573],
+      hi: [3.28253784, 1.48308754e-3, -7.57966669e-7, 2.09470555e-10, -2.16717794e-14, -1088.45772, 5.45323129] },
+    H2O: { MW: 18.01528, Tm: 1000,
+      lo: [4.19864056, -2.0364341e-3, 6.52040211e-6, -5.48797062e-9, 1.77197817e-12, -30293.7267, -0.849032208],
+      hi: [3.03399249, 2.17691804e-3, -1.64072518e-7, -9.7041987e-11, 1.68200992e-14, -30004.2971, 4.9667701] },
+    CO2: { MW: 44.0095, Tm: 1000,
+      lo: [2.35677352, 8.98459677e-3, -7.12356269e-6, 2.45919022e-9, -1.43699548e-13, -48371.9697, 9.90105222],
+      hi: [3.85746029, 4.41437026e-3, -2.21481404e-6, 5.23490188e-10, -4.72084164e-14, -48759.166, 2.27163806] },
+  };
+  // liquid n-dodecane: ΔHf(298) = -352.1 kJ/mol (gas -290.9 minus 61.2 vaporisation), cp ≈ 2.21 kJ/kg-K
+  const FUEL = { MW: 170.338, hf: -352.1e3, cp: 2.21e3 * 0.170338 };
+  const co = (s, T) => (T < s.Tm ? s.lo : s.hi);
+  const cpR = (s, T) => { const a = co(s, T); return a[0] + T * (a[1] + T * (a[2] + T * (a[3] + T * a[4]))); };
+  const hRT = (s, T) => { const a = co(s, T); return a[0] + T * (a[1] / 2 + T * (a[2] / 3 + T * (a[3] / 4 + T * a[4] / 5))) + a[5] / T; };
+  const sR = (s, T) => { const a = co(s, T); return a[0] * Math.log(T) + T * (a[1] + T * (a[2] / 2 + T * (a[3] / 3 + T * a[4] / 4))) + a[6]; };
+  const hm = (k, T) => hRT(SP[k], T) * Ru * T; // J/mol
+
+  function Mix(x) {
+    const tot = Object.values(x).reduce((p, v) => p + v, 0);
+    this.x = {}; for (const k in x) if (x[k] > 0) this.x[k] = x[k] / tot;
+    this.MW = 0; for (const k in this.x) this.MW += this.x[k] * SP[k].MW;
+    this.R = Ru / (this.MW / 1000);
+  }
+  Mix.prototype.h = function (T) { let v = 0; for (const k in this.x) v += this.x[k] * hRT(SP[k], T) * Ru * T; return v / (this.MW / 1000); };
+  Mix.prototype.cp = function (T) { let v = 0; for (const k in this.x) v += this.x[k] * cpR(SP[k], T) * Ru; return v / (this.MW / 1000); };
+  Mix.prototype.s = function (T, P) { let v = 0; for (const k in this.x) { const xi = this.x[k]; v += xi * Ru * (sR(SP[k], T) - Math.log(xi * P / P0)); } return v / (this.MW / 1000); };
+  Mix.prototype.gamma = function (T) { const cp = this.cp(T); return cp / (cp - this.R); };
+  Mix.prototype.T_h = function (h, Tg = 1000) { let T = Tg; for (let i = 0; i < 50; i++) { const d = (this.h(T) - h) / this.cp(T); T -= d; if (Math.abs(d) < 1e-6) break; } return T; };
+  Mix.prototype.T_sP = function (s, P, Tg = 1000) { let T = Tg; for (let i = 0; i < 50; i++) { const d = (this.s(T, P) - s) / (this.cp(T) / T); T -= d; if (Math.abs(d) < 1e-6) break; } return T; };
+
+  const AIR = new Mix({ O2: 0.21, N2: 0.79 });
+  const NF_STOICH = 0.21 / 18.5;                       // mol fuel per mol oxidiser at φ = 1
+  const FAR_of = nf => nf * FUEL.MW / AIR.MW;          // kg fuel / kg air
+  const nf_of = far => far * AIR.MW / FUEL.MW;
+  const prodMix = nf => new Mix({ CO2: 12 * nf, H2O: 13 * nf, O2: Math.max(0.21 - 18.5 * nf, 0), N2: 0.79 });
+  const Hox = T => 0.21 * hm("O2", T) + 0.79 * hm("N2", T);
+  const Dp = T => 12 * hm("CO2", T) + 13 * hm("H2O", T) - 18.5 * hm("O2", T);
+  const hfuel = Tf => FUEL.hf + FUEL.cp * (Tf - 298.15);
+  const LHVm = -(Dp(298.15) - FUEL.hf);                // J/mol fuel, liquid fuel, H2O vapour
+  const LHV = LHVm / (FUEL.MW / 1000);                 // J/kg
+  // fuel per mol oxidiser needed to reach T03 from T02 (closed form)
+  const nf_for = (T02, T03, Tf, eta_b) => (Hox(T02) - Hox(T03)) / (Dp(T03) - hfuel(Tf) + (1 - eta_b) * LHVm);
+  // combustion efficiency implied by a known fuel flow
+  const etab_for = (T02, T03, Tf, nf) => 1 - (Hox(T02) + nf * hfuel(Tf) - Hox(T03) - nf * Dp(T03)) / (nf * LHVm);
+
+  function bisect(f, lo, hi, n = 60) {
+    let flo = f(lo);
+    for (let i = 0; i < n; i++) { const m = 0.5 * (lo + hi), fm = f(m); if ((fm > 0) === (flo > 0)) { lo = m; flo = fm; } else hi = m; }
+    return 0.5 * (lo + hi);
+  }
+
+  // ---- components ----
+  function ambient(T01, P01) { return { T01, P01, th: T01 / TSTD, de: P01 / PSTD }; }
+  // compressor work coefficient ψ = Δh0/U² from the reference pressure ratio at the reference corrected speed
+  function psiFrom(p) {
+    const s1 = AIR.s(TSTD, PSTD), T2s = AIR.T_sP(s1, PSTD * p.r_ref, TSTD * 1.4);
+    const dh = (AIR.h(T2s) - AIR.h(TSTD)) / p.eta_comp;
+    const U = Math.PI * p.D_comp * p.N_ref / 60;
+    return dh / (U * U);
+  }
+  function compressor(p, amb, Nphys) {
+    const U = Math.PI * p.D_comp * Nphys / 60, dh = p.psi * U * U;
+    const h1 = AIR.h(amb.T01), T2 = AIR.T_h(h1 + dh, amb.T01 + dh / 1005);
+    const T2s = AIR.T_h(h1 + p.eta_comp * dh, amb.T01 + p.eta_comp * dh / 1005);
+    const P2 = amb.P01 * Math.exp((AIR.s(T2s, amb.P01) - AIR.s(amb.T01, amb.P01)) / AIR.R);
+    return { U, dh, T2, P2, r: P2 / amb.P01 };
+  }
+  function nozzle(g, T04, P04, Pa, p) {
+    const A = Math.PI / 4 * (p.D_noz * p.D_noz - (p.D_cone || 0) ** 2), Aeff = A * p.Cd;
+    if (!(P04 > Pa)) return { m: 0, F: 0, V5: 0, T5: T04, P5: Pa, choked: false };
+    const h04 = g.h(T04), s04 = g.s(T04, P04), gm = g.gamma(T04);
+    const Pcrit = P04 * Math.pow(2 / (gm + 1), gm / (gm - 1));
+    const choked = Pcrit > Pa, P5 = Math.max(Pa, Pcrit);
+    const T5s = g.T_sP(s04, P5, T04), h5 = h04 - p.eta_nozzle * (h04 - g.h(T5s));
+    const V5 = Math.sqrt(Math.max(2 * (h04 - h5), 0)), T5 = g.T_h(h5, T5s), rho5 = P5 / (g.R * T5);
+    const m = rho5 * V5 * Aeff;
+    return { m, F: m * V5 + (P5 - Pa) * A, V5, T5, P5, choked, rho5, A };
+  }
+
+  // ---- forward: predict an operating point ----
+  // Two matching constraints close the cycle: the choked turbine NGV (m·√T03/P03 = Q, calibrated) and the
+  // measured nozzle area. The compressor may slide along its speed line: r = r_op·(m/m_op)^(−S).
+  // p: parameters (incl. calibrated m_ref, k, eta_turb, eta_b, Q_ngv); op: {T01, P01, Nc, P_elec, eta_gen, P_drag}
+  function run(p, op) {
+    const amb = ambient(op.T01, op.P01), Nphys = op.Nc * Math.sqrt(amb.th);
+    const c0 = compressor(p, amb, Nphys);
+    const m_op = p.m_ref * Math.pow(op.Nc / p.N_ref, p.k) * amb.de / Math.sqrt(amb.th);
+    const P_shaft = op.P_elec / op.eta_gen + op.P_drag, Tf = amb.T01;
+    const h1 = AIR.h(amb.T01), s1 = AIR.s(amb.T01, amb.P01);
+    const comp = m => {
+      const r = c0.r * Math.pow(m / m_op, -p.S), P2 = r * amb.P01;
+      const T2s = AIR.T_sP(s1, P2, c0.T2), h2 = h1 + (AIR.h(T2s) - h1) / p.eta_comp;
+      return { r, P2, T2: AIR.T_h(h2, c0.T2), dh: h2 - h1 };
+    };
+    const state = m => {
+      const c = comp(m), P03 = (1 - p.dp_comb) * c.P2;
+      // NGV: m_tot·√T03 / P03 = Q  →  T03
+      const fT = T03 => { const nf = nf_for(c.T2, T03, Tf, p.eta_b); if (!(nf > 0)) return -1; if (nf > 0.95 * NF_STOICH) return 1; return m * (1 + FAR_of(nf)) * Math.sqrt(T03) / P03 - p.Q_ngv; };
+      const lo = c.T2 + 20, hi = 2100;
+      if (fT(lo) > 0 || fT(hi) < 0) return null;
+      const T03 = bisect(fT, lo, hi, 45), nf = nf_for(c.T2, T03, Tf, p.eta_b);
+      const g = prodMix(nf), far = FAR_of(nf), m_f = m * far, m_tot = m + m_f;
+      const W_c = m * c.dh, W_t = W_c + P_shaft;
+      const h03 = g.h(T03), h04 = h03 - W_t / m_tot;
+      if (!(h04 > g.h(amb.T01))) return { c, T03, bad: true };
+      const T04 = g.T_h(h04, T03 - 100);
+      const h4s = h03 - (h03 - h04) / p.eta_turb; if (!(h4s > g.h(250))) return { c, T03, bad: true };
+      const T4s = g.T_h(h4s, T04);
+      const s03 = g.s(T03, P03), P04 = P03 * Math.exp((g.s(T4s, P03) - s03) / g.R);
+      const nz = nozzle(g, T04, P04, amb.P01, p);
+      return { c, P03, nf, g, far, m_f, m_tot, W_c, W_t, T03, T04, P04, s03, nz };
+    };
+    // residual: nozzle capacity minus actual flow. Lower air flow → hotter NGV → more nozzle capacity.
+    const resid = m => { const st = state(m); if (!st) return NaN; if (st.bad) return -1; return (st.nz.m - st.m_tot) / st.m_tot; };
+    const out = { amb, Nphys, m_op, r_op: c0.r, P_shaft, warnings: [] };
+    // scan for a sign change from high flow (resid < 0) to low flow (resid > 0)
+    let a = null, b = null, prev = null;
+    for (let f = 1.6; f >= 0.35; f -= 0.05) {
+      const m = m_op * f, v = resid(m);
+      if (isFinite(v)) { if (prev && prev.v < 0 && v >= 0) { a = prev.m; b = m; break; } prev = { m, v }; }
+    }
+    if (a == null) { out.failed = true; out.warnings.push("No matched operating point: the turbine cannot drive the compressor and generator through this nozzle at this speed."); return out; }
+    const m_air = bisect(m => { const v = resid(m); return isFinite(v) ? v : 1; }, a, b, 45);
+    const st = state(m_air);
+    if (!st || st.bad) { out.failed = true; out.warnings.push("No matched operating point at this condition."); return out; }
+    const { g, nz } = st;
+    Object.assign(out, st, {
+      m_air, flowShift: m_air / m_op - 1, rShift: st.c.r / c0.r - 1, U: c0.U,
+      phi: st.nf / NF_STOICH, F: nz.F, Fc: nz.F / amb.de, V5: nz.V5, T5: nz.T5, P5: nz.P5, choked: nz.choked, A5: nz.A,
+      EGT: st.T04 - p.egt_offset, TSFC: st.m_f * 3600 / nz.F, fuel_mlmin: st.m_f / p.rho_fuel * 60000,
+      st: [
+        { n: "1", name: "Compressor inlet", T: amb.T01, P: amb.P01, s: s1 },
+        { n: "2", name: "Compressor exit", T: st.c.T2, P: st.c.P2, s: AIR.s(st.c.T2, st.c.P2) },
+        { n: "3", name: "Turbine inlet", T: st.T03, P: st.P03, s: st.s03 },
+        { n: "4", name: "Turbine exit", T: st.T04, P: st.P04, s: g.s(st.T04, st.P04) },
+        { n: "5", name: "Nozzle exit (static)", T: nz.T5, P: nz.P5, s: g.s(nz.T5, nz.P5) },
+      ],
+      eta_th: (nz.m * nz.V5 * nz.V5 / 2 + op.P_elec / op.eta_gen) / (st.m_f * LHV),
+    });
+    return out;
+  }
+
+  // ---- inverse: back out the engine from one test point ----
+  // t: {T01, P01, N, F, EGT (K), fuel (ml/min or null)}; returns m_air, eta_turb, (eta_b if fuel given)
+  function backout(p, t, eta_b_guess) {
+    const amb = ambient(t.T01, t.P01), Nc = t.N / Math.sqrt(amb.th), c = compressor(p, amb, t.N);
+    const T04 = t.EGT + p.egt_offset, P03 = (1 - p.dp_comb) * c.P2, Tf = amb.T01;
+    const m_f_known = t.fuel > 0 ? t.fuel * p.rho_fuel / 60000 : null;
+    let far = 0.022, r = null;
+    for (let it = 0; it < 8; it++) {
+      const g = prodMix(nf_of(far));
+      const P04 = bisect(P => nozzle(g, T04, P, amb.P01, p).F - t.F, amb.P01 * 1.0001, amb.P01 * 4, 60);
+      const nz = nozzle(g, T04, P04, amb.P01, p), m_tot = nz.m;
+      const m_air = m_f_known ? m_tot - m_f_known : m_tot / (1 + far);
+      const W_c = m_air * c.dh, h04 = g.h(T04), h03 = h04 + W_c / m_tot, T03 = g.T_h(h03, T04 + 100);
+      const farNew = m_f_known ? m_f_known / m_air : FAR_of(nf_for(c.T2, T03, Tf, eta_b_guess));
+      r = { amb, Nc, c, g, P04, nz, m_tot, m_air, W_c, T03, T04, P03, h03, h04 };
+      if (Math.abs(farNew - far) < 1e-7) { far = farNew; break; }
+      far = farNew;
+    }
+    r.far = far; r.m_f = r.m_air * far;
+    r.mc = r.m_air * Math.sqrt(amb.th) / amb.de;
+    if (!(r.P04 < r.P03)) { r.bad = "This thrust and EGT need more turbine-exit pressure than the compressor delivers. Check the test values or assumptions."; return r; }
+    const s03 = r.g.s(r.T03, r.P03), T4s = r.g.T_sP(s03, r.P04, r.T04);
+    r.eta_turb = (r.h03 - r.h04) / (r.h03 - r.g.h(T4s));
+    r.eta_b = m_f_known ? etab_for(c.T2, r.T03, Tf, nf_of(far)) : null;
+    r.fuel_mlmin = r.m_f / p.rho_fuel * 60000;
+    return r;
+  }
+
+  // fit m_ref, k, eta_turb, eta_b to a list of test points
+  function calibrate(p, tests, opts) {
+    const res = { pts: [], warnings: [] };
+    const withFuel = tests.filter(t => t.fuel > 0), noFuel = tests.filter(t => !(t.fuel > 0));
+    const bf = withFuel.map(t => backout(p, t, 0.9));
+    const ebs = bf.filter(r => !r.bad && isFinite(r.eta_b)).map(r => r.eta_b);
+    res.eta_b = ebs.length ? ebs.reduce((a, b) => a + b, 0) / ebs.length : opts.eta_b_manual;
+    const bn = noFuel.map(t => backout(p, t, res.eta_b));
+    tests.forEach(t => res.pts.push({ t, r: (t.fuel > 0 ? bf[withFuel.indexOf(t)] : bn[noFuel.indexOf(t)]) }));
+    const good = res.pts.filter(q => !q.r.bad && isFinite(q.r.eta_turb));
+    res.pts.filter(q => q.r.bad).forEach(q => res.warnings.push(`${q.t.label || "Test point"}: ${q.r.bad}`));
+    if (!good.length) { res.failed = true; return res; }
+    res.eta_turb = good.reduce((a, q) => a + q.r.eta_turb, 0) / good.length;
+    good.forEach(q => { q.r.Q = q.r.m_tot * Math.sqrt(q.r.T03) / q.r.P03; });
+    res.Q_ngv = good.reduce((a, q) => a + q.r.Q, 0) / good.length;
+    res.Q_spread = good.length > 1 ? (Math.max(...good.map(q => q.r.Q)) / Math.min(...good.map(q => q.r.Q)) - 1) : null;
+    // corrected flow vs corrected speed: ln(mc) = a + k ln(Nc)
+    const xs = good.map(q => Math.log(q.r.Nc)), ys = good.map(q => Math.log(q.r.mc));
+    const xm = xs.reduce((a, b) => a + b, 0) / xs.length, ym = ys.reduce((a, b) => a + b, 0) / ys.length;
+    const sxx = xs.reduce((a, x) => a + (x - xm) ** 2, 0);
+    res.k_fit = sxx > 1e-6 ? xs.reduce((a, x, i) => a + (x - xm) * (ys[i] - ym), 0) / sxx : null;
+    res.k = opts.k_auto && res.k_fit != null ? res.k_fit : opts.k_manual;
+    res.m_ref = Math.exp(ym + res.k * (Math.log(p.N_ref) - xm));
+    return res;
+  }
+
+  const api = { run, backout, calibrate, psiFrom, compressor, ambient, Mix, AIR, LHV, TSTD, PSTD };
+  if (typeof module !== "undefined") module.exports = api; else root.CycleV2 = api;
+})(this);
+</script>
+<script>
+// ---------- units ----------
+// Each unit: [factor, offset] so that SI = value * factor + offset
+const UNITS = {
+  pressure:    { label: "Pressure",          u: { "Pa": [1], "kPa": [1e3], "bar": [1e5], "atm": [101325], "psi": [6894.757293168], "inHg": [3386.389] } },
+  temperature: { label: "Temperature",       u: { "K": [1, 0], "°C": [1, 273.15], "°F": [5 / 9, 459.67 * 5 / 9], "°R": [5 / 9, 0] } },
+  massflow:    { label: "Air mass flow",     u: { "kg/s": [1], "g/s": [1e-3], "lb/s": [0.45359237], "lb/min": [0.45359237 / 60] } },
+  fuelmass:    { label: "Fuel mass flow",    u: { "g/s": [1e-3], "kg/h": [1 / 3600], "lb/h": [0.45359237 / 3600], "lb/min": [0.45359237 / 60] } },
+  fuelflow:    { label: "Fuel volume flow",  u: { "ml/min": [1], "L/h": [1000 / 60], "US gal/h": [3785.411784 / 60], "US fl oz/min": [29.5735295625] } },
+  density:     { label: "Fuel density",      u: { "kg/L": [1], "kg/m³": [1e-3], "lb/US gal": [0.45359237 / 3.785411784], "lb/ft³": [0.45359237 / 28.316846592] } },
+  force:       { label: "Thrust",            u: { "N": [1], "kN": [1e3], "lbf": [4.4482216152605], "kgf": [9.80665] } },
+  velocity:    { label: "Velocity",          u: { "m/s": [1], "km/h": [1 / 3.6], "ft/s": [0.3048], "mph": [0.44704], "kn": [1852 / 3600] } },
+  elec:        { label: "Electrical power",  u: { "W": [1], "kW": [1e3], "hp": [745.69987158227] } },
+  shaft:       { label: "Shaft power / work", u: { "W": [1], "kW": [1e3], "hp": [745.69987158227], "BTU/h": [0.29307107017] } },
+  area:        { label: "Area",              u: { "cm²": [1e-4], "mm²": [1e-6], "m²": [1], "in²": [6.4516e-4] } },
+  length:      { label: "Length",            u: { "mm": [1e-3], "cm": [1e-2], "in": [0.0254] } },
+  tsfc:        { label: "TSFC",              u: { "kg/(N·h)": [1], "g/(kN·s)": [0.0036], "lb/(lbf·h)": [1 / 9.80665] } },
+  entropy:     { label: "Entropy",           u: { "J/(kg·K)": [1], "kJ/(kg·K)": [1e3], "BTU/(lb·°R)": [4186.8] } },
+  mass:        { label: "Mass",              u: { "g": [1e-3], "kg": [1], "oz": [0.028349523125], "lb": [0.45359237] } },
+  inertia:     { label: "Moment of inertia", u: { "kg·mm²": [1e-6], "g·cm²": [1e-7], "kg·m²": [1], "lb·in²": [0.45359237 * 0.00064516] } },
+  energy:      { label: "Energy",            u: { "kJ": [1e3], "J": [1], "BTU": [1055.05585262], "ft·lbf": [1.3558179483] } },
+  torque:      { label: "Torque",            u: { "N·m": [1], "N·mm": [1e-3], "lbf·in": [0.112984829], "lbf·ft": [1.3558179483] } },
+  stress:      { label: "Stress",            u: { "MPa": [1e6], "ksi": [6894757.293168], "psi": [6894.757293168] } },
+};
+const PRESETS = {
+  metric:   { pressure: "kPa", temperature: "K",  massflow: "kg/s", fuelmass: "g/s",  fuelflow: "ml/min",   density: "kg/L",      force: "N",   velocity: "m/s",  elec: "W", shaft: "kW", area: "cm²", length: "mm", tsfc: "kg/(N·h)",   entropy: "J/(kg·K)", mass: "g", inertia: "kg·mm²", energy: "kJ", torque: "N·m", stress: "MPa" },
+  imperial: { pressure: "psi", temperature: "°F", massflow: "lb/s", fuelmass: "lb/h", fuelflow: "US gal/h", density: "lb/US gal", force: "lbf", velocity: "ft/s", elec: "W", shaft: "hp", area: "in²", length: "in", tsfc: "lb/(lbf·h)", entropy: "BTU/(lb·°R)", mass: "oz", inertia: "lb·in²", energy: "BTU", torque: "lbf·in", stress: "ksi" },
+};
+const units = { ...PRESETS.metric };
+try { const s = JSON.parse(localStorage.getItem("p100-units") || "{}"); for (const q in s) if (UNITS[q] && UNITS[q].u[s[q]]) units[q] = s[q]; } catch (e) {}
+
+const uf = q => q === "tdelta" ? [UNITS.temperature.u[units.temperature][0], 0] : UNITS[q].u[units[q]];
+const toSI = (q, v) => { const [f, o = 0] = uf(q); return v * f + o; };
+const fromSI = (q, v) => { const [f, o = 0] = uf(q); return (v - o) / f; };
+const fromSIdelta = (q, v) => v / uf(q)[0];   // differences (no offset)
+const un = q => q === "tdelta" ? units.temperature : units[q];
+function niceStep(x) { const m = Math.pow(10, Math.floor(Math.log10(x))); const r = x / m; return (r < 1.5 ? 1 : r < 3.5 ? 2 : r < 7.5 ? 5 : 10) * m; }
+function decimalsOf(step) { let d = 0; while (d < 6 && Math.abs(step * 10 ** d - Math.round(step * 10 ** d)) > 1e-6) d++; return d; }
+// format with ~sig significant figures
+function fmtS(v, sig = 4) {
+  if (!isFinite(v)) return "—"; if (v === 0) return "0";
+  const d = Math.max(0, Math.min(6, sig - 1 - Math.floor(Math.log10(Math.abs(v)))));
+  return v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+// shared decimals for a table column so numbers align
+function colDec(vals, sig = 4) { const mx = Math.max(...vals.map(v => Math.abs(v)).filter(isFinite)); return mx > 0 ? Math.max(0, Math.min(6, sig - 1 - Math.floor(Math.log10(mx)))) : 0; }
+// value shown in an input box: 5 significant figures, trailing zeros stripped
+const inputVal = v => String(+(+v).toPrecision(5));
+
+// ================= Cycle Analysis V2: page logic =================
+const N_SCORED = 138600, N_FULL = 154000, LBF = 4.4482216152605, EGT_LIM = 800 + 273.15, EGT_SPEC = 720 + 273.15;
+const $ = id => document.getElementById(id);
+const fmt = (v, d = 0) => isFinite(v) ? v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }) : "—";
+const F_ = (k, label, q, def, min, max, step, unit) => ({ k, label, q, def, min, max, step, unit });
+const GROUPS = [
+  ["Operating point", [
+    F_("Nc", "Corrected speed", null, N_SCORED, 100000, 160000, 100, "rpm"),
+    F_("T01", "Ambient temperature", "temperature", 288.15, 250, 320, 0.5),
+    F_("P01", "Ambient pressure", "pressure", 101325, 80000, 105000, 25),
+  ]],
+  ["Power extraction", [
+    F_("P_elec", "Electrical power out", "elec", 1000, 0, 4000, 10),
+    F_("eta_gen", "Generator + rectifier efficiency", null, 0.85, 0.5, 1, 0.01),
+    F_("P_drag", "Extra drag from generator hardware", "elec", 0, 0, 500, 5),
+  ]],
+  ["Measured geometry", [
+    F_("D_comp", "Compressor tip diameter", "length", 0.060, 0.045, 0.075, 0.0001),
+    F_("D_noz_test", "Nozzle exit diameter, as tested", "length", 0.04762, 0.038, 0.056, 0.0001),
+    F_("D_noz", "Nozzle exit diameter, for prediction", "length", 0.04762, 0.038, 0.056, 0.0001),
+    F_("D_cone", "Tail-cone diameter at exit plane", "length", 0, 0, 0.03, 0.0005),
+  ]],
+  ["Assumptions", [
+    F_("r_ref", "Pressure ratio at 154,000 rpm", null, 2.9, 2.3, 3.5, 0.01),
+    F_("eta_comp", "Compressor isentropic efficiency", null, 0.75, 0.6, 0.85, 0.005),
+    F_("eta_nozzle", "Nozzle efficiency", null, 0.95, 0.85, 1, 0.005),
+    F_("Cd", "Nozzle discharge coefficient", null, 0.97, 0.85, 1, 0.005),
+    F_("dp_comb", "Combustor pressure loss fraction", null, 0.05, 0, 0.12, 0.005),
+    F_("S", "Compressor speed-line slope S", null, 0.5, 0, 5, 0.05),
+    F_("egt_offset", "EGT sensor reads low by", "tdelta", 0, 0, 80, 1),
+    F_("rho_fuel", "Fuel density", "density", 0.80, 0.7, 0.85, 0.005),
+    F_("k_manual", "Flow exponent k (manual)", null, 1.45, 0.5, 3, 0.01),
+    F_("eta_b_manual", "Combustion efficiency if no fuel data", null, 0.85, 0.5, 1, 0.01),
+  ]],
+];
+const FIELDS = GROUPS.flatMap(g => g[1]);
+const DEFAULTS = Object.fromEntries(FIELDS.map(f => [f.k, f.def])); DEFAULTS.k_auto = true;
+const TEST_DEFAULT = [
+  { label: "Full throttle", T01: 288.15, P01: 102130, N: 154100, F: 23.4 * LBF, EGT: 675 + 273.15, fuel: 390 },
+  { label: "90% throttle", T01: 288.15, P01: 102130, N: 149600, F: 20.66 * LBF, EGT: 635 + 273.15, fuel: null },
+];
+const ROTOR_DEFAULT = { m_total: 0.220, m_comp: 0.054, m_shaft: 0.044, m_nuts: 0.010, D_turb: 0.058, d_shaft: 0.00633, kc: 0.35, kt: 0.45 };
+const load = (key, def) => { try { const v = JSON.parse(localStorage.getItem(key)); return v ?? def; } catch (e) { return def; } };
+const save = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} };
+const state = { ...DEFAULTS, ...load("p100-v2-inputs", {}) };
+let tests = load("p100-v2-tests", null) || structuredClone(TEST_DEFAULT);
+const rotor = { ...ROTOR_DEFAULT, ...load("p100-v2-rotor", {}) };
+
+// ---------- units ----------
+function activePreset() { for (const p in PRESETS) if (Object.keys(UNITS).every(q => PRESETS[p][q] === units[q])) return p; return null; }
+function buildUnits() {
+  const ap = activePreset();
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === ap ? "true" : "false"));
+  $("unitTag").textContent = ap ? "" : "custom";
+  $("unitSel").innerHTML = Object.entries(UNITS).map(([q, d]) =>
+    `<label for="u-${q}">${d.label}</label><select id="u-${q}" data-q="${q}">${Object.keys(d.u).map(u => `<option${u === units[q] ? " selected" : ""}>${u}</option>`).join("")}</select>`).join("");
+  $("unitSel").querySelectorAll("select").forEach(s => s.addEventListener("change", () => { units[s.dataset.q] = s.value; unitsChanged(); }));
+}
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { Object.assign(units, PRESETS[b.dataset.p]); unitsChanged(); }));
+function unitsChanged() { save("p100-units", units); buildUnits(); buildForm(); buildTests(); buildRotor(); schedule(); }
+const disp = (q, v) => q ? fromSI(q, v) : v;
+const tsi = (q, v) => q ? toSI(q, v) : v;
+const ulabel = f => f.q ? un(f.q) : (f.unit || "");
+
+// ---------- inputs ----------
+function buildForm() {
+  const form = $("inputs"); form.innerHTML = "";
+  GROUPS.forEach(([group, fs]) => {
+    const fsEl = document.createElement("fieldset");
+    fsEl.innerHTML = `<legend>${group}</legend>`;
+    fs.forEach(f => {
+      if (f.k === "k_manual") {
+        const t = document.createElement("label"); t.className = "toggle";
+        t.innerHTML = `<input type="checkbox" id="k_auto" ${state.k_auto ? "checked" : ""}> Fit flow exponent k from test data`;
+        fsEl.appendChild(t);
+      }
+      const dStep = f.q ? niceStep(f.step / uf(f.q)[0]) : f.step;
+      const d = document.createElement("div"); d.className = "field";
+      d.innerHTML = `<label for="n-${f.k}">${f.label}${ulabel(f) ? `<small>${ulabel(f)}</small>` : ""}</label>
+        <input type="number" id="n-${f.k}" step="any" value="${inputVal(disp(f.q, state[f.k]))}">
+        <input type="range" aria-label="${f.label}" id="r-${f.k}" min="${disp(f.q, f.min)}" max="${disp(f.q, f.max)}" step="${dStep}" value="${disp(f.q, state[f.k])}">`;
+      fsEl.appendChild(d);
+      if (f.k === "Nc") {
+        const p = document.createElement("div"); p.className = "presets";
+        p.innerHTML = `<button type="button" data-n="${N_SCORED}">90% scored</button><button type="button" data-n="${N_FULL}">100%</button>`;
+        fsEl.appendChild(p);
+        const h = document.createElement("p"); h.className = "hint"; h.id = "physHint"; fsEl.appendChild(h);
+        p.querySelectorAll("button").forEach(b => b.addEventListener("click", () => setField("Nc", +b.dataset.n)));
+      }
+      if (f.k === "D_cone") { const h = document.createElement("p"); h.className = "hint"; h.textContent = "0 if the inner cone ends before the exit plane."; fsEl.appendChild(h); }
+      if (f.k === "eta_b_manual") { const h = document.createElement("p"); h.className = "hint"; h.textContent = "Only used when no test point has a fuel flow."; fsEl.appendChild(h); }
+    });
+    $("inputs").appendChild(fsEl);
+  });
+  FIELDS.forEach(f => {
+    const n = $("n-" + f.k), r = $("r-" + f.k);
+    n.addEventListener("input", () => { const v = parseFloat(n.value); if (isFinite(v)) { state[f.k] = tsi(f.q, v); r.value = v; schedule(); } });
+    r.addEventListener("input", () => { const v = parseFloat(r.value); state[f.k] = tsi(f.q, v); n.value = inputVal(v); schedule(); });
+  });
+  $("k_auto").addEventListener("change", e => { state.k_auto = e.target.checked; schedule(); });
+}
+function setField(k, vSI) { const f = FIELDS.find(x => x.k === k); state[k] = vSI; $("n-" + k).value = inputVal(disp(f.q, vSI)); $("r-" + k).value = disp(f.q, vSI); schedule(); }
+$("reset").onclick = () => { Object.assign(state, DEFAULTS); buildForm(); schedule(); };
+
+// ---------- test data table ----------
+const TCOLS = [["label", "Test point", null], ["T01", "Ambient T", "temperature"], ["P01", "Ambient P", "pressure"], ["N", "Speed", null, "rpm"], ["F", "Thrust", "force"], ["EGT", "EGT", "temperature"], ["fuel", "Fuel flow", "fuelflow"]];
+function buildTests() {
+  const head = `<thead><tr>${TCOLS.map(([k, l, q, u]) => `<th>${l}${q || u ? ` (${q ? un(q) : u})` : ""}</th>`).join("")}<th></th></tr></thead>`;
+  const body = tests.map((t, i) => `<tr>${TCOLS.map(([k, , q]) => {
+    if (k === "label") return `<td><input class="lbl" data-i="${i}" data-k="label" value="${(t.label || "").replace(/"/g, "&quot;")}" aria-label="Test point name"></td>`;
+    const v = t[k] == null ? "" : inputVal(disp(q, t[k]));
+    return `<td><input type="number" step="any" data-i="${i}" data-k="${k}" value="${v}" ${k === "fuel" ? 'placeholder="optional"' : ""} aria-label="${k}"></td>`;
+  }).join("")}<td><button type="button" class="x" data-del="${i}" aria-label="Remove test point" title="Remove">×</button></td></tr>`).join("");
+  $("tests").innerHTML = head + "<tbody>" + body + "</tbody>";
+  $("tests").querySelectorAll("input").forEach(inp => inp.addEventListener("input", () => {
+    const i = +inp.dataset.i, k = inp.dataset.k, col = TCOLS.find(c => c[0] === k);
+    if (k === "label") tests[i].label = inp.value;
+    else { const v = parseFloat(inp.value); if (inp.value.trim() === "" && k === "fuel") tests[i].fuel = null; else if (isFinite(v)) tests[i][k] = tsi(col[2], v); else return; }
+    save("p100-v2-tests", tests); schedule();
+  }));
+  $("tests").querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => { tests.splice(+b.dataset.del, 1); save("p100-v2-tests", tests); buildTests(); schedule(); }));
+}
+$("addTest").onclick = () => { const last = tests[tests.length - 1] || TEST_DEFAULT[0]; tests.push({ ...last, label: "New point", fuel: null }); save("p100-v2-tests", tests); buildTests(); schedule(); };
+$("resetTests").onclick = () => { tests = structuredClone(TEST_DEFAULT); save("p100-v2-tests", tests); buildTests(); schedule(); };
+
+// ---------- rotor inputs ----------
+const RCOLS = [["m_total", "Rotor assembly (total)", "mass"], ["m_comp", "Compressor", "mass"], ["m_shaft", "Shaft", "mass"], ["m_nuts", "Nuts", "mass"],
+  ["D_turb", "Turbine tip diameter", "length"], ["d_shaft", "Shaft diameter", "length"], ["kc", "Compressor I/(mR²)", null], ["kt", "Turbine I/(mR²)", null]];
+function buildRotor() {
+  $("rotorIn").innerHTML = RCOLS.map(([k, l, q]) => `<div><label for="ro-${k}">${l}${q ? ` (${un(q)})` : ""}</label><input type="number" step="any" id="ro-${k}" value="${inputVal(disp(q, rotor[k]))}"></div>`).join("");
+  RCOLS.forEach(([k, , q]) => $("ro-" + k).addEventListener("input", e => { const v = parseFloat(e.target.value); if (isFinite(v)) { rotor[k] = tsi(q, v); save("p100-v2-rotor", rotor); schedule(); } }));
+}
+
+// ---------- model glue ----------
+function baseParams(Dnoz) {
+  const p = { D_comp: state.D_comp, N_ref: N_FULL, r_ref: state.r_ref, eta_comp: state.eta_comp, eta_nozzle: state.eta_nozzle, Cd: state.Cd,
+    D_noz: Dnoz, D_cone: state.D_cone, dp_comb: state.dp_comb, egt_offset: state.egt_offset, rho_fuel: state.rho_fuel, S: state.S };
+  p.psi = CycleV2.psiFrom(p); return p;
+}
+const validTests = () => tests.filter(t => t.T01 > 0 && t.P01 > 0 && t.N > 0 && t.F > 0 && t.EGT > 0);
+function calibrateAll() {
+  const pc = baseParams(state.D_noz_test);
+  const cal = CycleV2.calibrate(pc, validTests(), { k_auto: state.k_auto, k_manual: state.k_manual, eta_b_manual: state.eta_b_manual });
+  if (cal.failed) return { cal };
+  const fit = { m_ref: cal.m_ref, k: cal.k, eta_turb: cal.eta_turb, eta_b: cal.eta_b, Q_ngv: cal.Q_ngv };
+  return { cal, pTest: { ...pc, ...fit }, pPred: { ...baseParams(state.D_noz), ...fit } };
+}
+const opAt = (p, Nc, P_elec, amb) => CycleV2.run(p, { T01: amb ? amb.T01 : state.T01, P01: amb ? amb.P01 : state.P01, Nc, P_elec, eta_gen: state.eta_gen, P_drag: state.P_drag });
+const STD = { T01: 288.15, P01: 101325 };
+
+function kpi(id, val, unit, note, status) {
+  $(id).innerHTML = `${val}<span>${unit}</span>`;
+  const col = { good: "var(--good)", warn: "var(--warn)", bad: "var(--bad)" }[status] || "var(--muted)";
+  const icon = { good: "✓", warn: "!", bad: "✕" }[status] || "";
+  $(id + "c").innerHTML = `<span class="dot" style="background:${col}"></span>${icon ? `<span aria-hidden="true">${icon}</span>` : ""}${note}`;
+}
+const thrustScore = lbf => lbf > 20 ? 20 : lbf < 10 ? 0 : 2 * lbf - 20;
+
+let pending = false;
+function schedule() { if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; save("p100-v2-inputs", state); update(); }); } }
+
+let last = null;
+function update() {
+  const th = state.T01 / 288.15;
+  $("physHint").textContent = `Physical speed ${fmt(state.Nc * Math.sqrt(th))} rpm at this ambient (θ = ${th.toFixed(3)}). Tested: ${validTests().map(t => fmt(t.N)).join(", ")} rpm.`;
+  const warn = [];
+  const C = calibrateAll();
+  C.cal.warnings.forEach(w => warn.push(w));
+  if (!C.pTest) { warn.push("Calibration failed: at least one valid test point with speed, thrust and EGT is needed."); $("warn").textContent = warn.join(" "); last = null; return; }
+  const o = opAt(C.pPred, state.Nc, state.P_elec);
+  last = { o, C };
+  if (o.failed) warn.push(...o.warnings);
+  if (Math.abs(state.D_noz - state.D_noz_test) > 1e-5) warn.push(`Predicting with a ${fmt(fromSI("length", state.D_noz), 2)} ${un("length")} nozzle instead of the tested ${fmt(fromSI("length", state.D_noz_test), 2)} ${un("length")}. Away from the tested nozzle, results depend on the speed-line slope S, so confirm them on the engine.`);
+  if (state.Nc < 130000) warn.push("Below about 130,000 rpm the model is extrapolating well outside the tested range.");
+  if (!o.failed && o.flowShift < -0.08) warn.push(`The compressor has moved ${fmt(-o.flowShift * 100, 1)}% down in flow from its no-load operating line, toward surge. Real surge margin is unknown without a compressor map.`);
+  if (state.k_auto && C.cal.k_fit == null) warn.push("Only one test speed, so k cannot be fitted; using the manual value.");
+  $("warn").textContent = warn.join(" ");
+
+  // power sweep
+  const PMAX = 4000, sweep = [];
+  for (let P = 0; P <= PMAX + 1; P += 200) { const r = opAt(C.pPred, state.Nc, P); if (!r.failed) sweep.push([P, r]); }
+  const pLim = powerAtLimit(C.pPred, sweep);
+  if (o.failed) {
+    ["k-F", "k-T", "k-Q"].forEach(id => kpi(id, "—", "", "no solution", "bad"));
+  } else {
+    const Fc_lbf = o.Fc / LBF, scored = Math.abs(state.Nc - N_SCORED) < 1500;
+    kpi("k-F", fmtS(fromSI("force", o.Fc)), un("force"), scored ? `90%-speed score ≈ ${fmt(thrustScore(Fc_lbf), 1)} / 20 pts` : `physical ${fmtS(fromSI("force", o.F))} ${un("force")}`, scored ? (Fc_lbf >= 20 ? "good" : "warn") : null);
+    const margin = EGT_LIM - o.EGT;
+    kpi("k-T", fmt(fromSI("temperature", o.EGT)), un("temperature"), `limit ${fmt(fromSI("temperature", EGT_LIM))} ${un("temperature")} · margin ${fmt(fromSIdelta("tdelta", margin))} ${un("temperature")}`, margin > 100 ? "good" : margin > 0 ? "warn" : "bad");
+    kpi("k-Q", fmtS(fromSI("fuelflow", o.fuel_mlmin), 3), un("fuelflow"), `TSFC ${fmtS(fromSI("tsfc", o.TSFC), 3)} ${un("tsfc")}`, null);
+  }
+  if (pLim.P != null) kpi("k-P", fmtS(fromSI("elec", pLim.P), 3), un("elec"), pLim.note, pLim.P > state.P_elec ? "good" : "bad");
+  else kpi("k-P", "—", "", pLim.note, "bad");
+
+  renderCalibration(C);
+  drawPowerCharts(sweep, o);
+  drawSpeedCharts(C);
+  renderStations(o);
+  drawTS(o.failed ? null : o);
+  renderRotor(o);
+}
+
+function powerAtLimit(p, sweep) {
+  const egtAt = P => { const r = opAt(p, state.Nc, P); return r.failed ? null : r.EGT; };
+  const e0 = sweep.length && sweep[0][0] === 0 ? sweep[0][1].EGT : egtAt(0);
+  if (e0 == null) return { P: null, note: "no solution at this speed" };
+  if (e0 >= EGT_LIM) return { P: 0, note: "EGT already over the limit with no load" };
+  let lo = 0, hi = null;
+  for (const [P, r] of sweep) { if (r.EGT >= EGT_LIM) { hi = P; break; } lo = P; }
+  if (hi == null) { // search beyond the sweep
+    let P = 4000;
+    while (P < 32000) { P *= 2; const e = egtAt(P); if (e == null || e >= EGT_LIM) { hi = P; break; } lo = P; }
+    if (hi == null) return { P: null, note: "EGT limit not reached below 32 kW" };
+  }
+  for (let i = 0; i < 12; i++) { const m = 0.5 * (lo + hi), e = egtAt(m); if (e != null && e < EGT_LIM) lo = m; else hi = m; }
+  return { P: lo, note: `at ${fmt(state.Nc)} rpm corrected, this ambient` };
+}
+
+// ---------- calibration tables ----------
+function renderCalibration(C) {
+  const cal = C.cal, pts = cal.pts || [];
+  const T = v => fmt(fromSI("temperature", v)), tu = un("temperature");
+  let rows = "";
+  pts.forEach(({ t, r }) => {
+    if (r.bad || !isFinite(r.eta_turb)) { rows += `<tr><td>${t.label || ""}</td><td colspan="9">${r.bad || "could not be solved"}</td></tr>`; return; }
+    const fwd = opAt(C.pTest, r.Nc, 0, { T01: t.T01, P01: t.P01 });
+    const dF = fwd.failed ? NaN : fwd.F - t.F, dT = fwd.failed ? NaN : fwd.EGT - t.EGT;
+    const cls = (v, tol) => isFinite(v) ? (Math.abs(v) <= tol ? "ok" : "off") : "";
+    rows += `<tr><td>${t.label || ""}</td><td class="num">${fmt(r.Nc)}</td><td class="num">${fmtS(fromSI("massflow", r.mc))}</td><td class="num">${fmt(r.c.r, 2)}</td>
+      <td class="num">${T(r.T03)}</td><td class="num">${fmt(r.eta_turb, 3)}</td><td class="num">${r.eta_b == null ? "—" : fmt(r.eta_b, 3)}</td><td class="num">${fmt(r.Q * 1e5, 3)}</td>
+      <td class="num ${cls(dF / t.F, 0.02)}">${fwd.failed ? "—" : `${fmtS(fromSI("force", fwd.F))} (${dF >= 0 ? "+" : ""}${fmt(100 * dF / t.F, 1)}%)`}</td>
+      <td class="num ${cls(dT, 15)}">${fwd.failed ? "—" : `${T(fwd.EGT)} (${dT >= 0 ? "+" : ""}${fmt(fromSIdelta("tdelta", dT))})`}</td></tr>`;
+  });
+  $("backout").innerHTML = `<thead><tr><th>Point</th><th>Corr. speed (rpm)</th><th>Corr. air flow (${un("massflow")})</th><th>Press. ratio</th><th>T₀₃ (${tu})</th><th>Turbine eff.</th><th>Comb. eff.</th><th>NGV m√T/P (×10⁻⁵)</th><th>Model thrust (${un("force")})</th><th>Model EGT (${tu})</th></tr></thead><tbody>${rows}</tbody>`;
+  if (!C.pTest) { $("fitted").innerHTML = ""; return; }
+  const items = [
+    ["Air flow at 154,000 rpm (corr.)", `${fmtS(fromSI("massflow", cal.m_ref))} ${un("massflow")}`],
+    ["Flow exponent k", `${fmt(cal.k, 2)}${state.k_auto && cal.k_fit != null ? " (fitted)" : " (manual)"}`],
+    ["Turbine efficiency (mean)", fmt(cal.eta_turb, 3)],
+    ["Combustion efficiency", `${fmt(cal.eta_b, 3)}${pts.some(q => q.t.fuel > 0) ? "" : " (manual)"}`],
+    ["NGV flow parameter", `${fmt(cal.Q_ngv * 1e5, 3)}×10⁻⁵ (spread ${cal.Q_spread == null ? "—" : fmt(cal.Q_spread * 100, 1) + "%"})`],
+    ["Compressor work coeff. ψ = Δh/U²", fmt(C.pTest.psi, 3)],
+  ];
+  $("fitted").innerHTML = items.map(([a, b]) => `<div><span>${a}</span><span class="mono">${b}</span></div>`).join("");
+}
+
+// ---------- stations ----------
+function renderStations(o) {
+  if (o.failed) { $("stations").innerHTML = ""; $("summary").innerHTML = ""; return; }
+  const s0 = o.st[0].s, T = v => fromSI("temperature", v);
+  const Ts = o.st.map(s => T(s.T)), Ps = o.st.map(s => fromSI("pressure", s.P)), Ss = o.st.map(s => fromSIdelta("entropy", s.s - s0));
+  const dT = colDec(Ts), dP = colDec(Ps), dS = colDec(Ss);
+  $("stations").innerHTML = `<thead><tr><th>Stn</th><th>Location</th><th>T (${un("temperature")})</th><th>P (${un("pressure")})</th><th>Δs (${un("entropy")})</th></tr></thead><tbody>` +
+    o.st.map((s, i) => `<tr><td class="mono">${s.n}</td><td>${s.name}</td><td class="num">${fmt(Ts[i], dT)}</td><td class="num">${fmt(Ps[i], dP)}</td><td class="num">${fmt(Ss[i], dS)}</td></tr>`).join("") + "</tbody>";
+  const pw = v => `${fmtS(fromSI("shaft", v))} ${un("shaft")}`, pct = v => `${v >= 0 ? "+" : ""}${fmt(v * 100, 1)}%`;
+  const rows = [
+    ["Air mass flow", `${fmtS(fromSI("massflow", o.m_air))} ${un("massflow")}`], ["Compressor pressure ratio", fmt(o.c.r, 3)],
+    ["Flow vs no-load line", pct(o.flowShift)], ["Pressure ratio vs no-load line", pct(o.rShift)],
+    ["Fuel mass flow", `${fmtS(fromSI("fuelmass", o.m_f))} ${un("fuelmass")}`], ["Equivalence ratio φ", fmt(o.phi, 3)],
+    ["Compressor work", pw(o.W_c)], ["Generator shaft power", pw(o.P_shaft)], ["Turbine work", pw(o.W_t)],
+    ["Exit velocity", `${fmtS(fromSI("velocity", o.V5), 3)} ${un("velocity")}`], ["Exit area", `${fmtS(fromSI("area", o.A5))} ${un("area")}`],
+    ["Nozzle", o.choked ? "choked" : "not choked"], ["Physical speed", `${fmt(o.Nphys)} rpm`], ["Thermal efficiency", `${fmt(o.eta_th * 100, 1)}%`],
+  ];
+  $("summary").innerHTML = rows.map(([a, b]) => `<div><span>${a}</span><span class="mono">${b}</span></div>`).join("");
+}
+
+// ---------- rotor ----------
+function renderRotor(o) {
+  const m_turb = rotor.m_total - rotor.m_comp - rotor.m_shaft - rotor.m_nuts;
+  const I = rotor.kc * rotor.m_comp * (state.D_comp / 2) ** 2 + rotor.kt * m_turb * (rotor.D_turb / 2) ** 2
+    + 0.5 * rotor.m_shaft * (rotor.d_shaft / 2) ** 2 + 0.5 * rotor.m_nuts * 0.0066 ** 2;
+  const N = o.failed ? state.Nc * Math.sqrt(state.T01 / 288.15) : o.Nphys, w = N * 2 * Math.PI / 60;
+  const Wc = o.failed ? NaN : o.W_c, Ps = state.P_elec / state.eta_gen + state.P_drag;
+  const Tc = Wc / w, Tg = Ps / w, tau = 16 * (Tc + Tg) / (Math.PI * rotor.d_shaft ** 3);
+  const alpha = Ps / (I * w), rpmPerS = alpha * 60 / (2 * Math.PI), t1 = 0.01 * w / alpha;
+  const U = d => Math.PI * d * N / 60;
+  const rows = [
+    ["Turbine mass (total − parts)", `${fmtS(fromSI("mass", m_turb), 3)} ${un("mass")}`],
+    ["Polar moment of inertia", `${fmtS(fromSI("inertia", I), 3)} ${un("inertia")}`],
+    ["Stored rotor energy", `${fmtS(fromSI("energy", 0.5 * I * w * w), 3)} ${un("energy")}`],
+    ["Compressor torque", `${fmtS(fromSI("torque", Tc), 3)} ${un("torque")}`],
+    ["Generator torque", `${fmtS(fromSI("torque", Tg), 3)} ${un("torque")} (${fmt(100 * Tg / Tc, 1)}% of compressor)`],
+    ["Shaft shear stress (turbine→compressor)", `${fmtS(fromSI("stress", tau), 3)} ${un("stress")}`],
+    ["Speed loss if load hits before fuel", `${fmt(rpmPerS)} rpm/s`],
+    ["Time to lose 1% speed", Ps > 0 ? `${fmt(t1 * 1000)} ms` : "—"],
+    ["Compressor tip speed", `${fmtS(fromSI("velocity", U(state.D_comp)), 3)} ${un("velocity")}`],
+    ["Turbine tip speed", `${fmtS(fromSI("velocity", U(rotor.D_turb)), 3)} ${un("velocity")}`],
+  ];
+  $("rotorOut").innerHTML = rows.map(([a, b]) => `<div><span>${a}</span><span class="mono">${b}</span></div>`).join("");
+}
+
+// ---------- chart helpers ----------
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function ticks(a, b, n = 5) { const step0 = (b - a) / n, mag = Math.pow(10, Math.floor(Math.log10(step0))); const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= step0 * 0.999); const t = []; for (let v = Math.ceil(a / step - 1e-9) * step; v <= b + step * 1e-9; v += step) t.push(+v.toFixed(10)); return { t, d: decimalsOf(step) }; }
+function showTip(tip, svg, px, py, html, W) {
+  const r = svg.getBoundingClientRect(), k = r.width / W;
+  tip.innerHTML = html; tip.style.opacity = 1;
+  let left = px * k + 10; if (left + tip.offsetWidth > r.width) left = px * k - tip.offsetWidth - 10;
+  tip.style.left = left + "px"; tip.style.top = Math.max(0, py * k - tip.offsetHeight - 8) + "px";
+}
+const padDomain = (vals, lo, hi) => { const a = Math.min(...vals), b = Math.max(...vals), s = (b - a) || Math.abs(a) * 0.1 || 1; return [a - s * lo, b + s * hi]; };
+// opts: {xd, xl, yl, series:[{pts:[[x,y,meta]], color, dash, hover}], points:[{x,y,html}], hlines:[{y,label,color}], vlines:[{x,label}], band:[x0,x1], cur:{x,y}, tip:(pt)=>html}
+function chart(host, o) {
+  const W = 440, H = 290, m = { t: 14, r: 16, b: 42, l: 58 };
+  host.innerHTML = "";
+  const ys = o.series.flatMap(s => s.pts.map(p => p[1])).concat((o.points || []).map(p => p.y), (o.hlines || []).map(h => h.y));
+  if (!ys.length) return;
+  const yd = padDomain(ys, 0.08, 0.1), xd = o.xd;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img", "aria-label": o.aria || "" }, host);
+  const x = v => m.l + (v - xd[0]) / (xd[1] - xd[0]) * (W - m.l - m.r);
+  const y = v => H - m.b - (v - yd[0]) / (yd[1] - yd[0]) * (H - m.t - m.b);
+  if (o.band) el("rect", { x: x(Math.max(o.band[0], xd[0])), y: m.t, width: Math.max(2, x(Math.min(o.band[1], xd[1])) - x(Math.max(o.band[0], xd[0]))), height: H - m.t - m.b, fill: "var(--band)" }, svg);
+  const yt = ticks(...yd), xt = ticks(...xd);
+  yt.t.forEach(t => { el("line", { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: "var(--grid)" }, svg); el("text", { x: m.l - 8, y: y(t) + 4, "text-anchor": "end", "font-size": 12, fill: "var(--muted)" }, svg).textContent = fmt(t, yt.d); });
+  xt.t.forEach(t => el("text", { x: x(t), y: H - m.b + 17, "text-anchor": "middle", "font-size": 12, fill: "var(--muted)" }, svg).textContent = xt.d === 0 && Math.abs(t) >= 10000 ? fmt(t / 1000) + "k" : fmt(t, xt.d));
+  el("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: "var(--line)" }, svg);
+  el("text", { x: (m.l + W - m.r) / 2, y: H - 4, "text-anchor": "middle", "font-size": 13, fill: "var(--text-2)" }, svg).textContent = o.xl;
+  el("text", { x: 12, y: (m.t + H - m.b) / 2, "text-anchor": "middle", "font-size": 13, fill: "var(--text-2)", transform: `rotate(-90 12 ${(m.t + H - m.b) / 2})` }, svg).textContent = o.yl;
+  (o.hlines || []).forEach(h => { el("line", { x1: m.l, x2: W - m.r, y1: y(h.y), y2: y(h.y), stroke: h.color || "var(--muted)", "stroke-dasharray": "5 4", "stroke-width": 1.25 }, svg);
+    el("text", { x: W - m.r - 4, y: y(h.y) - 5, "text-anchor": "end", "font-size": 12, fill: "var(--text-2)" }, svg).textContent = h.label; });
+  (o.vlines || []).forEach(v => { if (v.x < xd[0] || v.x > xd[1]) return; el("line", { x1: x(v.x), x2: x(v.x), y1: m.t, y2: H - m.b, stroke: "var(--muted)", "stroke-dasharray": "3 4" }, svg);
+    el("text", { x: x(v.x) + 4, y: m.t + 11, "font-size": 12, fill: "var(--text-2)" }, svg).textContent = v.label; });
+  o.series.forEach(s => { if (s.pts.length > 1) el("path", { d: s.pts.map((p, i) => (i ? "L" : "M") + x(p[0]).toFixed(1) + "," + y(p[1]).toFixed(1)).join(""), fill: "none", stroke: s.color, "stroke-width": 2, "stroke-dasharray": s.dash || "", "stroke-linejoin": "round" }, svg); });
+  if (o.cur) el("circle", { cx: x(o.cur.x), cy: y(o.cur.y), r: 5, fill: "var(--s1)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+  const tip = document.createElement("div"); tip.className = "tip"; host.appendChild(tip);
+  // hover on the primary series
+  const S0 = o.series[0];
+  if (S0 && S0.pts.length) {
+    const cross = el("line", { y1: m.t, y2: H - m.b, stroke: "var(--text-2)", "stroke-width": 1, opacity: 0 }, svg);
+    const mk = el("circle", { r: 5, fill: S0.color, stroke: "var(--surface)", "stroke-width": 2, opacity: 0 }, svg);
+    const ov = el("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent" }, svg);
+    ov.addEventListener("mousemove", e => {
+      const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * W / r.width;
+      const p = S0.pts.reduce((a, b) => Math.abs(x(b[0]) - px) < Math.abs(x(a[0]) - px) ? b : a);
+      cross.setAttribute("x1", x(p[0])); cross.setAttribute("x2", x(p[0])); cross.setAttribute("opacity", 1);
+      mk.setAttribute("cx", x(p[0])); mk.setAttribute("cy", y(p[1])); mk.setAttribute("opacity", 1);
+      showTip(tip, svg, x(p[0]), y(p[1]), o.tip(p), W);
+    });
+    ov.addEventListener("mouseleave", () => { cross.setAttribute("opacity", 0); mk.setAttribute("opacity", 0); tip.style.opacity = 0; });
+  }
+  // measured points sit above the hover layer so they keep their own tooltips
+  (o.points || []).forEach(pt => {
+    const cx = x(pt.x), cy = y(pt.y);
+    el("circle", { cx, cy, r: 5, fill: "var(--surface)", stroke: "var(--pt)", "stroke-width": 2 }, svg);
+    const hit = el("circle", { cx, cy, r: 12, fill: "transparent" }, svg);
+    hit.addEventListener("mouseenter", () => showTip(tip, svg, cx, cy, pt.html, W));
+    hit.addEventListener("mouseleave", () => tip.style.opacity = 0);
+  });
+}
+const legend = (id, items) => { $(id).innerHTML = items.map(([kind, color, label]) => kind === "pt" ? `<span><i class="pt"></i>${label}</span>` : kind === "band" ? `<span><i class="band"></i>${label}</span>` : `<span><i class="${kind === "dash" ? "dash" : ""}" style="border-color:${color}"></i>${label}</span>`).join(""); };
+
+function drawPowerCharts(sweep, o) {
+  const Tu = un("temperature"), Fu = un("force"), Pu = un("elec");
+  const xs = sweep.map(([P]) => fromSI("elec", P));
+  const egt = sweep.map(([P, r], i) => [xs[i], fromSI("temperature", r.EGT), r]);
+  const fc = sweep.map(([P, r], i) => [xs[i], fromSI("force", r.Fc), r]);
+  const xd = [0, fromSI("elec", 4000)], cur = o.failed ? null : fromSI("elec", state.P_elec);
+  const where = `${fmt(state.Nc)} rpm corrected, ${fmt(fromSI("temperature", state.T01))} ${Tu} / ${fmtS(fromSI("pressure", state.P01))} ${un("pressure")}`;
+  $("sub-egtP").textContent = `At ${where}. The ECU adds fuel to hold speed as load rises.`;
+  $("sub-fP").textContent = `At ${where}. Dashed line: 20 lbf earns the full 90%-speed thrust score.`;
+  const tip = p => `${fmtS(p[0], 3)} ${Pu}<br>EGT ${fmt(fromSI("temperature", p[2].EGT))} ${Tu} · Fc ${fmtS(fromSI("force", p[2].Fc))} ${Fu}<br>fuel ${fmtS(fromSI("fuelflow", p[2].fuel_mlmin), 3)} ${un("fuelflow")}`;
+  legend("lg-egtP", [["line", "var(--s1)", "Model"], ["dash", "var(--bad)", "ICD limit 800 °C"], ["dash", "var(--muted)", "JetCat spec max 720 °C"]]);
+  chart($("ch-egtP"), { xd, xl: `Electrical power (${Pu})`, yl: `EGT (${Tu})`, aria: "EGT versus electrical power",
+    series: [{ pts: egt, color: "var(--s1)" }], hlines: [{ y: fromSI("temperature", EGT_LIM), label: "800 °C limit", color: "var(--bad)" }, { y: fromSI("temperature", EGT_SPEC), label: "720 °C spec" }],
+    cur: cur != null && cur <= xd[1] ? { x: cur, y: fromSI("temperature", o.EGT) } : null, tip });
+  legend("lg-fP", [["line", "var(--s1)", "Model"], ["dash", "var(--muted)", "20 lbf full score"]]);
+  chart($("ch-fP"), { xd, xl: `Electrical power (${Pu})`, yl: `Corrected thrust (${Fu})`, aria: "Corrected thrust versus electrical power",
+    series: [{ pts: fc, color: "var(--s1)" }], hlines: [{ y: fromSI("force", 20 * LBF), label: "20 lbf" }],
+    cur: cur != null && cur <= xd[1] ? { x: cur, y: fromSI("force", o.Fc) } : null, tip });
+}
+
+function drawSpeedCharts(C) {
+  const Tu = un("temperature"), Fu = un("force");
+  const N0 = 120000, N1 = 158000, n0 = [], n1 = [];
+  for (let N = N0; N <= N1 + 1; N += 2000) {
+    const a = opAt(C.pPred, N, 0, STD); if (!a.failed) n0.push([N, a]);
+    if (state.P_elec > 0) { const b = opAt(C.pPred, N, state.P_elec, STD); if (!b.failed) n1.push([N, b]); }
+  }
+  const pts = validTests().map(t => { const th = t.T01 / 288.15, de = t.P01 / 101325; return { t, Nc: t.N / Math.sqrt(th), Fc: t.F / de, EGTc: t.EGT / th }; });
+  const band = pts.length ? [Math.min(...pts.map(p => p.Nc)), Math.max(...pts.map(p => p.Nc))] : null;
+  const loadLbl = `${fmtS(fromSI("elec", state.P_elec), 3)} ${un("elec")} load`;
+  const series = (f) => [{ pts: n0.map(([N, r]) => [N, f(r), r]), color: "var(--s1)" }].concat(state.P_elec > 0 ? [{ pts: n1.map(([N, r]) => [N, f(r), r]), color: "var(--s2)" }] : []);
+  const lg = extra => [["line", "var(--s1)", "Model, no load"]].concat(state.P_elec > 0 ? [["line", "var(--s2)", `Model, ${loadLbl}`]] : [], [["pt", "", "Test data (corrected)"], ["band", "", "Tested range"]], extra);
+  const vl = [{ x: N_SCORED, label: "90% scored" }];
+  legend("lg-fN", lg([]));
+  chart($("ch-fN"), { xd: [N0, N1], xl: "Corrected speed (rpm)", yl: `Corrected thrust (${Fu})`, aria: "Corrected thrust versus corrected speed", band, vlines: vl,
+    series: series(r => fromSI("force", r.Fc)),
+    points: pts.map(p => ({ x: p.Nc, y: fromSI("force", p.Fc), html: `${p.t.label || "Test"}<br>${fmt(p.Nc)} rpm · ${fmtS(fromSI("force", p.Fc))} ${Fu}` })),
+    tip: p => `${fmt(p[0])} rpm, no load<br>Fc ${fmtS(fromSI("force", p[2].Fc))} ${Fu} · EGT ${fmt(fromSI("temperature", p[2].EGT))} ${Tu}` });
+  legend("lg-tN", lg([["dash", "var(--bad)", "ICD limit 800 °C"]]));
+  chart($("ch-tN"), { xd: [N0, N1], xl: "Corrected speed (rpm)", yl: `EGT (${Tu})`, aria: "EGT versus corrected speed", band, vlines: vl,
+    series: series(r => fromSI("temperature", r.EGT)), hlines: [{ y: fromSI("temperature", EGT_LIM), label: "800 °C limit", color: "var(--bad)" }],
+    points: pts.map(p => ({ x: p.Nc, y: fromSI("temperature", p.EGTc), html: `${p.t.label || "Test"}<br>${fmt(p.Nc)} rpm · EGT ${fmt(fromSI("temperature", p.EGTc))} ${Tu}` })),
+    tip: p => `${fmt(p[0])} rpm, no load<br>EGT ${fmt(fromSI("temperature", p[2].EGT))} ${Tu} · Fc ${fmtS(fromSI("force", p[2].Fc))} ${Fu}` });
+}
+
+function drawTS(o) {
+  const host = $("ts"); if (!o) { host.innerHTML = ""; return; }
+  const W = 440, H = 290, m = { t: 14, r: 16, b: 42, l: 58 };
+  const s0 = o.st[0].s, A = CycleV2.AIR, G = o.g;
+  const X = s => fromSIdelta("entropy", s - s0), Y = T => fromSI("temperature", T);
+  const lin = (a, b, n, f) => Array.from({ length: n + 1 }, (_, i) => f(a + (b - a) * i / n));
+  const [S1, S2, S3, S4, S5] = o.st;
+  const paths = [
+    lin(0, 1, 20, f => { const T = S1.T + (S2.T - S1.T) * f, P = S1.P * Math.pow(S2.P / S1.P, f); return [A.s(T, P), T]; }),
+    lin(0, 1, 30, f => { const T = S2.T + (S3.T - S2.T) * f, P = S2.P + (S3.P - S2.P) * f; return [(1 - f) * A.s(T, P) + f * G.s(T, P), T]; }),
+    lin(0, 1, 20, f => { const T = S3.T + (S4.T - S3.T) * f, P = S3.P * Math.pow(S4.P / S3.P, f); return [G.s(T, P), T]; }),
+    lin(0, 1, 20, f => { const T = S4.T + (S5.T - S4.T) * f, P = S4.P * Math.pow(S5.P / S4.P, f); return [G.s(T, P), T]; }),
+  ].map(p => p.map(([s, T]) => [X(s), Y(T)]));
+  const iso = lin(S1.T, S3.T * 1.05, 40, T => [X(G.s(T, S1.P)), Y(T)]);
+  const all = paths.flat().concat(iso);
+  const xd = padDomain(all.map(p => p[0]), 0.04, 0.06), yd = padDomain(all.map(p => p[1]), 0.06, 0.06);
+  host.innerHTML = "";
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img", "aria-label": "Temperature–entropy diagram" }, host);
+  const x = v => m.l + (v - xd[0]) / (xd[1] - xd[0]) * (W - m.l - m.r), y = v => H - m.b - (v - yd[0]) / (yd[1] - yd[0]) * (H - m.t - m.b);
+  const yt = ticks(...yd), xt = ticks(...xd);
+  yt.t.forEach(t => { el("line", { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: "var(--grid)" }, svg); el("text", { x: m.l - 8, y: y(t) + 4, "text-anchor": "end", "font-size": 12, fill: "var(--muted)" }, svg).textContent = fmt(t, yt.d); });
+  xt.t.forEach(t => el("text", { x: x(t), y: H - m.b + 17, "text-anchor": "middle", "font-size": 12, fill: "var(--muted)" }, svg).textContent = fmt(t, xt.d));
+  el("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: "var(--line)" }, svg);
+  el("text", { x: (m.l + W - m.r) / 2, y: H - 4, "text-anchor": "middle", "font-size": 13, fill: "var(--text-2)" }, svg).textContent = `Δs (${un("entropy")})`;
+  el("text", { x: 12, y: (m.t + H - m.b) / 2, "text-anchor": "middle", "font-size": 13, fill: "var(--text-2)", transform: `rotate(-90 12 ${(m.t + H - m.b) / 2})` }, svg).textContent = `T (${un("temperature")})`;
+  const d = pts => pts.map((p, i) => (i ? "L" : "M") + x(p[0]).toFixed(1) + "," + y(p[1]).toFixed(1)).join("");
+  el("path", { d: d(iso), fill: "none", stroke: "var(--muted)", "stroke-width": 1, "stroke-dasharray": "3 4" }, svg);
+  const ip = iso[iso.length - 1]; el("text", { x: x(ip[0]) - 4, y: y(ip[1]) - 6, "text-anchor": "end", "font-size": 12, fill: "var(--muted)" }, svg).textContent = "ambient isobar";
+  paths.forEach(p => el("path", { d: d(p), fill: "none", stroke: "var(--s1)", "stroke-width": 2, "stroke-linejoin": "round" }, svg));
+  const tip = document.createElement("div"); tip.className = "tip"; host.appendChild(tip);
+  o.st.forEach(s => {
+    const cx = x(X(s.s)), cy = y(Y(s.T));
+    el("circle", { cx, cy, r: 5, fill: "var(--s1)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+    el("text", { x: cx + 9, y: cy + (s.n === "3" ? -6 : 4), "font-size": 12, "font-weight": 600, fill: "var(--text)" }, svg).textContent = s.n;
+    const hit = el("circle", { cx, cy, r: 14, fill: "transparent" }, svg);
+    hit.addEventListener("mouseenter", () => showTip(tip, svg, cx, cy, `${s.n} · ${s.name}<br>${fmt(Y(s.T))} ${un("temperature")} · ${fmtS(fromSI("pressure", s.P))} ${un("pressure")}`, W));
+    hit.addEventListener("mouseleave", () => tip.style.opacity = 0);
+  });
+}
+
+// ---------- CSV ----------
+$("csv").onclick = () => {
+  if (!last || last.o.failed) return;
+  const { o, C } = last, c = (q, v) => +fromSI(q, v).toPrecision(6), cal = C.cal;
+  const L = ["input,value,unit", ...FIELDS.map(f => `${f.label},${+disp(f.q, state[f.k]).toPrecision(6)},${ulabel(f) || "-"}`), "",
+    `test point,ambient T (${un("temperature")}),ambient P (${un("pressure")}),speed (rpm),thrust (${un("force")}),EGT (${un("temperature")}),fuel (${un("fuelflow")})`,
+    ...tests.map(t => `${t.label},${c("temperature", t.T01)},${c("pressure", t.P01)},${t.N},${c("force", t.F)},${c("temperature", t.EGT)},${t.fuel > 0 ? c("fuelflow", t.fuel) : ""}`), "",
+    "fitted,value", `air flow at 154000 rpm corrected (${un("massflow")}),${c("massflow", cal.m_ref)}`, `flow exponent k,${cal.k.toFixed(4)}`, `turbine efficiency,${cal.eta_turb.toFixed(4)}`,
+    `combustion efficiency,${cal.eta_b.toFixed(4)}`, `NGV flow parameter,${cal.Q_ngv.toExponential(5)}`, "",
+    `station,location,T (${un("temperature")}),P (${un("pressure")})`, ...o.st.map(s => `${s.n},${s.name},${c("temperature", s.T)},${c("pressure", s.P)}`), "",
+    "output,value,unit", `Corrected thrust,${c("force", o.Fc)},${un("force")}`, `Thrust,${c("force", o.F)},${un("force")}`, `EGT (ECU reading),${c("temperature", o.EGT)},${un("temperature")}`,
+    `Fuel flow,${c("fuelflow", o.fuel_mlmin)},${un("fuelflow")}`, `TSFC,${c("tsfc", o.TSFC)},${un("tsfc")}`, `Air mass flow,${c("massflow", o.m_air)},${un("massflow")}`,
+    `Compressor pressure ratio,${o.c.r.toFixed(4)},-`, `Compressor work,${c("shaft", o.W_c)},${un("shaft")}`, `Turbine work,${c("shaft", o.W_t)},${un("shaft")}`];
+  navigator.clipboard.writeText(L.join("\n")).then(() => { const b = $("csv"); b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy results (CSV)", 1200); });
+};
+
+buildUnits(); buildForm(); buildTests(); buildRotor(); update();
+</script>
+</body></html>
