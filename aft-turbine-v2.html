@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aft Turbine V2</title>
+<meta name="description" content="Interactive geometry for the split-duct aft turbine on the P100-RX: spare turbine wheel in a cone shroud, two round exhaust pipes, optional guide vanes, with estimated electrical power and thrust.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f4f3ef; --surface:#fcfcfb; --surface-2:#efeee9; --line:#dcdad3; --grid:#e7e5df;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#7a7972;
+  --accent:#c2410c; --s1:#2a78d6; --s2:#eb6834;
+  --good:#1c7c3c; --warn:#a35f00; --bad:#b42318; --band:rgba(42,120,214,.08); --pt:#0b0b0b; --s3:#1baf7a; --steel:#cfcdc5;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+    --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+    --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+    --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec; --s3:#199e70; --steel:#3c3b37;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+  --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+  --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec; --s3:#199e70; --steel:#3c3b37;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+.mono,td.num,.kpi .v{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+header{border-bottom:1px solid var(--line);background:var(--surface)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+header .wrap{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding-top:18px;padding-bottom:16px}
+header h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
+header p{margin:0;color:var(--text-2);font-size:14px}
+nav{margin-left:auto;font-size:14px}
+nav a{color:var(--text-2);text-decoration:none;margin-left:14px}
+nav a[aria-current]{color:var(--text);font-weight:500;border-bottom:2px solid var(--accent)}
+main.wrap{display:grid;grid-template-columns:330px 1fr;gap:20px;padding-top:20px;padding-bottom:40px}
+@media (max-width:900px){main.wrap{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+aside.panel{padding:6px 16px 16px;align-self:start;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+aside.panel::-webkit-scrollbar{width:8px}
+aside.panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+@media (max-width:900px){aside.panel{position:static;max-height:none;overflow:visible}}
+fieldset{border:0;border-top:1px solid var(--line);margin:0;padding:12px 0 4px}
+fieldset:first-of-type{border-top:0}
+legend{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0}
+.field{display:grid;grid-template-columns:1fr 92px;align-items:center;gap:8px;margin:8px 0}
+.field label{font-size:14px;color:var(--text-2)}
+.field label small{color:var(--muted);display:block;font-size:12px;line-height:1.2}
+.field input[type=number]{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:14px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.field input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent);margin:-2px 0 0}
+.toggle{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--text-2);margin:8px 0}
+.toggle input{accent-color:var(--accent)}
+.btns{display:flex;gap:8px;margin-top:14px}
+button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--muted)}
+section.out{display:flex;flex-direction:column;gap:20px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{padding:12px 14px}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi .v{font-size:26px;font-weight:500;margin:2px 0 0;line-height:1.2}
+.kpi .v span{font-size:14px;color:var(--text-2);margin-left:3px}
+.kpi .c{font-size:12px;color:var(--text-2);margin-top:4px;display:flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.card{padding:16px}
+.card h2{font-size:15px;font-weight:600;margin:0 0 2px}
+.card .sub{font-size:13px;color:var(--text-2);margin:0 0 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:1100px){.grid2{grid-template-columns:1fr}}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-weight:500;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;text-align:right;padding:6px 10px;border-bottom:1px solid var(--line)}
+th:first-child,th:nth-child(2),td:first-child,td:nth-child(2){text-align:left}
+td{padding:7px 10px;border-bottom:1px solid var(--grid)}
+td.num{text-align:right}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:4px 20px;margin-top:14px;font-size:14px}
+.summary div{display:flex;justify-content:space-between;border-bottom:1px dashed var(--grid);padding:4px 0}
+.summary span:first-child{color:var(--text-2)}
+.warn{border-left:3px solid var(--warn);background:var(--surface);padding:10px 14px;border-radius:6px;font-size:14px}
+.warn:empty{display:none}
+svg text{font-family:"IBM Plex Sans",sans-serif}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--text);color:var(--surface);font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity .1s;font-family:"IBM Plex Mono",monospace}
+.units{padding:12px 0 10px;border-bottom:1px solid var(--line)}
+.units-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.units-l{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;padding:2px;background:var(--surface-2)}
+.seg button{border:0;background:transparent;padding:5px 14px;border-radius:5px;color:var(--text-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 0 0 1px var(--line)}
+details{margin-top:8px}
+summary{cursor:pointer;font-size:13px;color:var(--text-2)}
+.tag{font-size:11px;color:var(--accent);margin-left:4px}
+.unit-grid{display:grid;grid-template-columns:1fr 128px;gap:6px 8px;align-items:center;margin-top:10px;font-size:13px;color:var(--text-2)}
+.unit-grid select{font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);width:100%}
+.hint{font-size:12px;color:var(--muted);margin:-2px 0 8px;line-height:1.35}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 8px}
+.presets button{font-size:12px;padding:3px 9px}
+.tests input,.rotor-in input{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.tests input{min-width:86px}
+.tests input.lbl{text-align:left;font-family:inherit;min-width:120px}
+.tests td{padding:4px 5px;border-bottom:0}
+.tests th{white-space:nowrap}
+.x{border:0;background:transparent;color:var(--muted);font-size:18px;line-height:1;padding:2px 6px}
+.x:hover{color:var(--text)}
+.row-btns{display:flex;gap:8px;margin:10px 0 4px;flex-wrap:wrap;align-items:center}
+.fn{font-size:12px;color:var(--muted);margin:6px 0 0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin:-4px 0 8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:16px;height:0;border-top:2px solid}
+.legend i.dash{border-top-style:dashed}
+.legend i.pt{width:9px;height:9px;border:2px solid var(--text);border-radius:50%;background:var(--surface)}
+.legend i.band{width:14px;height:10px;border:0;background:var(--band)}
+h3{font-size:13px;font-weight:600;margin:16px 0 6px;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em}
+.rotor-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px;margin-bottom:6px}
+.rotor-in label{font-size:12px;color:var(--text-2);display:block;margin-bottom:3px}
+td.ok{color:var(--good)} td.off{color:var(--warn)}
+.toc{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;margin-top:10px}
+.toc a{color:var(--text-2)}
+.prose{font-size:15px;line-height:1.6;color:var(--text)}
+.prose p{margin:8px 0;max-width:78ch}
+.prose li{margin:6px 0;max-width:76ch}
+.prose h2{font-size:17px;margin:4px 0 6px}
+.prose h3{text-transform:none;letter-spacing:0;font-size:15px;color:var(--text);margin:18px 0 4px}
+.eq{font-family:"IBM Plex Mono",monospace;font-size:14px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.live{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;background:var(--surface-2);border-radius:4px;padding:0 4px}
+.pill{display:inline-block;font-size:12px;font-weight:500;padding:1px 8px;border-radius:10px;border:1px solid;white-space:nowrap}
+.pill.have{color:var(--good)} .pill.partial{color:var(--warn)} .pill.need{color:var(--bad)}
+ol.steps{padding-left:22px}
+ol.steps>li{margin:14px 0}
+ol.steps>li>b{display:block;margin-bottom:2px}
+ol.steps ul{margin:4px 0;padding-left:18px}
+.callout{border-left:3px solid var(--accent);background:var(--surface-2);padding:10px 14px;border-radius:6px;margin:12px 0;font-size:14px}
+.rec{font-size:15px;line-height:1.55;margin:0}
+tr.sel td{background:var(--surface-2)}
+td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
+.geo svg text{font-family:"IBM Plex Sans",sans-serif}
+.grid2>*{min-width:0}
+.notes{font-size:14px;color:var(--text-2)}
+.notes h2{color:var(--text)}
+.notes li{margin:4px 0}
+nav{display:flex;flex-wrap:wrap;align-items:baseline}
+.dd{position:relative;display:inline-flex;align-items:baseline}
+.dd>button{border:0;background:transparent;color:var(--text-2);padding:0 2px 0 3px;font-size:12px;line-height:1}
+.dd-menu{display:none;position:absolute;top:100%;right:0;z-index:20;min-width:150px;padding:6px 0;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+.dd:hover .dd-menu,.dd:focus-within .dd-menu,.dd.open .dd-menu{display:block}
+.dd-menu a{display:block;margin:0;padding:6px 12px;white-space:nowrap}
+.dd-menu a:hover{background:var(--surface-2);color:var(--text)}
+.dd-menu a[aria-current]{border-bottom:0}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>Aft Turbine V2</h1>
+  <p>JetCat P100-RX · spare turbine wheel in a cone shroud, direct-coupled motor, exhaust split into two round pipes</p>
+  <nav><a href="./">Cycle analysis</a><a href="cycle-v2.html">Cycle analysis V2</a><a href="generator.html">Generator physics</a><a href="nozzle.html">Nozzle modification</a><span class="dd"><a href="aft-turbine.html" aria-current="true">Aft turbine</a><button type="button" aria-label="Aft turbine pages" aria-haspopup="true" onclick="this.parentNode.classList.toggle('open')">▾</button><span class="dd-menu"><a href="aft-turbine-v2.html" aria-current="page">Aft Turbine V2</a></span></span><a href="load-bank.html">Load bank shopping</a></nav>
+</div></header>
+
+<main class="wrap">
+  <aside class="panel" aria-label="Aft turbine V2 inputs">
+    <div class="units" style="border-bottom:0;padding-bottom:0">
+      <div class="units-row"><span class="units-l">Guide vanes</span>
+        <div class="seg" role="group" aria-label="Guide vanes"><button type="button" id="gvOff">Off</button><button type="button" id="gvOn">On</button></div>
+      </div>
+      <p class="hint" style="margin:8px 0 12px">A fixed vane row between the engine turbine exit and the wheel. It pre-swirls the exhaust, which raises the work the wheel can do for a given axial velocity.</p>
+    </div>
+    <form id="inputs" onsubmit="return false"></form>
+    <div class="btns"><button type="button" id="auto">Set load for 1000 W</button><button type="button" id="reset">Reset inputs</button></div>
+  </aside>
+
+  <section class="out">
+    <div class="panel card">
+      <h2>The idea</h2>
+      <p class="sub" style="margin-bottom:0">The stock nozzle comes off and a bolt-on module takes its place. A copy of the engine's turbine wheel sits in a cone shroud right behind the core turbine and drives a Lehner 1535 motor on the same axis through a magnetic coupler. The exhaust splits left and right around the motor into two round pipes that end in plain round exits. Sliding the wheel aft in the cone opens the gap over the blade tips, which bypasses gas and slows the wheel. Every output below is a first-pass 1-D estimate; replace the baseline numbers with test data as they arrive.</p>
+    </div>
+
+    <div class="kpis">
+      <div class="panel kpi"><div class="l">Electrical power at 90%</div><div class="v" id="k-P"></div><div class="c" id="k-Pc"></div></div>
+      <div class="panel kpi"><div class="l">Thrust at 90%</div><div class="v" id="k-F"></div><div class="c" id="k-Fc"></div></div>
+      <div class="panel kpi"><div class="l">Wheel / motor speed</div><div class="v" id="k-N"></div><div class="c" id="k-Nc"></div></div>
+      <div class="panel kpi"><div class="l">Runaway at full throttle</div><div class="v" id="k-R"></div><div class="c" id="k-Rc"></div></div>
+    </div>
+    <div class="warn" id="warn" role="status"></div>
+
+    <div class="panel card prose" id="geo">
+      <h2>1. Geometry, to scale</h2>
+      <p class="fn" style="margin-top:0">Drawn from the inputs on the left. Section through the split plane, and the view looking forward from behind. The dashed line is the 97 mm engine case.</p>
+      <div class="legend"><span><i style="border-color:var(--s2)"></i>Hot gas</span><span><i style="border-color:var(--s1)"></i>Motor</span><span><i style="border-color:var(--s3)"></i>Guide vanes</span><span><i class="dash" style="border-color:var(--muted)"></i>Engine case line</span></div>
+      <div class="grid2">
+        <div><h3>Plan section</h3><div id="plan"></div></div>
+        <div><h3>Looking forward from behind</h3><div id="rear" style="max-width:340px;margin:0 auto"></div></div>
+      </div>
+      <div class="summary" id="geoSum"></div>
+    </div>
+
+    <div class="panel card" id="ops">
+      <h2>2. Operating points</h2>
+      <p class="sub">The same geometry and load resistor at 90% corrected speed (scored for power and thrust) and at full throttle (scored for thrust only).</p>
+      <div class="tablewrap"><table id="opTable"></table></div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel card"><h2>Electrical power vs wheel position</h2><p class="sub">90% speed, current load resistor. The dot is the current position.</p><div id="chP"></div></div>
+      <div class="panel card"><h2>Wheel speed vs wheel position</h2><p class="sub">Loaded at 90%, and with no load at full throttle.</p><div class="legend"><span><i style="border-color:var(--s1)"></i>Loaded, 90%</span><span><i class="dash" style="border-color:var(--s2)"></i>No load, full throttle</span></div><div id="chN"></div></div>
+    </div>
+
+    <div class="panel card" id="score">
+      <h2>3. Score estimate</h2>
+      <p class="sub">Only the items this page models. Weight and the presentation are not included.</p>
+      <div class="tablewrap"><table id="scTable"></table></div>
+    </div>
+
+    <div class="panel card prose notes" id="notes">
+      <h2>4. How the estimate works</h2>
+      <ul>
+        <li><b>Baseline.</b> The stock nozzle's effective area is back-calculated from full-throttle thrust, mass flow and exhaust temperature. The 90% point uses that area with the 90% thrust and temperature you enter.</li>
+        <li><b>Wheel.</b> Work per kilogram is w = U·(C − U) with C = V<sub>x</sub>·(tan α₁ + tan β₂). V<sub>x</sub> is the axial velocity through the blades plus the tip gap, taken as uniform. The share of gas inside the blade annulus does work; the rest bypasses.</li>
+        <li><b>Load.</b> The load bank is a fixed resistor, so electrical power is V²/R with V = rpm ÷ K<sub>v</sub>. That sets where the wheel settles.</li>
+        <li><b>Guide vanes.</b> With vanes on, α₁ is the vane angle, and the vane loss is charged to the whole flow. Vanes raise the runaway speed and the power ceiling, so the wheel can sit further aft with more bypass. At this light loading the gas still meets the blades about 45° off their design inlet angle with or without vanes, so the default efficiency gain is small (0.50 to 0.55); change it if testing shows more.</li>
+        <li><b>Engine match.</b> The round exits have a fixed area. The model finds the core turbine-exit pressure that pushes the flow through the vanes, cone, wheel, pipes and exits, then estimates the EGT change from the smaller or larger expansion across the core turbine at constant speed. This step is the roughest part of the page.</li>
+        <li><b>Round pipes.</b> Two round pipes beside a 38 mm tunnel are wider than the engine case, which costs radial-distance points. The plan section and score table show how much.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+<script>
+"use strict";
+const G = 1.335, RG = 287, CP = G * RG / (G - 1), PA = 101325;
+const RM = (58 / 2 + 37.5 / 2) / 2 / 1000, HUB = 37.5, WHEEL = 58, INLET = 58.4, WHEEL_W = 6.8;
+const N_RATED = 110500, N_OVER = 140000, CASE_R = 48.5, WALL = 0.9;
+const TR = M => 1 + (G - 1) / 2 * M * M;
+const PR = M => Math.pow(TR(M), G / (G - 1));
+const mfp = M => Math.sqrt(G / RG) * M * Math.pow(TR(M), -(G + 1) / (2 * (G - 1)));
+function machFromMfp(v) { if (v >= mfp(1)) return 1; let lo = 0, hi = 1; for (let i = 0; i < 50; i++) { const m = (lo + hi) / 2; if (mfp(m) < v) lo = m; else hi = m; } return (lo + hi) / 2; }
+const rpmOf = U => U / RM * 60 / (2 * Math.PI);
+const circ = d => Math.PI / 4 * d * d * 1e-6;
+const rad = d => d * Math.PI / 180;
+
+function baseline(p) {
+  const VeM = p.Fmax / p.mdMax, TsM = p.T5max - VeM * VeM / (2 * CP), MeM = VeM / Math.sqrt(G * RG * TsM);
+  const Aeff = p.mdMax / (PA / (RG * TsM) * VeM);
+  const Me9 = Math.sqrt(p.F90 / (G * PA * Aeff)), Ts9 = p.T590 / TR(Me9), Ve9 = Me9 * Math.sqrt(G * RG * Ts9);
+  return { Aeff,
+    max: { N: 154000, F: p.Fmax, md: p.mdMax, T0: p.T5max, P0: PA * PR(MeM), dTt: 125 },
+    p90: { N: 139000, F: p.F90, md: p.F90 / Ve9, T0: p.T590, P0: PA * PR(Me9), dTt: 105 } };
+}
+function geometry(p) {
+  const Ds = INLET + 2 * (p.xw + WHEEL_W / 2) * Math.tan(rad(p.cone));
+  const At = Math.PI / 4 * (Ds * Ds - HUB * HUB) * 1e-6, Abl = Math.PI / 4 * (WHEEL * WHEEL - HUB * HUB) * 1e-6;
+  const legOD = p.legID + 2 * WALL, yc = p.tunnel / 2 + legOD / 2;
+  const Lmod = p.xw + WHEEL_W + 33 + 20 + 57.5 + 8;
+  const dExc = Math.max(0, yc + legOD / 2 - CASE_R);
+  return { Ds, gap: (Ds - WHEEL) / 2, At, Abl, frac: Math.min(1, Abl / At), legOD, yc, Lmod, dExc,
+    Aleg: 2 * circ(p.legID), Aexit: 2 * circ(Math.min(p.exitID, p.legID)) * p.Cd, Ltot: 241 - 40.4 + Lmod };
+}
+// one operating point with core turbine-exit pressure scaled by x
+function chain(op, x, p, g, loaded) {
+  const P04 = 0.95 * PA * (1 + 1.9 * Math.pow(op.N / 154000, 2));
+  const ex = (G - 1) / G, f0 = 1 - Math.pow(P04 / op.P0, -ex), f1 = 1 - Math.pow(P04 / (op.P0 * x), -ex);
+  const dEGT = f1 > 0.01 ? (f0 / f1 - 1) * (op.T0 + op.dTt) : 9999;
+  const T5 = op.T0 + dEGT, md = op.md;
+  let P0 = op.P0 * x;
+  const A5 = Math.PI / 4 * (INLET * INLET - HUB * HUB) * 1e-6;
+  const M5 = machFromMfp(md * Math.sqrt(T5) / (P0 * A5)), q5 = P0 * (1 - 1 / PR(M5));
+  const a1 = p.gv ? rad(p.alpha) : 0;
+  if (p.gv) P0 -= p.Kv * q5 / Math.pow(Math.cos(a1), 2);
+  P0 -= p.Kd * q5;
+  const Mx = machFromMfp(md * Math.sqrt(T5) / (P0 * g.At)), Vx = Mx * Math.sqrt(G * RG * T5 / TR(Mx));
+  const C = Vx * (Math.tan(a1) + Math.tan(rad(p.beta2))), mpt = md * g.frac;
+  const eta = p.gv ? p.etaGV : p.eta0;
+  const kU = loaded ? Math.pow(60 / (2 * Math.PI * RM), 2) / (p.Kv_rpm * p.Kv_rpm * p.R * p.etaGen) : 0;
+  const U = C * mpt / (mpt + kU), Psh = kU * U * U, N = rpmOf(U), V = N / p.Kv_rpm, Pel = Psh * p.etaGen;
+  const T6 = T5 - Psh / (md * CP);
+  P0 *= Math.pow(Math.max(0.5, 1 - Psh / (eta * md * CP) / T5), G / (G - 1));
+  const Ml = machFromMfp(md * Math.sqrt(T6) / (P0 * g.Aleg));
+  P0 -= p.Kl * P0 * (1 - 1 / PR(Ml));
+  const npr = Math.max(1.0001, P0 / PA), Me = Math.min(1, Math.sqrt((Math.pow(npr, ex) - 1) * 2 / (G - 1)));
+  const Ts = T6 / TR(Me), Ve = Me * Math.sqrt(G * RG * Ts), Aneed = md / (PA / (RG * Ts) * Ve);
+  const inc = Math.atan2(U - Vx * Math.tan(a1), Vx) * 180 / Math.PI;
+  return { x, dEGT, T5, Vx, Mx, C, U, N, V, I: V > 0 ? Pel / V : 0, Psh, Pel, Ml, Me, Ve, F: md * Ve, Aneed,
+    Nfree: rpmOf(C), bypass: 1 - g.frac, inc, Pceil: mpt * C * C / 4 * p.etaGen, dP5: op.P0 * (x - 1) };
+}
+function solvePoint(op, p, g, loaded) {
+  let lo = 0.8, hi = 1.6;
+  for (let i = 0; i < 40; i++) { const x = (lo + hi) / 2; if (chain(op, x, p, g, loaded).Aneed > g.Aexit) lo = x; else hi = x; }
+  return chain(op, (lo + hi) / 2, p, g, loaded);
+}
+function solve(p) {
+  const b = baseline(p), g = geometry(p);
+  const r90 = solvePoint(b.p90, p, g, true);
+  const rmax = solvePoint(b.max, p, g, !p.unloadMax);
+  const rfree = solvePoint(b.max, p, g, false);
+  return { b, g, r90, rmax, rfree };
+}
+function loadFor(p, target) {
+  // highest resistance (lightest load) that reaches the target at 90%; else the resistance giving peak power
+  const P = R => solve({ ...p, R }).r90.Pel;
+  let best = { R: p.R, P: -1 };
+  let prev = null;
+  for (let R = 60; R >= 0.4; R /= 1.06) {
+    const v = P(R); if (v > best.P) best = { R, P: v };
+    if (v >= target) { let lo = R, hi = prev ?? R; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (P(m) >= target) lo = m; else hi = m; } return { R: lo, ok: true }; }
+    prev = R;
+  }
+  return { R: best.R, ok: false, P: best.P };
+}
+const score = {
+  power: P => Math.min(100, Math.max(0, 0.1 * P)),
+  f90: lbf => lbf > 20 ? 20 : lbf < 10 ? 0 : 2 * lbf - 20,
+  fmax: lbf => lbf > 19 ? 10 : lbf < 15 ? 0 : 2.5 * lbf - 37.5,
+  radial: din => din > 4 ? 0 : 15 - 3.75 * din,
+  length: lin => lin <= 10 ? 15 : lin > 15 ? 0 : 45 - 3 * lin
+};
+const DEF = { xw: 13, cone: 8, legID: 36.3, exitID: 33.1, tunnel: 38, beta2: 47.4, gv: false, alpha: 15,
+  R: 3.85, Kv_rpm: 1441, etaGen: 0.87, unloadMax: true, eta0: 0.5, etaGV: 0.55, Kd: 0.10, Kl: 0.30, Kv: 0.08, Cd: 0.97,
+  Fmax: 100, mdMax: 0.235, T5max: 1000, F90: 71.3, T590: 940 };
+</script>
+<script>
+const $ = id => document.getElementById(id);
+const GROUPS = [
+  ["Geometry", [
+    { k: "xw", l: "Wheel position", s: "mm aft of the nozzle flange", min: 0, max: 35, step: 0.5 },
+    { k: "cone", l: "Cone half-angle", s: "deg", min: 4, max: 14, step: 0.5 },
+    { k: "legID", l: "Pipe inside diameter", s: "mm, each of two", min: 28, max: 48, step: 0.1 },
+    { k: "exitID", l: "Exit inside diameter", s: "mm, round, each of two", min: 26, max: 48, step: 0.1 },
+    { k: "tunnel", l: "Motor tunnel width", s: "mm between the pipes", min: 31, max: 46, step: 0.5 },
+    { k: "beta2", l: "Blade exit angle β₂", s: "deg, measure on the spare wheel", min: 35, max: 60, step: 0.1 }
+  ]],
+  ["Guide vanes", [
+    { k: "alpha", l: "Vane exit angle α₁", s: "deg of pre-swirl, used when vanes are on", min: 0, max: 35, step: 1 }
+  ]],
+  ["Generator and load", [
+    { k: "R", l: "Load resistance", s: "Ω, constant-resistance mode", min: 0.5, max: 30, step: 0.05 },
+    { k: "Kv_rpm", l: "Motor Kv", s: "rpm/V as wired", min: 600, max: 2000, step: 1 },
+    { k: "etaGen", l: "Generator + rectifier efficiency", s: "", min: 0.6, max: 0.98, step: 0.01 }
+  ]],
+  ["Loss assumptions", [
+    { k: "eta0", l: "Wheel efficiency, no vanes", s: "", min: 0.2, max: 0.9, step: 0.01 },
+    { k: "etaGV", l: "Wheel efficiency, with vanes", s: "", min: 0.2, max: 0.9, step: 0.01 },
+    { k: "Kv", l: "Vane loss", s: "fraction of vane-exit dynamic head", min: 0, max: 0.3, step: 0.01 },
+    { k: "Kd", l: "Cone loss", s: "fraction of annulus dynamic head", min: 0, max: 0.5, step: 0.01 },
+    { k: "Kl", l: "Split and pipe loss", s: "fraction of pipe dynamic head", min: 0, max: 1, step: 0.01 },
+    { k: "Cd", l: "Exit discharge coefficient", s: "", min: 0.85, max: 1, step: 0.01 }
+  ], true],
+  ["Stock engine baseline", [
+    { k: "F90", l: "Thrust at 90%", s: "N", min: 50, max: 90, step: 0.1 },
+    { k: "T590", l: "Exhaust total temp at 90%", s: "K", min: 800, max: 1100, step: 5 },
+    { k: "Fmax", l: "Thrust at full throttle", s: "N", min: 80, max: 120, step: 0.5 },
+    { k: "mdMax", l: "Mass flow at full throttle", s: "kg/s incl. fuel", min: 0.18, max: 0.32, step: 0.001 },
+    { k: "T5max", l: "Exhaust total temp, full throttle", s: "K", min: 850, max: 1150, step: 5 }
+  ], true]
+];
+const PIPES = [["1¼ in", 29.95], ["1⅜ in", 33.1], ["1½ in", 36.3], ["1¾ in", 42.65]];
+let st = { ...DEF };
+try { const s = JSON.parse(localStorage.getItem("p100-aft-v2") || "{}"); for (const k in DEF) if (typeof s[k] === typeof DEF[k]) st[k] = s[k]; } catch (e) {}
+const persist = () => { try { localStorage.setItem("p100-aft-v2", JSON.stringify(st)); } catch (e) {} };
+const fx = (v, d = 0) => Number.isFinite(v) ? v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }) : "–";
+const LBF = 4.4482;
+
+function buildInputs() {
+  const form = $("inputs"); form.innerHTML = "";
+  for (const [name, fields, closed] of GROUPS) {
+    const box = document.createElement(closed ? "details" : "fieldset");
+    if (closed) { const s = document.createElement("summary"); s.textContent = name; box.append(s); }
+    else { const lg = document.createElement("legend"); lg.textContent = name; box.append(lg); }
+    for (const f of fields) {
+      const d = document.createElement("div"); d.className = "field";
+      d.innerHTML = `<label for="n-${f.k}">${f.l}${f.s ? `<small>${f.s}</small>` : ""}</label><input type="number" id="n-${f.k}" min="${f.min}" max="${f.max}" step="${f.step}"><input type="range" id="r-${f.k}" min="${f.min}" max="${f.max}" step="${f.step}" aria-label="${f.l}">`;
+      box.append(d);
+      const set = v => { if (!Number.isFinite(v)) return; st[f.k] = Math.min(f.max, Math.max(f.min, v)); sync(); };
+      d.querySelector("[type=number]").addEventListener("change", e => set(parseFloat(e.target.value)));
+      d.querySelector("[type=range]").addEventListener("input", e => set(parseFloat(e.target.value)));
+      if (f.k === "legID" || f.k === "exitID") {
+        const pr = document.createElement("div"); pr.className = "presets";
+        pr.innerHTML = PIPES.map(([n, id]) => `<button type="button" data-id="${id}" title="${n} OD x 20 ga tube, ${id} mm ID">${n}</button>`).join("");
+        pr.addEventListener("click", e => { const b = e.target.closest("button"); if (b) set(parseFloat(b.dataset.id)); });
+        box.append(pr);
+      }
+    }
+    if (name === "Generator and load") {
+      const t = document.createElement("label"); t.className = "toggle";
+      t.innerHTML = `<input type="checkbox" id="unloadMax"> Disconnect the load at full throttle`;
+      box.append(t);
+      t.firstChild.addEventListener("change", e => { st.unloadMax = e.target.checked; sync(); });
+    }
+    form.append(box);
+  }
+}
+function sync() {
+  for (const [, fields] of GROUPS) for (const f of fields) {
+    const dp = (String(f.step).split(".")[1] || "").length;
+    $("n-" + f.k).value = (+st[f.k]).toFixed(dp); $("r-" + f.k).value = st[f.k];
+  }
+  $("unloadMax").checked = st.unloadMax;
+  $("gvOn").setAttribute("aria-pressed", st.gv); $("gvOff").setAttribute("aria-pressed", !st.gv);
+  persist(); render();
+}
+const dot = c => `<span class="dot" style="background:var(--${c})"></span>`;
+
+function render() {
+  const S = solve(st), { g, r90, rmax, rfree, b } = S;
+  const lbf90 = r90.F / LBF, lbfMax = rmax.F / LBF;
+  $("k-P").innerHTML = `${fx(r90.Pel)}<span>W</span>`;
+  $("k-Pc").innerHTML = (r90.Pel >= 1000 ? dot("good") + "Meets the 1000 W target" : dot("warn") + `${fx(1000 - r90.Pel)} W short of 1000 W`) + ` · ${fx(r90.V)} V, ${fx(r90.I, 1)} A`;
+  $("k-F").innerHTML = `${fx(r90.F, 1)}<span>N</span>`;
+  $("k-Fc").innerHTML = `${fx(lbf90, 1)} lbf · ${fx((r90.F / b.p90.F - 1) * 100)}% vs stock ${fx(b.p90.F, 1)} N`;
+  $("k-N").innerHTML = `${fx(r90.N / 1000, 1)}<span>k rpm</span>`;
+  $("k-Nc").innerHTML = r90.N > N_OVER ? dot("bad") + "Above the 140k overspeed limit" : r90.N > N_RATED ? dot("warn") + "Above the 110.5k rating" : dot("good") + "Within the 110.5k rating";
+  $("k-R").innerHTML = `${fx(rfree.N / 1000, 1)}<span>k rpm</span>`;
+  $("k-Rc").innerHTML = rfree.N > N_OVER ? dot("bad") + "Loss of load would overspeed the motor" : rfree.N > N_RATED ? dot("warn") + "Over rating, under the 140k limit" : dot("good") + "Under the 110.5k rating with no load";
+
+  const w = [];
+  if (rfree.N > N_OVER) w.push("With no electrical load at full throttle the wheel reaches " + fx(rfree.N / 1000, 1) + "k rpm, past the motor's 140k overspeed limit. Move the wheel aft to open the tip gap.");
+  if (r90.N > N_RATED) w.push("Loaded speed at 90% is above the motor's 110.5k rpm rating.");
+  if (r90.Pel > 0.92 * r90.Pceil) w.push("The wheel is close to its power ceiling at this position (" + fx(r90.Pceil) + " W ideal). Move it forward or lower the load resistance carefully; past the peak the wheel stalls.");
+  if (r90.dEGT > 60) w.push("The exits are tight for this loading: estimated EGT rise at 90% is +" + fx(r90.dEGT) + " K. Keep EGT under about 800 °C.");
+  if (rmax.dEGT > 60) w.push("Estimated EGT rise at full throttle is +" + fx(rmax.dEGT) + " K.");
+  if (r90.I > 25 || rmax.I > 25) w.push("Generator current exceeds 25 A (" + fx(Math.max(r90.I, rmax.I), 1) + " A). Check the motor's continuous rating.");
+  if (st.exitID > st.legID) w.push("Exit diameter is larger than the pipe; the model uses the pipe diameter as the exit.");
+  if (st.gv && st.xw < 9) w.push("There is less than 9 mm between the flange and the wheel, which leaves no room for a vane row.");
+  if (lbfMax < 19) w.push("Full-throttle thrust of " + fx(lbfMax, 1) + " lbf is under the 19 lbf full-score threshold.");
+  $("warn").innerHTML = w.join("<br>");
+
+  $("geoSum").innerHTML = [
+    ["Shroud diameter at wheel", fx(g.Ds, 1) + " mm"], ["Tip gap", fx(g.gap, 1) + " mm"], ["Bypass share (by area)", fx(r90.bypass * 100) + "%"],
+    ["Pipe area, total", fx(g.Aleg * 1e6) + " mm²"], ["Exit area, total effective", fx(g.Aexit * 1e6) + " mm²"], ["Stock nozzle, effective", fx(b.Aeff * 1e6) + " mm²"],
+    ["Width across pipes", fx(2 * (g.yc + g.legOD / 2), 1) + " mm"], ["Outside the engine case by", fx(g.dExc, 1) + " mm"], ["Jet centreline offset", fx(g.yc, 1) + " mm"],
+    ["Module length", fx(g.Lmod) + " mm"], ["Overall engine length", fx(g.Ltot) + " mm (" + fx(g.Ltot / 25.4, 1) + " in)"]
+  ].map(([a, c]) => `<div><span>${a}</span><span class="mono">${c}</span></div>`).join("");
+
+  const row = (l, f, u = "") => `<tr><td>${l}</td><td></td><td class="num">${f(r90)}${u}</td><td class="num">${f(rmax)}${u}</td></tr>`;
+  $("opTable").innerHTML = `<tr><th>Quantity</th><th></th><th>90% speed, loaded</th><th>Full throttle${st.unloadMax ? ", no load" : ", loaded"}</th></tr>` +
+    row("Electrical power", r => fx(r.Pel), " W") + row("Wheel speed", r => fx(r.N / 1000, 1), "k rpm") +
+    row("DC voltage / current", r => fx(r.V) + " V / " + fx(r.I, 1), " A") +
+    row("Thrust", r => fx(r.F, 1) + " N / " + fx(r.F / LBF, 1), " lbf") +
+    `<tr><td>Stock thrust</td><td></td><td class="num">${fx(b.p90.F, 1)} N / ${fx(b.p90.F / LBF, 1)} lbf</td><td class="num">${fx(b.max.F, 1)} N / ${fx(b.max.F / LBF, 1)} lbf</td></tr>` +
+    row("Estimated EGT change", r => (r.dEGT >= 0 ? "+" : "") + fx(r.dEGT), " K") +
+    row("Core back-pressure change", r => (r.dP5 >= 0 ? "+" : "") + fx(r.dP5 / 1000, 1), " kPa") +
+    row("Axial velocity at wheel", r => fx(r.Vx), " m/s") + row("Relative inflow angle at blades", r => fx(r.inc), "°") +
+    row("Mach in pipes / at exits", r => fx(r.Ml, 2) + " / " + fx(r.Me, 2)) +
+    row("No-load speed at this point", r => fx(r.Nfree / 1000, 1), "k rpm");
+
+  const din = g.dExc / 25.4, lin = g.Ltot / 25.4;
+  const sc = [["Power generation", fx(r90.Pel) + " W", score.power(r90.Pel), 100], ["Thrust at 90%", fx(lbf90, 1) + " lbf", score.f90(lbf90), 20],
+    ["Maximum thrust", fx(lbfMax, 1) + " lbf", score.fmax(lbfMax), 10], ["Radial distance", fx(din, 2) + " in", score.radial(din), 15], ["Overall length", fx(lin, 1) + " in", score.length(lin), 15]];
+  $("scTable").innerHTML = `<tr><th>Item</th><th>Value</th><th>Points</th><th>Of</th></tr>` + sc.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td class="num">${fx(r[2], 1)}</td><td class="num">${r[3]}</td></tr>`).join("") +
+    `<tr><td><b>Subtotal</b></td><td></td><td class="num"><b>${fx(sc.reduce((a, r) => a + r[2], 0), 1)}</b></td><td class="num">160</td></tr>`;
+
+  drawPlan(g); drawRear(g); drawCharts();
+}
+
+function drawPlan(g) {
+  const x0 = -22, xe = g.Lmod, W = xe - x0 + 34, half = Math.max(64, g.yc + g.legOD / 2 + 12);
+  const tan = Math.tan(rad(st.cone)), Lc = st.xw + WHEEL_W + 4, Rin = INLET / 2, Rc = Rin + Lc * tan;
+  const xcb = st.xw + WHEEL_W, xm = xcb + 53, xs = Math.min(xcb + 46, xe - 26), ro = g.yc + st.legID / 2, ri = g.yc - st.legID / 2;
+  const eID = Math.min(st.exitID, st.legID), xr = xe - 18, t = st.tunnel / 2;
+  const gas = s => `M0,${s * Rin} L${Lc},${s * Rc} C${Lc + 14},${s * (Rc + 2)} ${xs - 16},${s * ro} ${xs},${s * ro} L${xr},${s * ro} L${xe},${s * (g.yc + eID / 2)} L${xe},${s * (g.yc - eID / 2)} L${xr},${s * ri} L${xs},${s * ri} C${xs - 14},${s * ri} ${xcb + 12},${s * HUB / 2} ${xcb},${s * HUB / 2} L0,${s * HUB / 2} Z`;
+  let v = "";
+  if (st.gv) for (const s of [-1, 1]) for (let i = 0; i < 3; i++) { const y = s * (HUB / 2 + 2.2 + i * 3.2), xa = Math.max(1, st.xw - 8), dy = 5 * Math.tan(rad(st.alpha)); v += `<line x1="${xa}" y1="${y - dy / 2}" x2="${xa + 5}" y2="${y + dy / 2}" stroke="var(--s3)" stroke-width="1.1" stroke-linecap="round"/>`; }
+  const lab = (x, y, s, a = "middle") => `<text x="${x}" y="${y}" font-size="3.6" text-anchor="${a}" fill="var(--text-2)">${s}</text>`;
+  $("plan").innerHTML = `<svg viewBox="${x0 - 2} ${-half} ${W} ${2 * half + 12}" width="100%" role="img" aria-label="Plan section of the module drawn to scale from the inputs">
+    <rect x="${x0}" y="${-CASE_R}" width="${-x0}" height="${2 * CASE_R}" fill="var(--surface-2)" stroke="var(--muted)" stroke-width=".4"/>
+    ${lab(x0 / 2, 1.2, "Engine")}
+    <line x1="0" y1="${-CASE_R}" x2="${xe + 8}" y2="${-CASE_R}" stroke="var(--muted)" stroke-width=".4" stroke-dasharray="2 1.5"/>
+    <line x1="0" y1="${CASE_R}" x2="${xe + 8}" y2="${CASE_R}" stroke="var(--muted)" stroke-width=".4" stroke-dasharray="2 1.5"/>
+    <path d="${gas(-1)}" fill="var(--s2)" fill-opacity=".22" stroke="var(--s2)" stroke-width=".7"/>
+    <path d="${gas(1)}" fill="var(--s2)" fill-opacity=".22" stroke="var(--s2)" stroke-width=".7"/>
+    <rect x="${xcb}" y="${-t}" width="${xe - xcb}" height="${2 * t}" fill="var(--surface)" stroke="var(--muted)" stroke-width=".4"/>
+    <rect x="${st.xw}" y="${-WHEEL / 2}" width="${WHEEL_W}" height="${WHEEL}" fill="var(--steel)" stroke="var(--text)" stroke-width=".4"/>
+    <line x1="${st.xw}" y1="${-HUB / 2}" x2="${st.xw + WHEEL_W}" y2="${-HUB / 2}" stroke="var(--text)" stroke-width=".3"/><line x1="${st.xw}" y1="${HUB / 2}" x2="${st.xw + WHEEL_W}" y2="${HUB / 2}" stroke="var(--text)" stroke-width=".3"/>
+    ${v}
+    <rect x="${xcb + 2}" y="-11" width="29" height="22" rx="1.5" fill="var(--surface-2)" stroke="var(--muted)" stroke-width=".4"/>
+    <rect x="${xcb + 33}" y="-13.5" width="18" height="27" rx="1.5" fill="var(--surface-2)" stroke="var(--muted)" stroke-width=".4"/>
+    <rect x="${xm}" y="-14.65" width="57.5" height="29.3" rx="1.5" fill="var(--s1)" fill-opacity=".25" stroke="var(--s1)" stroke-width=".6"/>
+    ${lab(xcb + 16.5, 1.2, "Bearings")}${lab(xcb + 42, 1.2, "Cplr")}${lab(xm + 28.7, 1.2, "Motor")}
+    ${lab((xs + xr) / 2, -g.yc + 1.2, "Pipe " + fx(st.legID, 1) + " ID")}${lab((xs + xr) / 2, g.yc + 1.2, "Exit " + fx(eID, 1) + " ID")}
+    ${lab(st.xw + WHEEL_W / 2, -Rc - 6, "Wheel, gap " + fx(g.gap, 1) + " mm", "start")}
+    <path d="M${xe + 2},${-g.yc} h9 m-3,-2 l3,2 l-3,2 M${xe + 2},${g.yc} h9 m-3,-2 l3,2 l-3,2" fill="none" stroke="var(--s2)" stroke-width=".7"/>
+    <path d="M0,${half + 3} H${xe} M0,${half + 1} v4 M${xe},${half + 1} v4" fill="none" stroke="var(--muted)" stroke-width=".4"/>
+    ${lab(xe / 2, half + 8.5, fx(g.Lmod) + " mm from the nozzle flange")}
+  </svg>`;
+}
+function drawRear(g) {
+  const h = Math.max(62, g.yc + g.legOD / 2 + 8), eID = Math.min(st.exitID, st.legID);
+  const pipe = s => `<circle cx="${s * g.yc}" cy="0" r="${g.legOD / 2}" fill="none" stroke="var(--text)" stroke-width=".5"/><circle cx="${s * g.yc}" cy="0" r="${eID / 2}" fill="var(--s2)" fill-opacity=".25" stroke="var(--s2)" stroke-width=".6"/>`;
+  $("rear").innerHTML = `<svg viewBox="${-h} ${-h} ${2 * h} ${2 * h}" width="100%" role="img" aria-label="Rear view: two round exits either side of the motor, against the engine case circle">
+    <circle r="${CASE_R}" fill="none" stroke="var(--muted)" stroke-width=".4" stroke-dasharray="2 1.5"/>
+    <circle r="${g.Ds / 2}" fill="none" stroke="var(--muted)" stroke-width=".3"/>
+    ${pipe(-1)}${pipe(1)}
+    <circle r="14.65" fill="var(--s1)" fill-opacity=".25" stroke="var(--s1)" stroke-width=".6"/>
+    <text y="${CASE_R + 6}" font-size="3.8" text-anchor="middle" fill="var(--text-2)">97 mm engine case</text>
+    <text y="${-CASE_R - 3}" font-size="3.8" text-anchor="middle" fill="${g.dExc > 0 ? "var(--warn)" : "var(--good)"}">${g.dExc > 0 ? "Pipes sit " + fx(g.dExc, 1) + " mm outside the case" : "Inside the engine case"}</text>
+  </svg>`;
+}
+function lineChart(el, series, o) {
+  const W = 520, H = 250, L = 48, R = 12, T = 12, B = 36, X = v => L + (v - o.x0) / (o.x1 - o.x0) * (W - L - R), Y = v => H - B - (v - o.y0) / (o.y1 - o.y0) * (H - T - B);
+  let s = "";
+  for (let i = 0; i <= 4; i++) { const yv = o.y0 + (o.y1 - o.y0) * i / 4; s += `<line x1="${L}" x2="${W - R}" y1="${Y(yv)}" y2="${Y(yv)}" stroke="var(--grid)"/><text x="${L - 6}" y="${Y(yv) + 4}" font-size="11" text-anchor="end" fill="var(--muted)">${fx(yv)}</text>`; }
+  for (let xv = o.x0; xv <= o.x1; xv += 5) s += `<text x="${X(xv)}" y="${H - B + 16}" font-size="11" text-anchor="middle" fill="var(--muted)">${xv}</text>`;
+  for (const l of o.limits || []) if (l.v < o.y1) s += `<line x1="${L}" x2="${W - R}" y1="${Y(l.v)}" y2="${Y(l.v)}" stroke="var(--${l.c})" stroke-dasharray="3 3"/><text x="${W - R - 2}" y="${Y(l.v) - 4}" font-size="11" text-anchor="end" fill="var(--${l.c})">${l.t}</text>`;
+  for (const se of series) {
+    s += `<polyline fill="none" stroke="var(--${se.c})" stroke-width="2" ${se.dash ? 'stroke-dasharray="6 4"' : ""} points="${se.pts.map(p => X(p[0]) + "," + Y(Math.min(o.y1, p[1]))).join(" ")}"/>`;
+    if (se.cur) s += `<circle cx="${X(se.cur[0])}" cy="${Y(Math.min(o.y1, se.cur[1]))}" r="5" fill="var(--surface)" stroke="var(--pt)" stroke-width="2"/>`;
+  }
+  s += `<text x="${(L + W - R) / 2}" y="${H - 4}" font-size="12" text-anchor="middle" fill="var(--text-2)">Wheel position, mm aft of flange</text><text x="4" y="-6" font-size="12" fill="var(--text-2)">${o.yl}</text>`;
+  el.innerHTML = `<svg viewBox="0 -20 ${W} ${H + 20}" width="100%" role="img" aria-label="${o.aria}">${s}</svg>`;
+}
+function drawCharts() {
+  const P = [], N = [], NF = [];
+  for (let x = 0; x <= 35; x += 1) { const S = solve({ ...st, xw: x }); P.push([x, S.r90.Pel]); N.push([x, S.r90.N / 1000]); NF.push([x, S.rfree.N / 1000]); }
+  const cur = solve(st);
+  const pm = Math.max(1500, Math.ceil(Math.max(...P.map(p => p[1])) / 500) * 500);
+  lineChart($("chP"), [{ c: "s1", pts: P, cur: [st.xw, cur.r90.Pel] }], { x0: 0, x1: 35, y0: 0, y1: pm, yl: "W", limits: [{ v: 1000, c: "good", t: "1000 W target" }], aria: "Electrical power at 90% speed against wheel position" });
+  lineChart($("chN"), [{ c: "s2", pts: NF, dash: true, cur: [st.xw, cur.rfree.N / 1000] }, { c: "s1", pts: N, cur: [st.xw, cur.r90.N / 1000] }], { x0: 0, x1: 35, y0: 40, y1: 180, yl: "k rpm", limits: [{ v: 110.5, c: "warn", t: "110.5k rating" }, { v: 140, c: "bad", t: "140k overspeed limit" }], aria: "Wheel speed against wheel position, loaded at 90% and unloaded at full throttle" });
+}
+$("gvOn").addEventListener("click", () => { st.gv = true; sync(); });
+$("gvOff").addEventListener("click", () => { st.gv = false; sync(); });
+$("reset").addEventListener("click", () => { st = { ...DEF }; sync(); });
+$("auto").addEventListener("click", () => { const a = loadFor(st, 1000); st.R = Math.min(30, Math.max(0.5, Math.round(a.R * 20) / 20)); sync(); if (!a.ok) $("warn").innerHTML = "This geometry peaks at about " + fx(a.P) + " W. The load is set to that peak; move the wheel forward for more." + ($("warn").innerHTML ? "<br>" + $("warn").innerHTML : ""); });
+buildInputs(); sync();
+</script>
+</body>
+</html>
