@@ -1,0 +1,46 @@
+/* Shared base styles: theme colours, page width and the site header.
+   Pages link this before their own <style>, so a page can still override anything. */
+:root{
+  color-scheme:light;
+  --bg:#f4f3ef; --surface:#fcfcfb; --surface-2:#efeee9; --line:#dcdad3; --grid:#e7e5df;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#7a7972;
+  --accent:#c2410c; --s1:#2a78d6; --s2:#eb6834;
+  --good:#1c7c3c; --warn:#a35f00; --bad:#b42318;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+    --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+    --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+    --good:#5cc27f; --warn:#e3a53c; --bad:#f07067;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+  --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+  --good:#5cc27f; --warn:#e3a53c; --bad:#f07067;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+
+#site-header{border-bottom:1px solid var(--line);background:var(--surface);min-height:62px}
+#site-header .wrap{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding-top:18px;padding-bottom:16px}
+#site-header h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
+#site-header p{margin:0;color:var(--text-2);font-size:14px}
+#site-header nav{margin-left:auto;font-size:14px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 18px}
+#site-header .dd{position:relative;display:inline-flex;align-items:baseline}
+#site-header .dd-top{color:var(--text-2);text-decoration:none;font:inherit;font-size:14px;padding:0;border:0;background:transparent;cursor:pointer;border-radius:0}
+#site-header .dd-top[aria-current]{color:var(--text);font-weight:500;border-bottom:2px solid var(--accent)}
+#site-header .dd-btn:not(.dd-top){border:0;background:transparent;color:var(--text-2);padding:0 2px 0 3px;font-size:12px;line-height:1;cursor:pointer}
+#site-header .dd-top span{font-size:12px}
+#site-header .dd-menu{display:none;position:absolute;top:100%;right:0;z-index:20;min-width:190px;padding:6px 0;margin-top:4px;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+#site-header .dd-menu::before{content:"";position:absolute;left:0;right:0;top:-8px;height:8px}
+#site-header .dd:hover .dd-menu,#site-header .dd.open .dd-menu{display:block}
+#site-header .dd-menu a{display:block;padding:6px 14px;white-space:nowrap;color:var(--text-2);text-decoration:none}
+#site-header .dd-menu a:hover{background:var(--surface-2);color:var(--text)}
+#site-header .dd-menu a[aria-current]{color:var(--text);font-weight:500;box-shadow:inset 3px 0 0 var(--accent)}
+@media (max-width:640px){#site-header nav{margin-left:0;width:100%}#site-header .dd-menu{right:auto;left:0}#site-header .dd:last-child .dd-menu{left:auto;right:0}}

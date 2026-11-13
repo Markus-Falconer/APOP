@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 1. Set the browser tab title and description. -->
+<title>New Page Title</title>
+<meta name="description" content="One sentence on what this page covers.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+/* 2. Page-only styles go here. Colours, fonts, page width and the header come from site.css. */
+main.wrap{padding-top:20px;padding-bottom:40px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:20px}
+</style>
+</head>
+<body>
+<!-- 3. Use the id you added to SITE in site.js. The heading, subtitle and nav are drawn from it. -->
+<header id="site-header" data-page="new-page-id"></header>
+<script src="site.js"></script>
+
+<main class="wrap">
+  <div class="panel">
+    <h2>First section</h2>
+    <p>Page content.</p>
+  </div>
+</main>
+</body>
+</html>
