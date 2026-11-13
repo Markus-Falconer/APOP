@@ -147,13 +147,21 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
 .notes{font-size:14px;color:var(--text-2)}
 .notes h2{color:var(--text)}
 .notes li{margin:4px 0}
+nav{display:flex;flex-wrap:wrap;align-items:baseline}
+.dd{position:relative;display:inline-flex;align-items:baseline}
+.dd>button{border:0;background:transparent;color:var(--text-2);padding:0 2px 0 3px;font-size:12px;line-height:1}
+.dd-menu{display:none;position:absolute;top:100%;right:0;z-index:20;min-width:150px;padding:6px 0;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+.dd:hover .dd-menu,.dd:focus-within .dd-menu,.dd.open .dd-menu{display:block}
+.dd-menu a{display:block;margin:0;padding:6px 12px;white-space:nowrap}
+.dd-menu a:hover{background:var(--surface-2);color:var(--text)}
+.dd-menu a[aria-current]{border-bottom:0}
 </style>
 </head>
 <body>
 <header><div class="wrap">
   <h1>Aft Turbine</h1>
   <p>JetCat P100-RX · a free power turbine in the exhaust, geared to a generator outside the hot flow</p>
-  <nav><a href="./">Cycle analysis</a><a href="cycle-v2.html">Cycle analysis V2</a><a href="generator.html">Generator physics</a><a href="nozzle.html">Nozzle modification</a><a href="aft-turbine.html" aria-current="page">Aft turbine</a><a href="load-bank.html">Load bank shopping</a></nav>
+  <nav><a href="./">Cycle analysis</a><a href="cycle-v2.html">Cycle analysis V2</a><a href="generator.html">Generator physics</a><a href="nozzle.html">Nozzle modification</a><span class="dd"><a href="aft-turbine.html" aria-current="page">Aft turbine</a><button type="button" aria-label="Aft turbine pages" aria-haspopup="true" onclick="this.parentNode.classList.toggle('open')">▾</button><span class="dd-menu"><a href="aft-turbine-v2.html">Aft Turbine V2</a></span></span><a href="load-bank.html">Load bank shopping</a></nav>
 </div></header>
 
 <main class="wrap">
