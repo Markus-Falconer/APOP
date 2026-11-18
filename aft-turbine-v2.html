@@ -145,6 +145,29 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
 .dd-menu a{display:block;margin:0;padding:6px 12px;white-space:nowrap}
 .dd-menu a:hover{background:var(--surface-2);color:var(--text)}
 .dd-menu a[aria-current]{border-bottom:0}
+.bo-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:2px 0 8px}
+.bo-bar .seg button{padding:4px 11px;font-size:13px}
+.bo-view{position:relative;height:420px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);overflow:hidden}
+.bo-view canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:pan-y}
+.bo-view canvas:active{cursor:grabbing}
+@media (max-width:640px){.bo-view{height:320px}}
+.bo-hint{position:absolute;left:10px;bottom:8px;font-size:12px;color:var(--muted);pointer-events:none}
+.bo-fallback{padding:16px;color:var(--text-2);font-size:14px}
+.swatches{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--text-2);margin:10px 0 4px}
+.swatches span{display:inline-flex;align-items:center;gap:6px}
+.swatches i,.part h3 i{width:12px;height:12px;border-radius:3px;display:inline-block;flex:none}
+.bo-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;margin-top:4px}
+@media (max-width:1100px){.bo-cols{grid-template-columns:1fr}}
+.bo-cols ul{margin:4px 0 0;padding-left:18px;font-size:14px;color:var(--text)}
+.bo-cols li{margin:4px 0}
+.bo-cols .summary{margin-top:4px;grid-template-columns:1fr}
+.bo-cols .summary div{gap:16px;align-items:baseline}
+.bo-cols .summary span:first-child{flex:none;width:38%}
+.bo-cols .summary span:last-child{text-align:right}
+.parts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:10px}
+.part{border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.5;background:var(--surface)}
+.part h3{margin:0 0 4px;display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--text)}
+.part p{margin:4px 0 0;color:var(--text-2)}
 </style>
 </head>
 <body>
@@ -188,8 +211,70 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
       <div class="summary" id="geoSum"></div>
     </div>
 
+    <div class="panel card prose" id="build">
+      <h2>2. Build options in 3D</h2>
+      <p>Three ways to make the adjustable shroud and the two-pipe split from stock parts. Each one turns the ring of gas around the centre body into two round pipes with a different kind of part: bent pipe (A), formed sheet (B) or flat plate (C). All three keep the motor on the engine axis between the pipes and use the same cone and sliding wheel. The models are built from the inputs on the left, so pipe size, exit size, cone angle, tunnel width and wheel position all update them. None of them is optimized; treat them as a starting point for the CFD and the printed final part.</p>
+      <h3>How the wheel adjusts in every option</h3>
+      <p>The wheel, its bearing tube, the magnetic coupler and the motor form one sliding cartridge. It runs inside a guide tube that is welded to the duct, so the coupler gap never changes as the wheel moves. Slots in the guide tube with a jack screw, or two clamp screws, set the position between runs. Moving the cartridge aft opens the tip gap in the cone and bypasses more gas. <span id="bo-travel"></span> The pipes and motor tunnel are drawn for the current wheel position; add your planned travel to their straight length.</p>
+      <div class="swatches" id="bo-swatches"></div>
+      <h3>Side by side</h3>
+      <div class="tablewrap"><table id="bo-cmp"></table></div>
+      <p class="fn">Split loss K is a rough guess for each layout, applied to the pipe dynamic head in place of the "Split and pipe loss" input. With fixed exits, extra loss mostly shows up as engine back-pressure (hotter EGT) rather than lost thrust, so B and C have their exits resized to give the same EGT rise as A at your current exit size; the thrust difference is then the real cost of the loss. Power and thrust come from the same model as the rest of the page. Width, height and length are measured from the 3D geometry, with the motor at the current wheel position.</p>
+    </div>
+
+    <div class="panel card" id="bo-A">
+      <h2>Option A &middot; Bent-pipe pants</h2>
+      <p class="sub">Your original idea. Two mandrel bends are trimmed on the centre plane and welded into a Y, and two filler cheeks join the Y to the round end of the cone. The guide tube passes through the crotch of the Y.</p>
+      <div id="bo-view-A"></div>
+      <div class="bo-cols">
+        <div><h3>Parts</h3><ul id="bo-bom-A"></ul></div>
+        <div><h3>Key dimensions</h3><div class="summary" id="bo-dims-A"></div></div>
+        <div><h3>Good</h3><ul><li>Lowest pressure loss of the three: the flow turns gradually and is never dumped into a dead volume.</li><li>Closest to the shape a printed final part will have, so the CFD has a physical twin to check against.</li><li>Buy-instead-of-build route: a stainless 2-into-1 exhaust merge collector with 1.5 in primaries, used backwards, replaces the welded Y and cheeks. Its spike is the crotch. Check that its round end matches the cone outlet.</li></ul></div>
+        <div><h3>Watch out for</h3><ul><li>Most welding: the seam along the crotch, plus both cheeks to the cone and to the legs.</li><li>The cartridge has to neck down to about 22 mm behind the wheel to pass through the crotch, so the bearings sit in a 1 in guide tube.</li><li>Longest of the three, because the bends do the sideways offset. A tighter bend radius or a larger bend angle shortens it.</li><li>The cheeks converge steeply top and bottom. That's acceptable in accelerating flow, but make a card template first.</li></ul></div>
+      </div>
+    </div>
+
+    <div class="panel card" id="bo-B">
+      <h2>Option B &middot; Sheet-metal fishtail</h2>
+      <p class="sub">A round-to-oval sheet-metal transition spreads the flow sideways. Two straight pipes then start side by side with the guide tube between them, and four small gussets close the corners.</p>
+      <div id="bo-view-B"></div>
+      <div class="bo-cols">
+        <div><h3>Parts</h3><ul id="bo-bom-B"></ul></div>
+        <div><h3>Key dimensions</h3><div class="summary" id="bo-dims-B"></div></div>
+        <div><h3>Good</h3><ul><li>No bends: the pipes and the guide tube are all straight 1.5 in tube, and they weld to each other, which makes a stiff rear section.</li><li>The fishtail is a classic sheet-metal layout: two halves from flat patterns, like an HVAC round-to-oval transition.</li><li>Shorter than A, and the flow area stays roughly constant through the transition.</li></ul></div>
+        <div><h3>Watch out for</h3><ul><li>The fishtail sides flare outward at about <span id="bo-flare-B"></span>&deg;, so expect some separation along the side walls. Lengthening the fishtail lowers the angle.</li><li>Slightly higher loss than A; the gussets leave small dead corners at the pipe entries.</li><li>Two thin halves have to be formed accurately to meet the pipe ends; tack everything on a fixture before welding.</li></ul></div>
+      </div>
+    </div>
+
+    <div class="panel card" id="bo-C">
+      <h2>Option C &middot; Flat-plate box</h2>
+      <p class="sub">The cone dumps into a short oval box made of two laser-cut plates and a wrapped strip. The pipes and the guide tube pass straight through the rear plate.</p>
+      <div id="bo-view-C"></div>
+      <div class="bo-cols">
+        <div><h3>Parts</h3><ul id="bo-bom-C"></ul></div>
+        <div><h3>Key dimensions</h3><div class="summary" id="bo-dims-C"></div></div>
+        <div><h3>Good</h3><ul><li>Every part is flat or straight: laser or waterjet the plates, roll one strip, cut tube to length.</li><li>Easiest to change: re-cut the rear plate to try a different pipe size or spacing.</li><li>Shortest of the three.</li></ul></div>
+        <div><h3>Watch out for</h3><ul><li>Highest loss: a sudden expansion into the box, then sharp-edged pipe entries. At the same EGT that costs thrust (see the table above).</li><li>The box is the widest part, so it sets the radial-distance score.</li><li>Flat walls drum and warp at temperature; use at least 1.2 mm plate or press a stiffening bead into the wrap.</li></ul></div>
+      </div>
+    </div>
+
+    <div class="panel card" id="bo-parts">
+      <h2>Parts used in the build options</h2>
+      <p class="sub">What each kind of part is, where it's used, and how to get it. The colours match the 3D models.</p>
+      <div class="parts-grid">
+        <div class="part" data-k="cone"><h3><i></i>Cone section</h3><p>Holds the wheel and sets the tip gap: the further aft the wheel sits, the bigger the gap. Roll it from 0.8 mm 321 or 304 stainless sheet and seam-weld it, or buy a stainless concentric reducer close to these sizes. A 3 &times; 2&frac12; in sanitary reducer is roughly 60 &rarr; 73 mm ID; its length sets the angle. Tri-clamp ends give a quick-release joint, but swap the rubber gasket for a high-temperature graphite or metal one. The exit reducers are short cone sections too.</p><p id="bo-flat"></p></div>
+        <div class="part" data-k="bend"><h3><i></i>Bent pipe (mandrel bend)</h3><p>Mandrel bends keep the full diameter through the bend, unlike crush bends. Buy 1.5 in stainless U-bends or 45&deg; and 90&deg; bends at 1.5D (2.25 in) or 2D (3 in) centreline radius and cut them to angle. In Option A, the inlet end of each leg is trimmed on the centre plane so the two legs can be welded into a Y.</p></div>
+        <div class="part" data-k="tube"><h3><i></i>Straight tube</h3><p>1.5 in &times; 20 ga (0.035 in wall, 36.3 mm ID) 304 stainless exhaust or instrument tube for the pipes and guide tubes, and 1 in tube for Option A's guide. For a smaller exit, swage the pipe end down or butt-weld on a short cone and a length of exit-size tube.</p></div>
+        <div class="part" data-k="filler"><h3><i></i>Filler sheet metal</h3><p>Thin sheet (0.6&ndash;1.0 mm 321 or 304) cut and formed to close the gaps where round parts meet: Option A's cheeks, Option B's fishtail halves and gussets, and Option C's box wrap. Make a card or 3D-printed template first, then cut, form over a mandrel or form block, tack, and TIG-weld.</p></div>
+        <div class="part" data-k="plate"><h3><i></i>Flat plate</h3><p>Laser- or waterjet-cut 1.2&ndash;1.5 mm stainless, used for Option C's front and rear plates. Cut the holes to the tube OD so the tubes slip through, then fillet-weld them. Cheap to re-cut when you want to try a change.</p></div>
+        <div class="part" data-k="guide"><h3><i></i>Guide tube</h3><p>A fixed tube welded to the duct on the engine axis. The sliding cartridge runs inside it, and it doubles as the motor's tunnel and heat shield between the hot pipes. Put the adjustment slots and screws at its rear end, away from the hottest gas.</p></div>
+        <div class="part" data-k="cart"><h3><i></i>Sliding cartridge</h3><p>The wheel, bearing tube, magnetic coupler and motor as one unit, so moving the wheel never changes the coupler gap. In Option A it necks down to about 22 mm behind the wheel to fit through the crotch; in B and C it stays close to the 37.5 mm wheel hub.</p></div>
+        <div class="part"><h3>Materials</h3><p>321 stainless is the better choice for thin welded parts at 650&ndash;700 &deg;C because it resists weld decay; 304 is fine for a prototype. Keep aluminium and mild steel out of the hot path. A ceramic-blanket wrap on the guide tube helps keep the motor cool.</p></div>
+      </div>
+    </div>
+
     <div class="panel card" id="ops">
-      <h2>2. Operating points</h2>
+      <h2>3. Operating points</h2>
       <p class="sub">The same geometry and load resistor at 90% corrected speed (scored for power and thrust) and at full throttle (scored for thrust only).</p>
       <div class="tablewrap"><table id="opTable"></table></div>
     </div>
@@ -200,19 +285,20 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
     </div>
 
     <div class="panel card" id="score">
-      <h2>3. Score estimate</h2>
+      <h2>4. Score estimate</h2>
       <p class="sub">Only the items this page models. Weight and the presentation are not included.</p>
       <div class="tablewrap"><table id="scTable"></table></div>
     </div>
 
     <div class="panel card prose notes" id="notes">
-      <h2>4. How the estimate works</h2>
+      <h2>5. How the estimate works</h2>
       <ul>
         <li><b>Baseline.</b> The stock nozzle's effective area is back-calculated from full-throttle thrust, mass flow and exhaust temperature. The 90% point uses that area with the 90% thrust and temperature you enter.</li>
         <li><b>Wheel.</b> Work per kilogram is w = U·(C − U) with C = V<sub>x</sub>·(tan α₁ + tan β₂). V<sub>x</sub> is the axial velocity through the blades plus the tip gap, taken as uniform. The share of gas inside the blade annulus does work; the rest bypasses.</li>
         <li><b>Load.</b> The load bank is a fixed resistor, so electrical power is V²/R with V = rpm ÷ K<sub>v</sub>. That sets where the wheel settles.</li>
         <li><b>Guide vanes.</b> With vanes on, α₁ is the vane angle, and the vane loss is charged to the whole flow. Vanes raise the runaway speed and the power ceiling, so the wheel can sit further aft with more bypass. At this light loading the gas still meets the blades about 45° off their design inlet angle with or without vanes, so the default efficiency gain is small (0.50 to 0.55); change it if testing shows more.</li>
         <li><b>Engine match.</b> The round exits have a fixed area. The model finds the core turbine-exit pressure that pushes the flow through the vanes, cone, wheel, pipes and exits, then estimates the EGT change from the smaller or larger expansion across the core turbine at constant speed. This step is the roughest part of the page.</li>
+        <li><b>Build options.</b> The 3D models are built in the browser from the same inputs; their split-loss values are rough guesses until CFD or testing replaces them.</li>
         <li><b>Round pipes.</b> Two round pipes beside a 38 mm tunnel are wider than the engine case, which costs radial-distance points. The plan section and score table show how much.</li>
       </ul>
     </div>
@@ -442,6 +528,7 @@ function render() {
     `<tr><td><b>Subtotal</b></td><td></td><td class="num"><b>${fx(sc.reduce((a, r) => a + r[2], 0), 1)}</b></td><td class="num">160</td></tr>`;
 
   drawPlan(g); drawRear(g); drawCharts();
+  if (typeof drawBuildOptions === "function") drawBuildOptions();
 }
 
 function drawPlan(g) {
@@ -514,5 +601,6 @@ $("reset").addEventListener("click", () => { st = { ...DEF }; sync(); });
 $("auto").addEventListener("click", () => { const a = loadFor(st, 1000); st.R = Math.min(30, Math.max(0.5, Math.round(a.R * 20) / 20)); sync(); if (!a.ok) $("warn").innerHTML = "This geometry peaks at about " + fx(a.P) + " W. The load is set to that peak; move the wheel forward for more." + ($("warn").innerHTML ? "<br>" + $("warn").innerHTML : ""); });
 buildInputs(); sync();
 </script>
+<script src="aft-turbine-v2-3d.js"></script>
 </body>
 </html>
