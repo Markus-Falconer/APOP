@@ -25,7 +25,9 @@ const SITE = [
       { id: "aft-turbine", href: "aft-turbine.html", menu: "Aft turbine",
         title: "Aft Turbine", sub: "JetCat P100-RX · a free power turbine in the exhaust, geared to a generator outside the hot flow" },
       { id: "aft-turbine-v2", href: "aft-turbine-v2.html", menu: "Aft turbine V2",
-        title: "Aft Turbine V2", sub: "JetCat P100-RX · spare turbine wheel in a cone shroud, direct-coupled motor, exhaust split into two round pipes" }
+        title: "Aft Turbine V2", sub: "JetCat P100-RX · spare turbine wheel in a cone shroud, direct-coupled motor, exhaust split into two round pipes" },
+      { id: "aft-turbine-v3", href: "aft-turbine-v3.html", menu: "Aft turbine V3 “Big Ben”",
+        title: "Aft Turbine V3 “Big Ben”", sub: "JetCat P100-RX · lip-bypass wheel at the end of a straight tube, tee split into two big pipes, necked exits" }
     ]
   },
   {

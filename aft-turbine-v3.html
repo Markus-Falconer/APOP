@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aft Turbine V3 “Big Ben”</title>
+<meta name="description" content="Big Ben aft turbine for the P100-RX: straight inlet tube with lip bypass, tee split into two big pipes, necked exits. Cycle model with split losses and uneven blade loading, and three versions in 3D.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f4f3ef; --surface:#fcfcfb; --surface-2:#efeee9; --line:#dcdad3; --grid:#e7e5df;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#7a7972;
+  --accent:#c2410c; --s1:#2a78d6; --s2:#eb6834;
+  --good:#1c7c3c; --warn:#a35f00; --bad:#b42318; --band:rgba(42,120,214,.08); --pt:#0b0b0b; --s3:#1baf7a; --steel:#cfcdc5;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+    --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+    --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+    --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec; --s3:#199e70; --steel:#3c3b37;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+  --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+  --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec; --s3:#199e70; --steel:#3c3b37;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+.mono,td.num,.kpi .v{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+main.wrap{display:grid;grid-template-columns:330px 1fr;gap:20px;padding-top:20px;padding-bottom:40px}
+@media (max-width:900px){main.wrap{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+aside.panel{padding:6px 16px 16px;align-self:start;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+aside.panel::-webkit-scrollbar{width:8px}
+aside.panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+@media (max-width:900px){aside.panel{position:static;max-height:none;overflow:visible}}
+fieldset{border:0;border-top:1px solid var(--line);margin:0;padding:12px 0 4px}
+fieldset:first-of-type{border-top:0}
+legend{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0}
+.field{display:grid;grid-template-columns:1fr 92px;align-items:center;gap:8px;margin:8px 0}
+.field label{font-size:14px;color:var(--text-2)}
+.field label small{color:var(--muted);display:block;font-size:12px;line-height:1.2}
+.field input[type=number]{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:14px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.field input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent);margin:-2px 0 0}
+.toggle{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--text-2);margin:8px 0}
+.toggle input{accent-color:var(--accent)}
+.btns{display:flex;gap:8px;margin-top:14px}
+button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--muted)}
+section.out{display:flex;flex-direction:column;gap:20px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{padding:12px 14px}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi .v{font-size:26px;font-weight:500;margin:2px 0 0;line-height:1.2}
+.kpi .v span{font-size:14px;color:var(--text-2);margin-left:3px}
+.kpi .c{font-size:12px;color:var(--text-2);margin-top:4px;display:flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.card{padding:16px}
+.card h2{font-size:15px;font-weight:600;margin:0 0 2px}
+.card .sub{font-size:13px;color:var(--text-2);margin:0 0 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:1100px){.grid2{grid-template-columns:1fr}}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-weight:500;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;text-align:right;padding:6px 10px;border-bottom:1px solid var(--line)}
+th:first-child,th:nth-child(2),td:first-child,td:nth-child(2){text-align:left}
+td{padding:7px 10px;border-bottom:1px solid var(--grid)}
+td.num{text-align:right}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:4px 20px;margin-top:14px;font-size:14px}
+.summary div{display:flex;justify-content:space-between;border-bottom:1px dashed var(--grid);padding:4px 0}
+.summary span:first-child{color:var(--text-2)}
+.warn{border-left:3px solid var(--warn);background:var(--surface);padding:10px 14px;border-radius:6px;font-size:14px}
+.warn:empty{display:none}
+svg text{font-family:"IBM Plex Sans",sans-serif}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--text);color:var(--surface);font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity .1s;font-family:"IBM Plex Mono",monospace}
+.units{padding:12px 0 10px;border-bottom:1px solid var(--line)}
+.units-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.units-l{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;padding:2px;background:var(--surface-2)}
+.seg button{border:0;background:transparent;padding:5px 14px;border-radius:5px;color:var(--text-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 0 0 1px var(--line)}
+details{margin-top:8px}
+summary{cursor:pointer;font-size:13px;color:var(--text-2)}
+.tag{font-size:11px;color:var(--accent);margin-left:4px}
+.unit-grid{display:grid;grid-template-columns:1fr 128px;gap:6px 8px;align-items:center;margin-top:10px;font-size:13px;color:var(--text-2)}
+.unit-grid select{font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);width:100%}
+.hint{font-size:12px;color:var(--muted);margin:-2px 0 8px;line-height:1.35}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 8px}
+.presets button{font-size:12px;padding:3px 9px}
+.tests input,.rotor-in input{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.tests input{min-width:86px}
+.tests input.lbl{text-align:left;font-family:inherit;min-width:120px}
+.tests td{padding:4px 5px;border-bottom:0}
+.tests th{white-space:nowrap}
+.x{border:0;background:transparent;color:var(--muted);font-size:18px;line-height:1;padding:2px 6px}
+.x:hover{color:var(--text)}
+.row-btns{display:flex;gap:8px;margin:10px 0 4px;flex-wrap:wrap;align-items:center}
+.fn{font-size:12px;color:var(--muted);margin:6px 0 0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin:-4px 0 8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:16px;height:0;border-top:2px solid}
+.legend i.dash{border-top-style:dashed}
+.legend i.pt{width:9px;height:9px;border:2px solid var(--text);border-radius:50%;background:var(--surface)}
+.legend i.band{width:14px;height:10px;border:0;background:var(--band)}
+h3{font-size:13px;font-weight:600;margin:16px 0 6px;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em}
+.rotor-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px;margin-bottom:6px}
+.rotor-in label{font-size:12px;color:var(--text-2);display:block;margin-bottom:3px}
+td.ok{color:var(--good)} td.off{color:var(--warn)}
+.toc{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;margin-top:10px}
+.toc a{color:var(--text-2)}
+.prose{font-size:15px;line-height:1.6;color:var(--text)}
+.prose p{margin:8px 0;max-width:78ch}
+.prose li{margin:6px 0;max-width:76ch}
+.prose h2{font-size:17px;margin:4px 0 6px}
+.prose h3{text-transform:none;letter-spacing:0;font-size:15px;color:var(--text);margin:18px 0 4px}
+.eq{font-family:"IBM Plex Mono",monospace;font-size:14px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.live{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;background:var(--surface-2);border-radius:4px;padding:0 4px}
+.pill{display:inline-block;font-size:12px;font-weight:500;padding:1px 8px;border-radius:10px;border:1px solid;white-space:nowrap}
+.pill.have{color:var(--good)} .pill.partial{color:var(--warn)} .pill.need{color:var(--bad)}
+ol.steps{padding-left:22px}
+ol.steps>li{margin:14px 0}
+ol.steps>li>b{display:block;margin-bottom:2px}
+ol.steps ul{margin:4px 0;padding-left:18px}
+.callout{border-left:3px solid var(--accent);background:var(--surface-2);padding:10px 14px;border-radius:6px;margin:12px 0;font-size:14px}
+.rec{font-size:15px;line-height:1.55;margin:0}
+tr.sel td{background:var(--surface-2)}
+td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
+.geo svg text{font-family:"IBM Plex Sans",sans-serif}
+.grid2>*{min-width:0}
+.notes{font-size:14px;color:var(--text-2)}
+.notes h2{color:var(--text)}
+.notes li{margin:4px 0}
+.bo-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:2px 0 8px}
+.bo-bar .seg button{padding:4px 11px;font-size:13px}
+.bo-view{position:relative;height:420px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);overflow:hidden}
+.bo-view canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:pan-y}
+.bo-view canvas:active{cursor:grabbing}
+@media (max-width:640px){.bo-view{height:320px}}
+.bo-hint{position:absolute;left:10px;bottom:8px;font-size:12px;color:var(--muted);pointer-events:none}
+.bo-fallback{padding:16px;color:var(--text-2);font-size:14px}
+.swatches{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--text-2);margin:10px 0 4px}
+.swatches span{display:inline-flex;align-items:center;gap:6px}
+.swatches i,.part h3 i{width:12px;height:12px;border-radius:3px;display:inline-block;flex:none}
+@media (max-width:1100px){.bo-cols{grid-template-columns:1fr}}
+.fseg{margin:10px 0}
+.fseg .fl{display:block;font-size:14px;color:var(--text-2);margin-bottom:5px}
+.fseg .seg,.vsel{display:flex;flex-wrap:wrap}
+.fseg .seg button{padding:4px 10px;font-size:13px}
+.vsel button{flex:1 1 auto;padding:6px 10px}
+.dimmed{opacity:.45}
+.vcard{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:14px;background:var(--surface)}
+.vcard.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.vhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.vhead h3{margin:0;text-transform:none;letter-spacing:0;font-size:15px;color:var(--text)}
+.vhead .tagl{font-size:13px;color:var(--text-2);margin-left:6px;font-weight:400}
+.vcard ul{margin:8px 0 0;padding-left:18px;font-size:14px}
+.vcard li{margin:3px 0}
+.vstats{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--text-2);margin-top:8px;font-family:"IBM Plex Mono",monospace}
+.vstats b{font-family:"IBM Plex Sans",sans-serif;font-weight:500;color:var(--muted);margin-right:4px}
+.bar{position:relative;height:16px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--s2);opacity:.75}
+.bar span{position:relative;font-size:11px;padding-left:6px;line-height:16px;color:var(--text)}
+.kpis.k6{grid-template-columns:repeat(3,1fr)}
+@media (max-width:640px){.kpis.k6{grid-template-columns:repeat(2,1fr)}}
+.bo-view{height:380px}
+</style>
+</head>
+<body>
+<header id="site-header" data-page="aft-turbine-v3"></header>
+<script src="site.js"></script>
+
+<main class="wrap">
+  <aside class="panel" aria-label="Big Ben inputs">
+    <div class="units">
+      <div class="units-l" style="margin-bottom:8px">Version you're editing</div>
+      <div class="seg vsel" role="group" aria-label="Version" id="vsel"></div>
+      <p class="hint" id="vhint" style="margin:8px 0 0"></p>
+    </div>
+    <form id="inputs" onsubmit="return false"></form>
+    <div class="btns"><button type="button" id="auto">Set load for 1000 W</button><button type="button" id="sizeExit">Size exits for EGT target</button></div>
+    <div class="btns"><button type="button" id="resetV">Reset this version</button><button type="button" id="resetAll">Reset everything</button></div>
+  </aside>
+
+  <section class="out">
+    <div class="panel card prose">
+      <h2>The idea</h2>
+      <p>Ben's layout is built for easy fabrication. A short straight tube bolts to the nozzle flange, and the spare turbine wheel sits at its open end. Bypass is set by how far the wheel hangs past the end of the tube (the lip). Two bent pipes leave almost sideways right behind the wheel, then turn back aft and neck down at the exits. A flat-plate box between the pipes carries the motor and a slotted bearing bracket. This page models those specifics on top of the V2 engine and wheel model:</p>
+      <ul>
+        <li><b>Lip bypass.</b> Blade length past the lip opens a side window that bypasses gas, so moving the wheel does nothing until the trailing edge reaches the lip, then changes power quickly.</li>
+        <li><b>Tee split right behind the wheel.</b> Losses from the abrupt split, the sudden expansion into the big pipes, the flat bracket, the return bends and the necked exits.</li>
+        <li><b>Uneven loading.</b> The split's back-pressure pattern, plus any strut wakes, swing the blade loading twice per revolution. That costs wheel efficiency and sets the forcing frequencies to check against the blade's first mode.</li>
+        <li><b>Hub treatment.</b> An open cavity between the engine hub and the wheel, a hub cone on struts, or a spinner on the wheel.</li>
+      </ul>
+      <p>Pick a version on the left to edit it. Every number is a first-pass estimate from the CAD screenshots until Ben's measurements replace them (see section 8).</p>
+    </div>
+
+    <div class="kpis k6">
+      <div class="panel kpi"><div class="l">Power at 90% · <span id="selName"></span></div><div class="v" id="k-P"></div><div class="c" id="k-Pc"></div></div>
+      <div class="panel kpi"><div class="l">Thrust at 90%</div><div class="v" id="k-F"></div><div class="c" id="k-Fc"></div></div>
+      <div class="panel kpi"><div class="l">Wheel / motor speed</div><div class="v" id="k-N"></div><div class="c" id="k-Nc"></div></div>
+      <div class="panel kpi"><div class="l">Runaway at full throttle</div><div class="v" id="k-R"></div><div class="c" id="k-Rc"></div></div>
+      <div class="panel kpi"><div class="l">Uneven blade loading</div><div class="v" id="k-W"></div><div class="c" id="k-Wc"></div></div>
+      <div class="panel kpi"><div class="l">Envelope</div><div class="v" id="k-G"></div><div class="c" id="k-Gc"></div></div>
+    </div>
+    <div class="warn" id="warn" role="status"></div>
+
+    <div class="panel card" id="versions">
+      <h2>1. Three versions in 3D</h2>
+      <p class="sub">Ben's CAD as drawn, and two slightly optimized versions built from the same kinds of parts. Each model is built from that version's inputs, so it updates as you edit. Cutaway removes the top half; Exploded pulls the parts apart.</p>
+      <div class="swatches" id="swatches"></div>
+      <div class="vcard" data-k="drawn">
+        <div class="vhead"><h3>As drawn<span class="tagl">Ben's CAD, with necked exits</span></h3><button type="button" class="vedit" data-k="drawn">Edit this version</button></div>
+        <div id="view-drawn"></div>
+        <ul>
+          <li>Straight 60 mm tube with the wheel at its lip; the trailing edge hangs about 2 mm past the lip for bypass.</li>
+          <li>2 in pipes leave at about 65° right behind the wheel, with 2D bends back to parallel; the tube's end wall closes the top and bottom.</li>
+          <li>Hub cone on two struts (blue markups), flat bearing bracket in the crotch, exits necked to give a +30 K EGT rise.</li>
+        </ul>
+        <div class="vstats" id="vs-drawn"></div>
+      </div>
+      <div class="vcard" data-k="faired">
+        <div class="vhead"><h3>V3-1 Faired<span class="tagl">same parts, cleaned up</span></h3><button type="button" class="vedit" data-k="faired">Edit this version</button></div>
+        <div id="view-faired"></div>
+        <ul>
+          <li>Red-markup fairings replace the tube's end wall with a smooth sheet-metal boot into the legs.</li>
+          <li>Elbows trimmed so the legs leave at 50°, which brings them in by about 8 mm per side.</li>
+          <li>Spinner on the wheel instead of the strut-mounted cone (no wakes), and a rounded bearing fairing instead of the flat bracket.</li>
+          <li>Keeps Ben's lip bypass and wheel position, so the adjustment works the same way.</li>
+        </ul>
+        <div class="vstats" id="vs-faired"></div>
+      </div>
+      <div class="vcard" data-k="cone">
+        <div class="vhead"><h3>V3-2 Cone + gentle split<span class="tagl">cone shroud, 35° legs</span></h3><button type="button" class="vedit" data-k="cone">Edit this version</button></div>
+        <div id="view-cone"></div>
+        <ul>
+          <li>A rolled 8° cone replaces the straight tube, so the blades stay shrouded and bypass changes smoothly across the travel.</li>
+          <li>The split starts about 19 mm behind the wheel, which lets the back-pressure pattern die out before it reaches the blades.</li>
+          <li>Legs leave at 35° with 1.5D bends; 1¾ in pipes and a 36 mm gap pull the width in.</li>
+          <li>Spinner and rounded bearing fairing as in V3-1.</li>
+        </ul>
+        <div class="vstats" id="vs-cone"></div>
+      </div>
+    </div>
+
+    <div class="panel card">
+      <h2>2. Side by side</h2>
+      <p class="sub">All three with their own inputs and the shared assumptions. Points cover power, both thrusts, radial distance and length; weight and the presentation aren't modelled.</p>
+      <div class="tablewrap"><table id="cmp"></table></div>
+    </div>
+
+    <div class="panel card">
+      <h2>3. Operating points · <span id="selName2"></span></h2>
+      <p class="sub">The same geometry and load resistor at 90% corrected speed (scored for power and thrust) and at full throttle (scored for thrust only).</p>
+      <div class="tablewrap"><table id="opTable"></table></div>
+    </div>
+
+    <div class="panel card">
+      <h2>4. Where the pressure goes · <span id="selName3"></span></h2>
+      <p class="sub">Total-pressure drop at 90% speed, from the engine's turbine exit to the nozzle exits. With fixed exits, duct loss shows up as engine back-pressure (hotter EGT); after resizing the exits for the same EGT, it shows up as lost thrust.</p>
+      <div class="tablewrap"><table id="lossTable"></table></div>
+    </div>
+
+    <div class="panel card">
+      <h2>5. Uneven loading and blade forcing</h2>
+      <p class="sub">The split's back-pressure pattern repeats twice per revolution, so each blade loads and unloads at 2× running speed, with harmonics at 4×, 6× and 8×. Struts add their own orders. The wheel carries only about 5% of the torque it carries in the engine, so the swing costs efficiency more than blade life. A resonance would change that, which is what the chart checks.</p>
+      <div class="grid2">
+        <div><div class="summary" id="loadSum" style="grid-template-columns:1fr;margin-top:0"></div></div>
+        <div><div class="legend"><span><i style="border-color:var(--s1)"></i>Split orders</span><span><i class="dash" style="border-color:var(--s2)"></i>Strut orders</span><span><i class="band"></i>Running range</span></div><div id="chC"></div></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel card"><h2>Electrical power vs wheel position</h2><p class="sub">90% speed, current load. With the lip, nothing changes until the trailing edge reaches the lip, then power drops fast.</p><div id="chP"></div></div>
+      <div class="panel card"><h2>Wheel speed vs wheel position</h2><p class="sub">Loaded at 90%, and with no load at full throttle.</p><div class="legend"><span><i style="border-color:var(--s1)"></i>Loaded, 90%</span><span><i class="dash" style="border-color:var(--s2)"></i>No load, full throttle</span></div><div id="chN"></div></div>
+    </div>
+
+    <div class="panel card">
+      <h2>6. Score estimate</h2>
+      <p class="sub">The selected version, for the items this page models.</p>
+      <div class="tablewrap"><table id="scTable"></table></div>
+    </div>
+
+    <div class="panel card prose notes">
+      <h2>7. How this model differs from Aft Turbine V2</h2>
+      <ul>
+        <li><b>Same engine and wheel core.</b> Stock nozzle area back-calculated from published thrust and mass flow; Euler work on the wheel with a uniform axial velocity; a fixed load resistor sets the speed; the core turbine-exit pressure is solved so the flow passes the exits, and EGT change is estimated from the change in core-turbine expansion.</li>
+        <li><b>Lip bypass.</b> Overhang past the lip adds an open area of k × π × D × overhang beside the blades (k is the lip-window effectiveness), plus a mixing loss of 0.25 × (overhang ÷ blade width) dynamic heads.</li>
+        <li><b>Split losses</b>, on the dynamic head just behind the wheel: a tee or Y with K = (0.08 + 1 − cos θ) for legs leaving at θ, × 0.55 with fairings; Borda–Carnot for the sudden expansion into the legs, × 0.35 with fairings; 0.12 for a flat bracket in the crotch or 0.03 rounded.</li>
+        <li><b>Leg losses</b>, on the pipe dynamic head: return bends (θ ÷ 90°) × (0.13 + 0.12 ÷ (R/D)^1.2), and friction f = 0.02.</li>
+        <li><b>Hub</b>, on the engine-exit dynamic head: 0.15 for an open cavity, 0.03 + 0.035 per strut for a cone on struts, 0.04 for a spinner.</li>
+        <li><b>Necked exits.</b> Discharge coefficient 0.985 − 0.085 × (half-angle ÷ 45°)^1.3, so a steep neck flows less than its diameter suggests.</li>
+        <li><b>Uneven loading.</b> Back-pressure swing at the split = q × (0.15 + 0.85 × (1 − cos θ)), × 0.45 with fairings and × 1.15 with a flat bracket, then decayed as e<sup>−2L/r</sup> over the settling distance L. That swing is compared with the pressure drop across the blades, strut wakes are added, and wheel efficiency becomes η × (1 − k × swing²).</li>
+        <li><b>All loss coefficients are handbook-range estimates</b>, not measurements; treat differences between versions as more reliable than the absolute numbers. CFD or a back-to-back test should replace them.</li>
+      </ul>
+    </div>
+
+    <div class="panel card prose">
+      <h2>8. What to measure on Ben's CAD</h2>
+      <p>Enter these on the left under As drawn, then press Set load for 1000 W and Size exits for EGT target.</p>
+      <ul>
+        <li>Inlet tube ID and its length from the nozzle flange to the lip.</li>
+        <li>Wheel leading-edge position at the nominal setting, and the slot travel either way.</li>
+        <li>Pipe OD and wall, the angle the legs leave at, and the bend centreline radius.</li>
+        <li>Where the legs meet relative to the tube end, and the gap between the legs at the motor box.</li>
+        <li>Exit ID after necking and the neck cone angle.</li>
+        <li>The hub cone and strut sizes (blue markups), and the bearing bracket's size behind the wheel.</li>
+        <li>Off the CAD: ping-test a blade on the spare wheel for its first mode, and measure the blade exit angle.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+<script>
+"use strict";
+// ============================================================ Aft Turbine V3 "Big Ben" model
+// Same 1-D engine and wheel model as Aft Turbine V2, with the Big Ben geometry:
+// bypass set by how far the wheel hangs past the end (lip) of a straight inlet tube,
+// a tee-style split right behind the wheel, big pipes, necked exits, a hub fairing on
+// struts or a spinner, and the twice-per-revolution loading the split puts on the wheel.
+const G = 1.335, RG = 287, CP = G * RG / (G - 1), PA = 101325;
+const RM = (58 / 2 + 37.5 / 2) / 2 / 1000, HUB = 37.5, WHEEL = 58, INLET = 58.4, WHEEL_W = 6.8, SPAN = (58 - 37.5) / 2;
+const N_RATED = 110500, N_OVER = 140000, CASE_R = 48.5, MOTOR_L = 57.5, MOTOR_D = 29.3, R_BRG = 11, STOCK_LEN = 241 - 40.4;
+const A5 = Math.PI / 4 * (INLET * INLET - HUB * HUB) * 1e-6;
+const TR = M => 1 + (G - 1) / 2 * M * M;
+const PR = M => Math.pow(TR(M), G / (G - 1));
+const mfp = M => Math.sqrt(G / RG) * M * Math.pow(TR(M), -(G + 1) / (2 * (G - 1)));
+function machFromMfp(v) { if (v >= mfp(1)) return 1; let lo = 0, hi = 1; for (let i = 0; i < 50; i++) { const m = (lo + hi) / 2; if (mfp(m) < v) lo = m; else hi = m; } return (lo + hi) / 2; }
+const rpmOf = U => U / RM * 60 / (2 * Math.PI);
+const rad = d => d * Math.PI / 180;
+const qOf = (P0, M) => P0 * (1 - 1 / PR(M));
+const circA = d => Math.PI / 4 * d * d * 1e-6;
+
+function baseline(p) {
+  const VeM = p.Fmax / p.mdMax, TsM = p.T5max - VeM * VeM / (2 * CP), MeM = VeM / Math.sqrt(G * RG * TsM);
+  const Aeff = p.mdMax / (PA / (RG * TsM) * VeM);
+  const Me9 = Math.sqrt(p.F90 / (G * PA * Aeff)), Ts9 = p.T590 / TR(Me9), Ve9 = Me9 * Math.sqrt(G * RG * Ts9);
+  return { Aeff,
+    max: { N: 154000, F: p.Fmax, md: p.mdMax, T0: p.T5max, P0: PA * PR(MeM), dTt: 125 },
+    p90: { N: 139000, F: p.F90, md: p.F90 / Ve9, T0: p.T590, P0: PA * PR(Me9), dTt: 105 } };
+}
+
+// Layout: every position the model and the 3D view share. x is mm aft of the nozzle flange.
+function layout(v) {
+  const a = v.shroud === "cone" ? rad(v.cone) : 0;
+  const Rt0 = v.tubeID / 2, xte = v.tubeLen, Rte = Rt0 + xte * Math.tan(a);
+  const xw = v.xw, xtr = xw + WHEEL_W, Ds = v.tubeID + 2 * (xw + WHEEL_W / 2) * Math.tan(a);
+  const over = Math.max(0, Math.min(WHEEL_W, xtr - xte)), eps = over / WHEEL_W;
+  const ri = v.pipeID / 2, rp = ri + v.pipeWall, th = rad(v.theta1), R = v.rd * 2 * rp, ay = rp / Math.cos(th);
+  let xs, ys, xj, Lboot = 0;
+  if (v.fair) { ys = 0.5 * rp; const flare = Math.max(0, ys + ay - Rte); Lboot = Math.max(12, flare / Math.tan(rad(40))); xj = xte + Lboot; xs = xj; }
+  else { ys = 0; xs = xte + Math.max(0, ay - Rte) / Math.tan(th); xj = xte; }
+  // First straight sized so the legs end up the requested gap apart (never shorter than 1 mm).
+  const ycReq = rp + v.gap / 2, Ls = Math.max(1, (ycReq - ys - R * (1 - Math.cos(th))) / Math.sin(th));
+  const yc = ys + Ls * Math.sin(th) + R * (1 - Math.cos(th)), xPar = xs + Ls * Math.cos(th) + R * Math.sin(th);
+  // Motor box between the legs, starting where the legs' inner walls clear it.
+  const bw = Math.min(MOTOR_D / 2 + 6, yc - rp - 1), bh = Math.max(2 * rp, MOTOR_D + 12);
+  let xBox = xPar;
+  { const n = 200; for (let k = 0; k <= n; k++) { const s = k / n, P = legPoint(xs, ys, th, Ls, R, s * (Ls + R * th)); if (P.y - rp / Math.cos(P.h) >= bw - 0.5) { xBox = P.x; break; } } }
+  const xMot = Math.max(xBox + 10, xtr + 50), xBoxEnd = xMot + MOTOR_L + 5;
+  const re = Math.min(v.exitID, v.pipeID) / 2, Lneck = re < ri - 0.2 ? (ri - re) / Math.tan(rad(v.neck)) : 0;
+  const xn0 = Math.max(xPar + 5, xBoxEnd - Lneck), xExit = xn0 + Lneck;
+  const Lmod = Math.max(xExit, xBoxEnd), W = 2 * (yc + rp), out = Math.max(0, yc + rp - CASE_R);
+  const Lleg = Ls + R * th + (xn0 - xPar) + Lneck;
+  return { a, Rt0, xte, Rte, xw, xtr, Ds, over, eps, settle: xte - xtr, ri, rp, th, R, ay, xs, ys, xj, Lboot, Ls, yc, wide: yc > ycReq + 0.5, xPar, bw, bh, xBox, xMot, xBoxEnd,
+    re, Lneck, xn0, xExit, Lmod, W, out, Lleg, Lall: STOCK_LEN + Lmod };
+}
+// Point on a leg centreline (right leg) at arc length s: straight Ls at angle th, then an arc of radius R back to axial.
+function legPoint(xs, ys, th, Ls, R, s) {
+  if (s <= Ls) return { x: xs + s * Math.cos(th), y: ys + s * Math.sin(th), h: th };
+  const b = Math.min(th, (s - Ls) / R), x0 = xs + Ls * Math.cos(th), y0 = ys + Ls * Math.sin(th);
+  const cx = x0 + R * Math.sin(th), cy = y0 - R * Math.cos(th), h = th - b;
+  return { x: cx - R * Math.sin(h), y: cy + R * Math.cos(h), h };
+}
+
+const K = {
+  hub: v => v.hub === "none" ? 0.15 : v.hub === "struts" ? 0.03 + 0.035 * v.nStruts : 0.04,
+  shroud: v => v.shroud === "cone" ? 0.08 : 0.03,
+  tee: (v, L) => (0.08 + 1.0 * (1 - Math.cos(L.th))) * (v.fair ? 0.55 : 1),
+  nose: v => v.nose === "flat" ? 0.12 : 0.03,
+  dump: (v, ratio) => ratio >= 1 ? (1 - 1 / ratio) ** 2 * (v.fair ? 0.35 : 1) : 0.1 * (1 - ratio),
+  bends: (v, L) => (L.th / rad(90)) * (0.13 + 0.12 / Math.pow(v.rd, 1.2)),
+  friction: (v, L) => 0.02 * L.Lleg / v.pipeID,
+  Cd: v => 0.985 - 0.085 * Math.pow(v.neck / 45, 1.3)
+};
+
+// One operating point with the core turbine-exit pressure scaled by x.
+function chain(op, x, v, s, L, loaded) {
+  const P04 = 0.95 * PA * (1 + 1.9 * Math.pow(op.N / 154000, 2)), ex = (G - 1) / G;
+  const f0 = 1 - Math.pow(P04 / op.P0, -ex), f1 = 1 - Math.pow(P04 / (op.P0 * x), -ex);
+  const dEGT = f1 > 0.01 ? (f0 / f1 - 1) * (op.T0 + op.dTt) : 9999, T5 = op.T0 + dEGT, md = op.md;
+  const loss = [], drop = (k, name, q, K) => { const d = K * q; loss.push({ k, name, K, dP: d }); return d; };
+  let P0 = op.P0 * x;
+  const M5 = machFromMfp(md * Math.sqrt(T5) / (P0 * A5)), q5 = qOf(P0, M5);
+  P0 -= drop("hub", v.hub === "none" ? "Open hub cavity" : v.hub === "struts" ? `Hub cone on ${v.nStruts} struts` : "Spinner gap", q5, K.hub(v));
+  P0 -= drop("shroud", v.shroud === "cone" ? "Cone shroud" : "Inlet tube", q5, K.shroud(v));
+  // Wheel: Euler work with a uniform axial velocity over blades plus tip gap; overhang past the lip unloads the blade tips.
+  // Blade length past the lip opens a side window (area π·D·overhang, partly effective) that bypasses gas.
+  const At = (Math.PI / 4 * (L.Ds * L.Ds - HUB * HUB) + s.kspill * Math.PI * L.Ds * L.over) * 1e-6;
+  const frac = Math.min(1, Math.PI / 4 * (WHEEL * WHEEL - HUB * HUB) * 1e-6 / At);
+  const Mx = machFromMfp(md * Math.sqrt(T5) / (P0 * At)), Vx = Mx * Math.sqrt(G * RG * T5 / TR(Mx)), qw = qOf(P0, Mx);
+  if (L.eps > 0) P0 -= drop("spill", "Gas spilling over the exposed blade tips", qw, 0.25 * L.eps);
+  const C = Vx * Math.tan(rad(s.beta2)), mpt = md * frac;
+  const kU = loaded ? Math.pow(60 / (2 * Math.PI * RM), 2) / (s.Kv_rpm * s.Kv_rpm * v.R * s.etaGen) : 0;
+  const U = C * mpt / (mpt + kU), Psh = kU * U * U, N = rpmOf(U), V = N / s.Kv_rpm, Pel = Psh * s.etaGen;
+  const T6 = T5 - Psh / (md * CP);
+  // Twice-per-rev loading: the split's back-pressure pattern, decayed over the settling distance.
+  const Aj = (Math.PI * L.Rte * L.Rte - Math.PI * R_BRG * R_BRG) * 1e-6, Mj = machFromMfp(md * Math.sqrt(T6) / (P0 * Aj)), qj = qOf(P0, Mj);
+  const wb = mpt > 0 ? Psh / mpt : 0, dPb = P0 * (1 - Math.pow(Math.max(0.5, 1 - wb / (s.eta0 * CP * T5)), G / (G - 1)));
+  const Leff = L.eps > 0 ? 0 : Math.max(0, L.settle) + 0.5 * L.Lboot, decay = Math.exp(-2 * Leff / (L.Ds / 2));
+  const dPpp = qj * (0.15 + 0.85 * (1 - Math.cos(L.th))) * (v.fair ? 0.45 : 1) * (v.nose === "flat" ? 1.15 : 1) * decay;
+  const sw = dPb > 1 ? dPpp / 2 / dPb : 0, swS = v.hub === "struts" && dPb > 1 ? 0.12 * q5 * Math.exp(-6 / 12) / dPb : 0;
+  const swT = Math.hypot(sw, swS), eta = s.eta0 * (1 - s.kd * Math.min(swT, 1.5) ** 2);
+  const dPwheel = P0 * (1 - Math.pow(Math.max(0.5, 1 - Psh / (eta * md * CP) / T5), G / (G - 1)));
+  loss.push({ k: "wheel", name: "Turbine wheel (work + losses)", K: null, dP: dPwheel, work: true });
+  P0 -= dPwheel;
+  // Junction, legs and exits.
+  const Ap2 = 2 * circA(v.pipeID), ratio = Ap2 / Aj;
+  P0 -= drop("dump", ratio >= 1 ? "Sudden expansion into the legs" : "Contraction into the legs", qj, K.dump(v, ratio));
+  P0 -= drop("tee", v.fair ? "Faired split" : "Tee split", qj, K.tee(v, L));
+  P0 -= drop("nose", v.nose === "flat" ? "Flat bearing bracket in the crotch" : "Rounded bearing fairing", qj, K.nose(v));
+  const Ml = machFromMfp(md * Math.sqrt(T6) / (P0 * Ap2)), ql = qOf(P0, Ml);
+  P0 -= drop("bends", "Return bends", ql, K.bends(v, L));
+  P0 -= drop("fric", "Pipe friction", ql, K.friction(v, L));
+  const npr = Math.max(1.0001, P0 / PA), Me = Math.min(1, Math.sqrt((Math.pow(npr, ex) - 1) * 2 / (G - 1)));
+  const Ts = T6 / TR(Me), Ve = Me * Math.sqrt(G * RG * Ts), Aneed = md / (PA / (RG * Ts) * Ve);
+  return { x, dEGT, T5, Vx, Mx, C, U, N, V, I: V > 0 ? Pel / V : 0, Psh, Pel, Ml, Mj, Me, Ve, F: md * Ve, Aneed, frac, bypass: 1 - frac,
+    Nfree: rpmOf(C), inc: Math.atan2(U, Vx) * 180 / Math.PI, Pceil: mpt * C * C / 4 * s.etaGen, dP5: op.P0 * (x - 1),
+    sw, swS, swT, eta, dPb, dPpp, decay, loss, qj, q5 };
+}
+function solvePoint(op, v, s, L, loaded) {
+  const Ae = 2 * circA(Math.min(v.exitID, v.pipeID)) * K.Cd(v);
+  let lo = 0.8, hi = 1.6;
+  for (let i = 0; i < 40; i++) { const x = (lo + hi) / 2; if (chain(op, x, v, s, L, loaded).Aneed > Ae) lo = x; else hi = x; }
+  return chain(op, (lo + hi) / 2, v, s, L, loaded);
+}
+function solve(v, s) {
+  const b = baseline(s), L = layout(v);
+  return { b, L, r90: solvePoint(b.p90, v, s, L, true), rmax: solvePoint(b.max, v, s, L, !s.unloadMax), rfree: solvePoint(b.max, v, s, L, false) };
+}
+function loadFor(v, s, target) {
+  const P = R => solve({ ...v, R }, s).r90.Pel;
+  let best = { R: v.R, P: -1 }, prev = null;
+  for (let R = 60; R >= 0.4; R /= 1.06) {
+    const p = P(R); if (p > best.P) best = { R, P: p };
+    if (p >= target) { let lo = R, hi = prev ?? R; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (P(m) >= target) lo = m; else hi = m; } return { R: lo, ok: true }; }
+    prev = R;
+  }
+  return { R: best.R, ok: false, P: best.P };
+}
+// Exit size giving the target 90% EGT change (bigger exits → less back-pressure → cooler).
+function exitFor(v, s, target) {
+  const egt = e => solve({ ...v, exitID: e }, s).r90.dEGT;
+  let lo = 18, hi = v.pipeID;
+  if (egt(hi) > target) return { exitID: hi, ok: false };
+  for (let k = 0; k < 30; k++) { const m = (lo + hi) / 2; if (egt(m) > target) lo = m; else hi = m; }
+  return { exitID: (lo + hi) / 2, ok: true };
+}
+const score = {
+  power: P => Math.min(100, Math.max(0, 0.1 * P)),
+  f90: lbf => lbf > 20 ? 20 : lbf < 10 ? 0 : 2 * lbf - 20,
+  fmax: lbf => lbf > 19 ? 10 : lbf < 15 ? 0 : 2.5 * lbf - 37.5,
+  radial: din => din > 4 ? 0 : 15 - 3.75 * din,
+  length: lin => lin <= 10 ? 15 : lin > 15 ? 0 : 45 - 3 * lin
+};
+// Forcing orders the wheel sees: the two-leg split (and its harmonics) plus any struts.
+function orders(v) { const o = [2, 4, 6, 8]; if (v.hub === "struts" && v.nStruts) { o.push(v.nStruts, 2 * v.nStruts); } return [...new Set(o)].sort((a, b) => a - b); }
+
+// Presets: best estimates from the CAD screenshots. Replace with Ben's measured values.
+const VERSIONS = {
+  drawn: { name: "As drawn", tag: "Ben's CAD",
+    tubeID: 60, tubeLen: 34, shroud: "lip", cone: 8, xw: 29, theta1: 65, rd: 2.0, gap: 52, pipeID: 47.5, pipeWall: 1.65,
+    exitID: 37.3, neck: 15, fair: false, hub: "struts", nStruts: 2, nose: "flat", R: 4.7 },
+  faired: { name: "V3-1 Faired", tag: "same parts, cleaned up",
+    tubeID: 60, tubeLen: 34, shroud: "lip", cone: 8, xw: 29, theta1: 50, rd: 2.0, gap: 52, pipeID: 47.5, pipeWall: 1.65,
+    exitID: 33.8, neck: 15, fair: true, hub: "spinner", nStruts: 2, nose: "round", R: 4.55 },
+  cone: { name: "V3-2 Cone + gentle split", tag: "cone shroud, 35° legs",
+    tubeID: 60, tubeLen: 40, shroud: "cone", cone: 8, xw: 14, theta1: 35, rd: 1.5, gap: 36, pipeID: 42.65, pipeWall: 0.9,
+    exitID: 33.2, neck: 12, fair: true, hub: "spinner", nStruts: 2, nose: "round", R: 2.7 }
+};
+const SHARED = { beta2: 47.4, Kv_rpm: 1441, etaGen: 0.87, unloadMax: true, eta0: 0.5, kspill: 0.5, kd: 0.2, fb: 20, egtT: 30,
+  Fmax: 100, mdMax: 0.235, T5max: 1000, F90: 71.3, T590: 940 };
+
+</script>
+<script src="viewer3d.js"></script>
+<script src="aft-turbine-v3-3d.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const fx = (v, d = 0) => Number.isFinite(v) ? v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }) : "–";
+const LBF = 4.4482, IN = 25.4, VKEYS = Object.keys(VERSIONS);
+const PIPES = [["1½ in", 36.3, 0.9], ["1¾ in", 42.65, 0.9], ["2 in", 47.5, 1.65]];
+const GROUPS = [
+  ["Inlet tube and wheel", "v", [
+    { k: "tubeID", l: "Inlet tube ID", s: "mm; 60 gives a 1 mm tip gap", min: 58.5, max: 70, step: 0.1 },
+    { k: "tubeLen", l: "Tube length to the lip", s: "mm from the nozzle flange", min: 10, max: 80, step: 0.5 },
+    { k: "shroud", l: "Shroud", type: "seg", opts: [["lip", "Straight tube + lip"], ["cone", "Cone"]] },
+    { k: "cone", l: "Cone half-angle", s: "deg (cone shroud only)", min: 2, max: 14, step: 0.5, dim: v => v.shroud !== "cone" },
+    { k: "xw", l: "Wheel position", s: "mm, leading edge aft of the flange", min: 0, max: 70, step: 0.5 }
+  ]],
+  ["Split and legs", "v", [
+    { k: "theta1", l: "Angle the legs leave at", s: "deg from the engine axis", min: 15, max: 90, step: 1 },
+    { k: "rd", l: "Bend radius", s: "× pipe OD (centreline)", min: 1, max: 3, step: 0.05 },
+    { k: "gap", l: "Gap between the legs", s: "mm, room for the motor box", min: 30, max: 90, step: 0.5 },
+    { k: "pipeID", l: "Pipe inside diameter", s: "mm", min: 30, max: 55, step: 0.05, presets: true },
+    { k: "pipeWall", l: "Pipe wall", s: "mm (20 ga = 0.9, 16 ga = 1.65)", min: 0.5, max: 3, step: 0.05 },
+    { k: "fair", l: "Fairings over the split (the red markups)", type: "chk" },
+    { k: "nose", l: "Bearing support behind the wheel", type: "seg", opts: [["flat", "Flat bracket"], ["round", "Rounded fairing"]] },
+    { k: "hub", l: "Hub between engine and wheel (blue markups)", type: "seg", opts: [["none", "Open"], ["struts", "Cone on struts"], ["spinner", "Spinner"]] },
+    { k: "nStruts", l: "Number of struts", s: "", min: 2, max: 4, step: 1, dim: v => v.hub !== "struts" }
+  ]],
+  ["Necked exits and load", "v", [
+    { k: "exitID", l: "Exit ID after necking", s: "mm, each", min: 20, max: 55, step: 0.1 },
+    { k: "neck", l: "Neck cone half-angle", s: "deg; steeper flows less", min: 5, max: 45, step: 1 },
+    { k: "R", l: "Load resistance", s: "Ω, constant-resistance mode", min: 0.5, max: 30, step: 0.05 }
+  ]],
+  ["Generator and targets · all versions", "s", [
+    { k: "Kv_rpm", l: "Motor Kv", s: "rpm/V as wired", min: 600, max: 2000, step: 1 },
+    { k: "etaGen", l: "Generator + rectifier efficiency", s: "", min: 0.6, max: 0.98, step: 0.01 },
+    { k: "unloadMax", l: "Disconnect the load at full throttle", type: "chk" },
+    { k: "egtT", l: "EGT target for exit sizing", s: "K change at 90% vs stock", min: -50, max: 150, step: 1 }
+  ]],
+  ["Wheel and loss assumptions · all versions", "s", [
+    { k: "beta2", l: "Blade exit angle β₂", s: "deg, measure on the spare wheel", min: 35, max: 60, step: 0.1 },
+    { k: "eta0", l: "Wheel efficiency, even inflow", s: "", min: 0.2, max: 0.9, step: 0.01 },
+    { k: "kspill", l: "Lip window effectiveness", s: "share of π·D·overhang that bypasses", min: 0, max: 1, step: 0.05 },
+    { k: "kd", l: "Uneven-loading efficiency factor", s: "η × (1 − k·swing²)", min: 0, max: 0.6, step: 0.01 }
+  ], true],
+  ["Blade vibration · all versions", "s", [
+    { k: "fb", l: "Blade first mode", s: "kHz; ping-test the spare wheel", min: 3, max: 60, step: 0.5 }
+  ], true],
+  ["Stock engine baseline · all versions", "s", [
+    { k: "F90", l: "Thrust at 90%", s: "N", min: 50, max: 90, step: 0.1 },
+    { k: "T590", l: "Exhaust total temp at 90%", s: "K", min: 800, max: 1100, step: 5 },
+    { k: "Fmax", l: "Thrust at full throttle", s: "N", min: 80, max: 120, step: 0.5 },
+    { k: "mdMax", l: "Mass flow at full throttle", s: "kg/s incl. fuel", min: 0.18, max: 0.32, step: 0.001 },
+    { k: "T5max", l: "Exhaust total temp, full throttle", s: "K", min: 850, max: 1150, step: 5 }
+  ], true]
+];
+const fresh = () => ({ sel: "drawn", v: Object.fromEntries(VKEYS.map(k => [k, { ...VERSIONS[k] }])), s: { ...SHARED } });
+let st = fresh();
+try {
+  const saved = JSON.parse(localStorage.getItem("p100-aft-v3") || "{}");
+  if (saved.v) for (const k of VKEYS) for (const f in VERSIONS[k]) if (saved.v[k] && typeof saved.v[k][f] === typeof VERSIONS[k][f]) st.v[k][f] = saved.v[k][f];
+  if (saved.s) for (const f in SHARED) if (typeof saved.s[f] === typeof SHARED[f]) st.s[f] = saved.s[f];
+  if (VKEYS.includes(saved.sel)) st.sel = saved.sel;
+} catch (e) {}
+const persist = () => { try { localStorage.setItem("p100-aft-v3", JSON.stringify(st)); } catch (e) {} };
+const V = () => st.v[st.sel];
+const scopeObj = sc => sc === "v" ? V() : st.s;
+
+function buildInputs() {
+  $("vsel").innerHTML = VKEYS.map(k => `<button type="button" data-k="${k}">${VERSIONS[k].name}</button>`).join("");
+  $("vsel").addEventListener("click", e => { const b = e.target.closest("button"); if (b) select(b.dataset.k); });
+  const form = $("inputs"); form.innerHTML = "";
+  for (const [name, sc, fields, closed] of GROUPS) {
+    const box = document.createElement(closed ? "details" : "fieldset");
+    box.insertAdjacentHTML("beforeend", closed ? `<summary>${name}</summary>` : `<legend>${name}</legend>`);
+    for (const f of fields) {
+      const d = document.createElement("div"); d.dataset.k = f.k;
+      if (f.type === "seg") {
+        d.className = "fseg";
+        d.innerHTML = `<span class="fl">${f.l}</span><div class="seg" role="group" aria-label="${f.l}">${f.opts.map(([val, t]) => `<button type="button" data-val="${val}">${t}</button>`).join("")}</div>`;
+        d.querySelector(".seg").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { scopeObj(sc)[f.k] = b.dataset.val; sync(); } });
+      } else if (f.type === "chk") {
+        d.className = "toggle";
+        d.innerHTML = `<input type="checkbox" id="c-${f.k}"><label for="c-${f.k}">${f.l}</label>`;
+        d.querySelector("input").addEventListener("change", e => { scopeObj(sc)[f.k] = e.target.checked; sync(); });
+      } else {
+        d.className = "field";
+        d.innerHTML = `<label for="n-${f.k}">${f.l}${f.s ? `<small>${f.s}</small>` : ""}</label><input type="number" id="n-${f.k}" min="${f.min}" max="${f.max}" step="${f.step}"><input type="range" id="r-${f.k}" min="${f.min}" max="${f.max}" step="${f.step}" aria-label="${f.l}">`;
+        const set = val => { if (!Number.isFinite(val)) return; scopeObj(sc)[f.k] = Math.min(f.max, Math.max(f.min, val)); sync(); };
+        d.querySelector("[type=number]").addEventListener("change", e => set(parseFloat(e.target.value)));
+        d.querySelector("[type=range]").addEventListener("input", e => set(parseFloat(e.target.value)));
+      }
+      box.append(d);
+      if (f.presets) {
+        const pr = document.createElement("div"); pr.className = "presets";
+        pr.innerHTML = PIPES.map(([n, id, w]) => `<button type="button" data-id="${id}" data-w="${w}" title="${n} OD tube, ${id} mm ID">${n}</button>`).join("");
+        pr.addEventListener("click", e => { const b = e.target.closest("button"); if (b) { V().pipeID = +b.dataset.id; V().pipeWall = +b.dataset.w; sync(); } });
+        box.append(pr);
+      }
+    }
+    form.append(box);
+  }
+}
+function sync() {
+  for (const [, sc, fields] of GROUPS) for (const f of fields) {
+    const o = scopeObj(sc), el = document.querySelector(`#inputs [data-k="${f.k}"]`);
+    if (f.type === "seg") el.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.val === o[f.k]));
+    else if (f.type === "chk") el.querySelector("input").checked = !!o[f.k];
+    else { const dp = (String(f.step).split(".")[1] || "").length; $("n-" + f.k).value = (+o[f.k]).toFixed(dp); $("r-" + f.k).value = o[f.k]; }
+    el.classList.toggle("dimmed", !!(f.dim && f.dim(V())));
+  }
+  $("vsel").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === st.sel));
+  $("vhint").textContent = `${VERSIONS[st.sel].name}: ${VERSIONS[st.sel].tag}. Inputs in the top three groups belong to this version; the rest apply to all three.`;
+  document.querySelectorAll(".vcard").forEach(c => c.classList.toggle("sel", c.dataset.k === st.sel));
+  persist(); schedule();
+}
+function select(k) { st.sel = k; sync(); }
+let raf = 0;
+const schedule = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); }); };
+const dot = c => `<span class="dot" style="background:var(--${c})"></span>`;
+const pts = (S, v) => {
+  const l90 = S.r90.F / LBF, lmx = S.rmax.F / LBF, din = S.L.out / IN, lin = S.L.Lall / IN;
+  return { l90, lmx, din, lin, total: score.power(S.r90.Pel) + score.f90(l90) + score.fmax(lmx) + score.radial(din) + score.length(lin) };
+};
+
+const views = {};
+function render() {
+  const R = {}; for (const k of VKEYS) R[k] = solve(st.v[k], st.s);
+  const v = V(), S = R[st.sel], { L, r90, rmax, rfree, b } = S;
+  // KPIs
+  $("k-P").innerHTML = `${fx(r90.Pel)}<span>W</span>`;
+  $("k-Pc").innerHTML = (r90.Pel >= 1000 ? dot("good") + "Meets 1000 W" : dot("warn") + `${fx(1000 - r90.Pel)} W short`) + ` · ${fx(r90.V)} V, ${fx(r90.I, 1)} A`;
+  $("k-F").innerHTML = `${fx(r90.F, 1)}<span>N</span>`;
+  $("k-Fc").innerHTML = `${fx(r90.F / LBF, 1)} lbf · ${fx((r90.F / b.p90.F - 1) * 100)}% vs stock · EGT ${r90.dEGT >= 0 ? "+" : ""}${fx(r90.dEGT)} K`;
+  $("k-N").innerHTML = `${fx(r90.N / 1000, 1)}<span>k rpm</span>`;
+  $("k-Nc").innerHTML = r90.N > N_OVER ? dot("bad") + "Above the 140k limit" : r90.N > N_RATED ? dot("warn") + "Above the 110.5k rating" : dot("good") + "Within the 110.5k rating";
+  $("k-R").innerHTML = `${fx(rfree.N / 1000, 1)}<span>k rpm</span>`;
+  $("k-Rc").innerHTML = rfree.N > N_OVER ? dot("bad") + "Loss of load would overspeed" : rfree.N > N_RATED ? dot("warn") + "Over rating, under 140k" : dot("good") + "Under the rating with no load";
+  $("k-W").innerHTML = `±${fx(r90.swT * 100)}<span>%</span>`;
+  $("k-Wc").innerHTML = (r90.swT > 0.5 ? dot("bad") : r90.swT > 0.2 ? dot("warn") : dot("good")) + `2/rev swing in blade load · η ${fx(st.s.eta0, 2)} → ${fx(r90.eta, 3)}`;
+  $("k-G").innerHTML = `${fx(L.W)}<span>mm wide</span>`;
+  $("k-Gc").innerHTML = `${fx(L.out, 1)} mm outside the case · ${fx(L.Lall / IN, 1)} in long overall`;
+  // Warnings for the selected version
+  // Forcing orders whose crossing with the blade mode falls inside the running range (loaded 90% to runaway, with margin).
+  const w = [], ord = orders(v), cross = ord.map(o => ({ o, N: 60 * st.s.fb * 1000 / o })).filter(c => c.N > 0.85 * r90.N && c.N < 1.1 * rfree.N);
+  if (rfree.N > N_OVER) w.push(`With no load at full throttle the wheel reaches ${fx(rfree.N / 1000, 1)}k rpm, past the motor's 140k limit. ${v.shroud === "lip" ? "Slide the wheel further past the lip" : "Slide the wheel aft"} or open the tube ID.`);
+  if (r90.N > N_RATED) w.push("Loaded speed at 90% is above the motor's 110.5k rpm rating.");
+  if (r90.Pel > 0.92 * r90.Pceil) w.push(`The wheel is near its power ceiling here (${fx(r90.Pceil)} W ideal); past the peak it stalls.`);
+  if (r90.dEGT > 60) w.push(`Estimated 90% EGT rise is +${fx(r90.dEGT)} K. Open the exits (Size exits) or cut duct loss.`);
+  if (r90.I > 25 || rmax.I > 25) w.push(`Generator current reaches ${fx(Math.max(r90.I, rmax.I), 1)} A; check the motor's continuous rating.`);
+  if (v.shroud === "lip" && L.eps > 0) w.push(`The wheel's trailing edge sits ${fx(L.over, 1)} mm past the lip, so the blades are inside the split with nothing to even out the back-pressure.`);
+  else if (v.shroud === "lip") w.push("The wheel is fully inside the straight tube, where moving it doesn't change bypass; only overhang past the lip does.");
+  if (r90.swT > 0.5) w.push(`Blade loading swings about ±${fx(r90.swT * 100)}% twice per revolution. That costs efficiency more than blade life, but check the forcing chart.`);
+  if (cross.length) w.push(`The ${cross.map(c => c.o + "×").join(", ")} forcing crosses the blade's first mode at ${cross.map(c => fx(c.N / 1000) + "k").join(", ")} rpm, inside the running range (see section 5).`);
+  if (L.wide) w.push(`At ${v.theta1}° with ${fx(v.rd, 2)}D bends the legs can't come in to a ${fx(v.gap)} mm gap; they end up ${fx(2 * (L.yc - L.rp))} mm apart.`);
+  if (v.exitID > v.pipeID) w.push("Exit ID is bigger than the pipe; the model uses the pipe ID.");
+  if (rmax.F / LBF < 19) w.push(`Full-throttle thrust of ${fx(rmax.F / LBF, 1)} lbf is under the 19 lbf full-score threshold.`);
+  $("warn").innerHTML = w.join("<br>");
+  // Version cards
+  for (const k of VKEYS) {
+    const Sk = R[k], vk = st.v[k];
+    if (views[k]) views[k].set(BigBen3D.build(vk, Sk.L));
+    $("vs-" + k).innerHTML = [["Power", `${fx(Sk.r90.Pel)} W`], ["Thrust 90%", `${fx(Sk.r90.F, 1)} N`], ["EGT", `${Sk.r90.dEGT >= 0 ? "+" : ""}${fx(Sk.r90.dEGT)} K`], ["Load swing", `±${fx(Sk.r90.swT * 100)}%`], ["Width", `${fx(Sk.L.W)} mm`], ["Overall", `${fx(Sk.L.Lall / IN, 1)} in`]]
+      .map(([a, c]) => `<span><b>${a}</b> ${c}</span>`).join("");
+  }
+  // Side by side
+  const cols = VKEYS.map(k => ({ k, S: R[k], v: st.v[k], p: pts(R[k], st.v[k]) }));
+  const row = (l, f) => `<tr><td>${l}</td><td></td>${cols.map(c => `<td class="num">${f(c)}</td>`).join("")}</tr>`;
+  $("cmp").innerHTML = `<tr><th>Quantity</th><th></th>${cols.map(c => `<th>${VERSIONS[c.k].name}</th>`).join("")}</tr>` +
+    row("Bypass set by", c => c.v.shroud === "lip" ? `overhang past lip (${fx(c.S.L.over, 1)} mm)` : `cone, Ø${fx(c.S.L.Ds, 1)} at wheel`) +
+    row("Bypass share at 90%", c => `${fx(c.S.r90.bypass * 100)}%`) +
+    row("Exit ID, each", c => `${fx(Math.min(c.v.exitID, c.v.pipeID), 1)} mm`) +
+    row("EGT change at 90%", c => `${c.S.r90.dEGT >= 0 ? "+" : ""}${fx(c.S.r90.dEGT)} K`) +
+    row("Electrical power at 90%", c => `${fx(c.S.r90.Pel)} W`) +
+    row("Thrust at 90%", c => `${fx(c.S.r90.F, 1)} N (${fx(c.p.l90, 1)} lbf)`) +
+    row("Max thrust", c => `${fx(c.S.rmax.F, 1)} N (${fx(c.p.lmx, 1)} lbf)`) +
+    row("Wheel speed loaded / runaway", c => `${fx(c.S.r90.N / 1000)}k / ${fx(c.S.rfree.N / 1000)}k`) +
+    row("Duct loss after the wheel", c => `${fx(c.S.r90.loss.filter(l => ["dump", "tee", "nose", "bends", "fric"].includes(l.k)).reduce((a, l) => a + l.dP, 0) / 1000, 1)} kPa`) +
+    row("2/rev blade-load swing", c => `±${fx(c.S.r90.swT * 100)}%`) +
+    row("Width × module length", c => `${fx(c.S.L.W)} × ${fx(c.S.L.Lmod)} mm`) +
+    row("Outside the engine case by", c => `${fx(c.S.L.out, 1)} mm`) +
+    row("Overall engine length", c => `${fx(c.S.L.Lall)} mm (${fx(c.p.lin, 1)} in)`) +
+    `<tr><td><b>Points modelled</b></td><td></td>${cols.map(c => `<td class="num"><b>${fx(c.p.total, 1)}</b></td>`).join("")}</tr>`;
+  // Operating points
+  const op = (l, f, u = "") => `<tr><td>${l}</td><td></td><td class="num">${f(r90)}${u}</td><td class="num">${f(rmax)}${u}</td></tr>`;
+  $("opTable").innerHTML = `<tr><th>Quantity</th><th></th><th>90% speed, loaded</th><th>Full throttle${st.s.unloadMax ? ", no load" : ", loaded"}</th></tr>` +
+    op("Electrical power", r => fx(r.Pel), " W") + op("Wheel speed", r => fx(r.N / 1000, 1), "k rpm") +
+    op("DC voltage / current", r => `${fx(r.V)} V / ${fx(r.I, 1)}`, " A") +
+    op("Thrust", r => `${fx(r.F, 1)} N / ${fx(r.F / LBF, 1)}`, " lbf") +
+    `<tr><td>Stock thrust</td><td></td><td class="num">${fx(b.p90.F, 1)} N</td><td class="num">${fx(b.max.F, 1)} N</td></tr>` +
+    op("Estimated EGT change", r => `${r.dEGT >= 0 ? "+" : ""}${fx(r.dEGT)}`, " K") +
+    op("Bypass share", r => fx(r.bypass * 100), "%") +
+    op("Axial velocity at the wheel", r => fx(r.Vx), " m/s") +
+    op("Mach behind the wheel / in pipes / at exits", r => `${fx(r.Mj, 2)} / ${fx(r.Ml, 2)} / ${fx(r.Me, 2)}`) +
+    op("Wheel efficiency with uneven loading", r => fx(r.eta, 3)) +
+    op("No-load speed at this point", r => fx(r.Nfree / 1000, 1), "k rpm");
+  // Loss breakdown
+  const ducts = r90.loss.filter(l => !l.work), tot = ducts.reduce((a, l) => a + l.dP, 0), mx = Math.max(...ducts.map(l => l.dP));
+  $("lossTable").innerHTML = `<tr><th>Element</th><th></th><th>K</th><th>Total-pressure drop</th><th style="width:34%">Share of duct loss</th></tr>` +
+    r90.loss.map(l => l.work ? `<tr class="sel"><td>${l.name}</td><td></td><td class="num">–</td><td class="num">${fx(l.dP / 1000, 2)} kPa</td><td class="fn" style="margin:0">Work extraction, not counted as duct loss</td></tr>`
+      : `<tr><td>${l.name}</td><td></td><td class="num">${fx(l.K, 2)}</td><td class="num">${fx(l.dP / 1000, 2)} kPa</td><td><div class="bar"><i style="width:${(l.dP / mx * 100).toFixed(1)}%"></i><span>${fx(l.dP / tot * 100)}%</span></div></td></tr>`).join("") +
+    `<tr><td><b>Duct losses</b></td><td></td><td></td><td class="num"><b>${fx(tot / 1000, 2)} kPa</b></td><td></td></tr>`;
+  // Loading and forcing
+  $("loadSum").innerHTML = [
+    ["Back-pressure swing behind the wheel", `${fx(r90.dPpp / 1000, 2)} kPa peak to peak`],
+    ["Settling distance, wheel to split", L.eps > 0 ? `none (wheel ${fx(L.over, 1)} mm past the lip)` : `${fx(L.settle, 1)} mm${v.fair ? ` + fairing ${fx(L.Lboot)} mm` : ""}`],
+    ["Left after settling", `${fx(r90.decay * 100)}%`],
+    ["Pressure drop across the blades", `${fx(r90.dPb / 1000, 2)} kPa`],
+    ["Load swing from the split", `±${fx(r90.sw * 100)}%`],
+    ["Load swing from strut wakes", v.hub === "struts" ? `±${fx(r90.swS * 100)}% at ${v.nStruts}×${v.nStruts % 2 ? "" : ", same order as the split, so they add"}` : "none"],
+    ["Wheel efficiency", `${fx(st.s.eta0, 2)} → ${fx(r90.eta, 3)}`],
+    ["Forcing at loaded / runaway speed", `${ord.slice(0, 3).map(o => `${o}× ${fx(o * r90.N / 60000, 1)}/${fx(o * rfree.N / 60000, 1)}`).join(" · ")} kHz`],
+    ["Resonance in the running range", cross.length ? cross.map(c => `${c.o}× at ${fx(c.N / 1000)}k rpm`).join(", ") : `none (lowest crossing: ${fx(Math.max(...ord) )}× at ${fx(60 * st.s.fb / Math.max(...ord))}k rpm)`]
+  ].map(([a, c]) => `<div><span>${a}</span><span class="mono">${c}</span></div>`).join("");
+  campbell($("chC"), ord, r90.N, rfree.N, st.s.fb);
+  // Wheel-position charts
+  const xs = [], P = [], N = [], NF = [], xmax = Math.max(L.xte + 12, v.xw + 6, 40);
+  for (let x = 0; x <= xmax; x += xmax / 40) { const Sx = solve({ ...v, xw: x }, st.s); xs.push(x); P.push([x, Sx.r90.Pel]); N.push([x, Sx.r90.N / 1000]); NF.push([x, Sx.rfree.N / 1000]); }
+  const lip = L.xte - WHEEL_W, vl = v.shroud === "lip" ? [{ v: lip, c: "muted", t: "trailing edge at lip" }] : [];
+  chart($("chP"), { x0: 0, x1: xmax, y0: 0, y1: Math.max(1500, Math.ceil(Math.max(...P.map(p => p[1])) / 500) * 500), xl: "Wheel position, mm aft of flange", yl: "W",
+    series: [{ c: "s1", pts: P, cur: [v.xw, r90.Pel] }], hl: [{ v: 1000, c: "good", t: "1000 W" }], vl, aria: "Electrical power at 90% against wheel position" });
+  chart($("chN"), { x0: 0, x1: xmax, y0: 40, y1: 180, xl: "Wheel position, mm aft of flange", yl: "k rpm",
+    series: [{ c: "s2", pts: NF, dash: true, cur: [v.xw, rfree.N / 1000] }, { c: "s1", pts: N, cur: [v.xw, r90.N / 1000] }],
+    hl: [{ v: 110.5, c: "warn", t: "110.5k rating" }, { v: 140, c: "bad", t: "140k limit" }], vl, aria: "Wheel speed against wheel position" });
+  // Score
+  const p = pts(S, v), sc = [["Power generation", `${fx(r90.Pel)} W`, score.power(r90.Pel), 100], ["Thrust at 90%", `${fx(p.l90, 1)} lbf`, score.f90(p.l90), 20],
+    ["Maximum thrust", `${fx(p.lmx, 1)} lbf`, score.fmax(p.lmx), 10], ["Radial distance", `${fx(p.din, 2)} in`, score.radial(p.din), 15], ["Overall length", `${fx(p.lin, 1)} in`, score.length(p.lin), 15]];
+  $("scTable").innerHTML = `<tr><th>Item</th><th>Value</th><th>Points</th><th>Of</th></tr>` + sc.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td class="num">${fx(r[2], 1)}</td><td class="num">${r[3]}</td></tr>`).join("") +
+    `<tr><td><b>Subtotal</b></td><td></td><td class="num"><b>${fx(p.total, 1)}</b></td><td class="num">160</td></tr>`;
+  $("selName").textContent = $("selName2").textContent = $("selName3").textContent = VERSIONS[st.sel].name;
+}
+
+function chart(el, o) {
+  const W = 520, H = 250, Lm = 48, Rm = 12, T = 12, B = 36, X = v => Lm + (v - o.x0) / (o.x1 - o.x0) * (W - Lm - Rm), Y = v => H - B - (v - o.y0) / (o.y1 - o.y0) * (H - T - B);
+  let s = "";
+  for (let i = 0; i <= 4; i++) { const yv = o.y0 + (o.y1 - o.y0) * i / 4; s += `<line x1="${Lm}" x2="${W - Rm}" y1="${Y(yv)}" y2="${Y(yv)}" stroke="var(--grid)"/><text x="${Lm - 6}" y="${Y(yv) + 4}" font-size="11" text-anchor="end" fill="var(--muted)">${fx(yv)}</text>`; }
+  const step = o.xstep || (o.x1 - o.x0 > 60 ? 20 : 10);
+  for (let xv = o.x0; xv <= o.x1 + 1e-9; xv += step) s += `<text x="${X(xv)}" y="${H - B + 16}" font-size="11" text-anchor="middle" fill="var(--muted)">${fx(xv)}</text>`;
+  if (o.band) s += `<rect x="${X(o.band[0])}" y="${T}" width="${Math.max(0, X(Math.min(o.band[1], o.x1)) - X(o.band[0]))}" height="${H - T - B}" fill="var(--band)"/>`;
+  for (const l of o.hl || []) if (l.v < o.y1) s += `<line x1="${Lm}" x2="${W - Rm}" y1="${Y(l.v)}" y2="${Y(l.v)}" stroke="var(--${l.c})" stroke-dasharray="3 3"/><text x="${l.left ? Lm + 4 : W - Rm - 2}" y="${Y(l.v) - 4}" font-size="11" text-anchor="${l.left ? "start" : "end"}" fill="var(--${l.c})">${l.t}</text>`;
+  for (const l of o.vl || []) if (l.v > o.x0 && l.v < o.x1) s += `<line x1="${X(l.v)}" x2="${X(l.v)}" y1="${T}" y2="${H - B}" stroke="var(--${l.c})" stroke-dasharray="3 3"/><text x="${X(l.v) + 4}" y="${T + 10}" font-size="11" fill="var(--${l.c})">${l.t}</text>`;
+  for (const se of o.series) {
+    s += `<polyline fill="none" stroke="var(--${se.c})" stroke-width="2" ${se.dash ? 'stroke-dasharray="6 4"' : ""} points="${se.pts.map(p => X(p[0]) + "," + Y(Math.max(o.y0, Math.min(o.y1, p[1])))).join(" ")}"/>`;
+    if (se.label) { const q = se.pts[se.pts.length - 1]; s += `<text x="${X(q[0]) - 4}" y="${Y(Math.min(o.y1, q[1])) + (q[1] > o.y1 ? 12 : -5)}" font-size="11" text-anchor="end" fill="var(--${se.c})">${se.label}</text>`; }
+    if (se.cur) s += `<circle cx="${X(se.cur[0])}" cy="${Y(Math.max(o.y0, Math.min(o.y1, se.cur[1])))}" r="5" fill="var(--surface)" stroke="var(--pt)" stroke-width="2"/>`;
+  }
+  s += `<text x="${(Lm + W - Rm) / 2}" y="${H - 4}" font-size="12" text-anchor="middle" fill="var(--text-2)">${o.xl}</text><text x="4" y="-6" font-size="12" fill="var(--text-2)">${o.yl}</text>`;
+  el.innerHTML = `<svg viewBox="0 -20 ${W} ${H + 20}" width="100%" role="img" aria-label="${o.aria}">${s}</svg>`;
+}
+function campbell(el, ord, n90, nfree, fb) {
+  const x1 = 160, y1 = Math.ceil(Math.max(fb * 1.3, 12) / 4) * 4, split = [2, 4, 6, 8], series = ord.map(o => {
+    const xe = Math.min(x1, y1 * 60 / o), st = !split.includes(o); return { c: st ? "s2" : "s1", dash: st, pts: [[0, 0], [xe, o * xe / 60]], label: `${o}×` };
+  });
+  chart(el, { x0: 0, x1, y0: 0, y1, xl: "Wheel speed, k rpm", yl: "kHz", xstep: 20, series, band: [n90 / 1000, nfree / 1000],
+    hl: [{ v: fb, c: "bad", t: `blade first mode ${fx(fb, 1)} kHz`, left: true }], aria: "Forcing frequency against wheel speed for each order, with the blade first mode" });
+}
+
+$("auto").addEventListener("click", () => { const a = loadFor(V(), st.s, 1000); V().R = Math.min(30, Math.max(0.5, Math.round(a.R * 20) / 20)); sync(); if (!a.ok) $("warn").insertAdjacentHTML("afterbegin", `This geometry peaks near ${fx(a.P)} W; the load is set to that peak.<br>`); });
+$("sizeExit").addEventListener("click", () => { const a = exitFor(V(), st.s, st.s.egtT); V().exitID = Math.round(a.exitID * 10) / 10; sync(); if (!a.ok) $("warn").insertAdjacentHTML("afterbegin", `Even full-size exits can't get the EGT change down to ${fx(st.s.egtT)} K; cut duct loss first.<br>`); });
+$("resetV").addEventListener("click", () => { st.v[st.sel] = { ...VERSIONS[st.sel] }; sync(); });
+$("resetAll").addEventListener("click", () => { st = fresh(); sync(); });
+document.querySelectorAll(".vedit").forEach(b => b.addEventListener("click", () => { select(b.dataset.k); document.querySelector("aside.panel").scrollTo({ top: 0, behavior: "smooth" }); }));
+buildInputs();
+for (const k of VKEYS) views[k] = new BigBen3D.View($("view-" + k), `${VERSIONS[k].name}: 3D model of the Big Ben aft turbine`);
+document.getElementById("swatches").innerHTML = [["tube", "Straight tube"], ["cone", "Cone section / neck"], ["bend", "Bent pipe"], ["filler", "Fairing (filler sheet)"], ["box", "Motor box and bracket"], ["strut", "Hub cone and struts"], ["wheel", "Turbine wheel / spinner"], ["cart", "Shaft and coupler"], ["motor", "Motor"]]
+  .map(([k, l]) => `<span><i style="background:${BigBen3D.colors[k]}"></i>${l}</span>`).join("") + `<span><i style="background:transparent;border:1px dashed ${BigBen3D.colors.ref}"></i>97 mm engine case</span>`;
+sync();
+
+</script>
+</body>
+</html>
