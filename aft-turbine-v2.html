@@ -601,6 +601,7 @@ $("reset").addEventListener("click", () => { st = { ...DEF }; sync(); });
 $("auto").addEventListener("click", () => { const a = loadFor(st, 1000); st.R = Math.min(30, Math.max(0.5, Math.round(a.R * 20) / 20)); sync(); if (!a.ok) $("warn").innerHTML = "This geometry peaks at about " + fx(a.P) + " W. The load is set to that peak; move the wheel forward for more." + ($("warn").innerHTML ? "<br>" + $("warn").innerHTML : ""); });
 buildInputs(); sync();
 </script>
+<script src="viewer3d.js"></script>
 <script src="aft-turbine-v2-3d.js"></script>
 </body>
 </html>

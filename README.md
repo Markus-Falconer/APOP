@@ -28,3 +28,7 @@ Every page's title, subtitle and navigation come from one list, `SITE`, at the t
 To add a new menu, add a group to `SITE`: `{ label: "Testing", pages: [ ... ] }`. Give it an `href` if clicking the menu name should open a default page, as Cycle analysis does with V2. Without `href`, the name just opens the menu.
 
 To move or rename a page in the menus, change only `site.js`. Any page can still override shared styles in its own `<style>` block.
+
+## 3D views
+
+`viewer3d.js` is a small shared WebGL viewer (orbit, preset views, cutaway, exploded view, clipping) plus mesh helpers for tubes, bends, cones, lofts and plates. Load it before a page's own geometry script and build parts as described at the top of the file; `aft-turbine-v3-3d.js` is a compact example.
