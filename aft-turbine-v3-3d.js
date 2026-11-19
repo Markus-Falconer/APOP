@@ -8,11 +8,20 @@
   const { COL, css, grid, merge, revolve, loft, rhoOf, path, sweep, blades, dashes, empty, View, D2R } = V3D;
   const CASE = 48.5, R_HUB = HUB / 2, R_IN = INLET / 2;
   const quad = (a, b, c, d) => grid([[a, b], [d, c]], false, true);
+  // A flat radial plate of thickness t at angle ang (from +y toward +z), from radius r0 to r1 and x0 to x1.
+  function slab(x0, x1, r0, r1, ang, t) {
+    const c = Math.cos(ang), sn = Math.sin(ang), h = t / 2, Q = (x, r, o) => [x, r * c - o * sn, r * sn + o * c];
+    return merge([
+      quad(Q(x0, r0, h), Q(x1, r0, h), Q(x1, r1, h), Q(x0, r1, h)), quad(Q(x0, r0, -h), Q(x1, r0, -h), Q(x1, r1, -h), Q(x0, r1, -h)),
+      quad(Q(x0, r0, -h), Q(x0, r0, h), Q(x0, r1, h), Q(x0, r1, -h)), quad(Q(x1, r0, -h), Q(x1, r0, h), Q(x1, r1, h), Q(x1, r1, -h)),
+      quad(Q(x0, r1, -h), Q(x1, r1, -h), Q(x1, r1, h), Q(x0, r1, h))
+    ]);
+  }
   const internal = { cut: false, ex: [0, 0, 55] };
 
   function build(v, L) {
     const parts = [], P = (g, k, o = {}) => parts.push({ g, k, c: COL[k], cut: true, ex: [0, 0, 0], ...o });
-    const tee = !v.fair, th = L.th, thd = v.theta1;
+    const tee = !L.side && !L.boot, th = L.th, thd = v.theta1, shroudKey = v.shroud === "cone" ? "cone" : "tube";
     // Engine stub and the engine turbine face, for scale.
     P(merge([revolve([[-26, CASE], [-14, CASE], [-6, 45], [-1.5, 37], [0, 34]]), revolve([[0, 34], [0, R_IN]])]), "engine", { ex: [-25, 0, 0] });
     P(revolve([[-3, R_IN], [-3, R_HUB], [-3, 0.1]]), "wheel", { ex: [-25, 0, 0] });
@@ -20,19 +29,28 @@
     // Runs from where the mitre plane meets the far wall to a little way into the bend, which only matters near the tube end.
     const legCyl = s => ({ p: [L.xs, s * L.ys, 0], d: [Math.cos(th), s * Math.sin(th), 0], r: L.rp, t0: -L.rp / Math.tan(th) - 0.5, t1: L.Ls + 0.3 * L.R });
     const teeClip = tee ? { cy: [legCyl(1), legCyl(-1)] } : {};
+    if (L.side) {
+      // Side entry: the tube runs past the pipes to an end cap; windows are cut where each pipe bore meets the wall.
+      const win = s => ({ p: [L.xs, 0, 0], d: [Math.cos(th), s * Math.sin(th), 0], r: L.ri, t0: 0, t1: L.Ls + 0.3 * L.R });
+      P(revolve([[0, L.Rt0], [L.xte, L.Rte]], 0, 0, 128), shroudKey, { cy: [win(1), win(-1)] });
+      P(revolve([[L.xte, 11.6], [L.xte, L.Rte]], 0, 0, 96), "tube", { ex: [10, 0, 0] });
+      if (v.nose === "round") P(revolve([[L.xte - 0.75 * L.Rw, 11.7], [L.xte - 0.02, 0.85 * L.Rte]], 0, 0, 96), "filler", { ex: [10, 0, 0] });
+    } else {
     // Inlet tube (straight with a lip, or a cone).
-    P(revolve([[0, L.Rt0], [L.xte, L.Rte]], 0, 0, 96), v.shroud === "cone" ? "cone" : "tube", teeClip);
+    P(revolve([[0, L.Rt0], [L.xte, L.Rte]], 0, 0, 96), shroudKey, teeClip);
     if (tee) P(revolve([[L.xte, 0.5], [L.xte, L.Rte]], 0, 0, 96), "tube", { ...teeClip, ex: [8, 0, 0] });
     else {
       const fig8 = (y, z) => ((y - L.ys) / L.ay) ** 2 + (z / L.rp) ** 2 <= 1 || ((y + L.ys) / L.ay) ** 2 + (z / L.rp) ** 2 <= 1;
       P(loft(L.xte, () => L.Rte, L.xj, rhoOf(fig8)), "filler", { ex: [14, 0, 0] });
     }
+    }
     // Legs: bent pipe, mitred on the centre plane where they meet.
     for (const s of [1, -1]) {
-      const e = L.rp * Math.tan(th) + L.rp + 6, dir = [Math.cos(th), s * Math.sin(th)], start = [L.xs - e * dir[0], s * L.ys - e * dir[1]];
+      const e = L.side ? 0 : L.rp * Math.tan(th) + L.rp + 6, dir = [Math.cos(th), s * Math.sin(th)], start = [L.xs - e * dir[0], s * L.ys - e * dir[1]];
       const pts = path(start, s * thd, [{ L: e + L.Ls }, { R: L.R, a: -s * thd }, { L: Math.max(0.5, L.xn0 - L.xPar) }]);
-      const o = { pl: [[0, s, 0, 0]].concat(tee ? [] : [[1, 0, 0, -L.xj]]), ex: [30, s * 18, 0] };
+      const o = { pl: L.side ? [] : [[0, s, 0, 0]].concat(tee ? [] : [[1, 0, 0, -L.xj]]), ex: [30, s * 18, 0] };
       if (tee) o.cy = [{ p: [0, 0, 0], d: [1, 0, 0], r: L.Rte, t0: -1e5, t1: L.xte }];
+      if (L.side) o.cy = [{ p: [0, 0, 0], d: [1, 0, 0], r: L.Rw, t0: -1e5, t1: L.xte }];
       P(sweep(pts, L.rp, 48), "bend", o);
       if (L.Lneck > 0) P(revolve([[L.xn0, L.rp], [L.xExit, L.re + v.pipeWall]], s * L.yc), "cone", { ex: [30, s * 18, 0] });
     }
@@ -40,15 +58,15 @@
     const x0 = L.xBox, x1 = L.xBoxEnd, hw = L.bw, hh = L.bh / 2, C = (x, y, z) => [x, y, z];
     P(merge([
       quad(C(x0, hw, -hh), C(x1, hw, -hh), C(x1, hw, hh), C(x0, hw, hh)), quad(C(x0, -hw, -hh), C(x1, -hw, -hh), C(x1, -hw, hh), C(x0, -hw, hh)),
-      quad(C(x0, -hw, hh), C(x1, -hw, hh), C(x1, hw, hh), C(x0, hw, hh)), quad(C(x0, -hw, -hh), C(x1, -hw, -hh), C(x1, hw, -hh), C(x0, hw, -hh)),
-      quad(C(x0, -hw, -hh), C(x0, hw, -hh), C(x0, hw, hh), C(x0, -hw, hh))
-    ]), "box", { ex: [30, 0, 0] });
+      quad(C(x0, -hw, hh), C(x1, -hw, hh), C(x1, hw, hh), C(x0, hw, hh)), quad(C(x0, -hw, -hh), C(x1, -hw, -hh), C(x1, hw, -hh), C(x0, hw, -hh))
+    ].concat(L.side ? [] : [quad(C(x0, -hw, -hh), C(x0, hw, -hh), C(x0, hw, hh), C(x0, -hw, hh))])), "box", { ex: [30, 0, 0] });
     // Hub treatment between the engine hub and the wheel.
     if (v.hub === "struts") {
       P(revolve([[0.8, R_HUB], [Math.max(2, v.xw - 7), R_HUB], [Math.max(3, v.xw - 2.5), 15]]), "strut");
-      const xa = 3, xb = Math.max(5, v.xw - 8), ro = L.Rt0 + 5, ang = [];
+      // Flat struts from the hub cone to the inside of the tube wall.
+      const xa = 3, xb = Math.max(5, v.xw - 8), ro = L.Rt0 + xa * Math.tan(L.a) - 0.3, ang = [];
       for (let k = 0; k < v.nStruts; k++) ang.push(Math.PI / 2 + k * 2 * Math.PI / v.nStruts);
-      P(merge(ang.map(a => { const c = Math.cos(a), sn = Math.sin(a); return quad([xa, R_HUB * c, R_HUB * sn], [xb, R_HUB * c, R_HUB * sn], [xb, ro * c, ro * sn], [xa, ro * c, ro * sn]); })), "strut");
+      P(merge(ang.map(a => slab(xa, xb, R_HUB, ro, a, 1.6))), "strut");
     } else if (v.hub === "spinner") {
       const x0s = Math.max(1.5, v.xw - 24), prof = [];
       for (let k = 0; k <= 8; k++) { const u = k / 8; prof.push([x0s + (v.xw - x0s) * u, Math.max(2.5, R_HUB * Math.sqrt(u))]); }
@@ -57,7 +75,8 @@
     // Turbine wheel, then the bearing bracket (flat plate) or a rounded fairing, then the cartridge and motor.
     P(merge([revolve([[v.xw, 0.1], [v.xw, R_HUB], [L.xtr, R_HUB]]), blades(v.xw)]), "wheel", internal);
     const xc0 = L.xMot - 18;
-    if (v.nose === "flat") {
+    if (L.side) P(revolve([[L.xtr + 0.5, R_HUB], [L.xtr + 6, 11], [xc0, 11]]), "box", internal);
+    else if (v.nose === "flat") {
       const xp = L.xtr + 7, hy = 15, hz = Math.min(L.Rte - 3, 22);
       P(merge([quad([xp, -hy, -hz], [xp, hy, -hz], [xp, hy, hz], [xp, -hy, hz]), revolve([[L.xtr + 0.5, 11], [xc0, 11]])]), "box", internal);
     } else P(revolve([[L.xtr + 0.5, R_HUB], [L.xtr + 10, 15.5], [L.xtr + 22, 11.5], [xc0, 11.5]]), "box", internal);
