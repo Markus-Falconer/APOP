@@ -173,7 +173,14 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
 .bar span{position:relative;font-size:11px;padding-left:6px;line-height:16px;color:var(--text)}
 .kpis.k6{grid-template-columns:repeat(3,1fr)}
 @media (max-width:640px){.kpis.k6{grid-template-columns:repeat(2,1fr)}}
-.bo-view{height:380px}
+.bo-view{height:400px}
+.dd-select{width:100%;font:inherit;font-size:14px;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);cursor:pointer}
+.vbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px}
+.vbar label{font-size:13px;color:var(--text-2)}
+.vbar .dd-select{width:auto;min-width:230px}
+.vbar .tagl{font-size:13px;color:var(--text-2)}
+#vdesc{margin:10px 0 0;padding-left:18px;font-size:14px}
+#vdesc li{margin:3px 0}
 </style>
 </head>
 <body>
@@ -183,8 +190,8 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
 <main class="wrap">
   <aside class="panel" aria-label="Big Ben inputs">
     <div class="units">
-      <div class="units-l" style="margin-bottom:8px">Version you're editing</div>
-      <div class="seg vsel" role="group" aria-label="Version" id="vsel"></div>
+      <label class="units-l" for="vsel" style="display:block;margin-bottom:8px">Design</label>
+      <select id="vsel" class="dd-select"></select>
       <p class="hint" id="vhint" style="margin:8px 0 0"></p>
     </div>
     <form id="inputs" onsubmit="return false"></form>
@@ -197,10 +204,10 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
       <h2>The idea</h2>
       <p>Ben's layout is built for easy fabrication. A straight tube bolts to the nozzle flange and the spare turbine wheel slides inside it. Two bent pipes join the tube through windows cut in its side wall, then turn back aft and neck down at the exits. The tube carries on past the windows to an end cap, and a flat-plate box behind the cap carries the motor and a slotted bearing mount. Because the bore is continuous, the wheel can slide over the windows without hitting anything; joining the pipes at the end of the tube doesn't allow that, because the 2 in pipes are smaller than the 58 mm wheel. This page models those specifics on top of the V2 engine and wheel model:</p>
       <ul>
-        <li><b>Window bypass.</b> As the blade row slides over the windows, the window area beside it opens a bypass path. The windows are elliptical, so bypass ramps up over about 10 mm of travel rather than all at once.</li>
+        <li><b>Window bypass from a pressure balance.</b> Gas reaches the pipes either through the blades (and out of the window behind them) or straight out of the window ahead of the wheel. The split is set where both paths see the same pressure drop, so bypass grows smoothly as more window sits ahead of the blades.</li>
         <li><b>Split losses.</b> The turn into the side windows, sharp or flared window edges, the flat end cap or a cone splitter on it, the sudden expansion into the big pipes, the return bends and the necked exits.</li>
         <li><b>Uneven loading.</b> The split's back-pressure pattern, plus any strut wakes, swing the blade loading twice per revolution. That costs wheel efficiency and sets the forcing frequencies to check against the blade's first mode.</li>
-        <li><b>Hub treatment.</b> An open cavity between the engine hub and the wheel, a hub cone on struts, or a spinner on the wheel.</li>
+        <li><b>Hub treatment and guide vanes.</b> An open cavity between the engine hub and the wheel, a hub cone on struts or on guide vanes, or a spinner on the wheel. Guide vanes pre-swirl the gas, which raises the work per kilogram, and the speed.</li>
       </ul>
       <p>Pick a version on the left to edit it. Every number is a first-pass estimate from the CAD screenshots until Ben's measurements replace them (see section 8).</p>
     </div>
@@ -216,41 +223,13 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
     <div class="warn" id="warn" role="status"></div>
 
     <div class="panel card" id="versions">
-      <h2>1. Three versions in 3D</h2>
-      <p class="sub">Ben's CAD as drawn, and two slightly optimized versions built from the same kinds of parts. Each model is built from that version's inputs, so it updates as you edit. Cutaway removes the top half; Exploded pulls the parts apart.</p>
+      <h2>1. The design in 3D</h2>
+      <p class="sub">Pick a design to view and edit; the inputs on the left follow it. The model is built from that design's inputs, so it updates as you edit. Cutaway removes the top half; Exploded pulls the parts apart.</p>
+      <div class="vbar"><label for="vsel2">Design</label><select id="vsel2" class="dd-select"></select><span class="tagl" id="vtag"></span></div>
       <div class="swatches" id="swatches"></div>
-      <div class="vcard" data-k="drawn">
-        <div class="vhead"><h3>Ben's layout<span class="tagl">pipes joined on the tube sides, necked exits</span></h3><button type="button" class="vedit" data-k="drawn">Edit this version</button></div>
-        <div id="view-drawn"></div>
-        <ul>
-          <li>Straight 60 mm tube (1 mm tip gap) that runs past the pipes to a flat end cap; the bearing housing passes through the cap into the motor box.</li>
-          <li>2 in pipes leave the side wall at 60° and bend back at 1.5D. Their windows run from about 23 to 77 mm aft of the flange, and the wheel sits where its blades just overlap them.</li>
-          <li>Hub cone on two struts (blue markups), sharp window edges, exits necked to give a +30 K EGT rise.</li>
-        </ul>
-        <div class="vstats" id="vs-drawn"></div>
-      </div>
-      <div class="vcard" data-k="faired">
-        <div class="vhead"><h3>V3-1 Faired<span class="tagl">side windows, cleaned up</span></h3><button type="button" class="vedit" data-k="faired">Edit this version</button></div>
-        <div id="view-faired"></div>
-        <ul>
-          <li>Same side-window layout, with the window edges flared or filleted (the red markups) so gas turns into the pipes without separating.</li>
-          <li>A sheet-metal cone splitter on the end cap steers the gas outward into the windows instead of letting it pile up on a flat face.</li>
-          <li>Pipes leave at 45° instead of 60°, which brings the legs in by about 16 mm per side.</li>
-          <li>Spinner on the wheel instead of the strut-mounted cone, so there are no wakes upstream of the blades.</li>
-        </ul>
-        <div class="vstats" id="vs-faired"></div>
-      </div>
-      <div class="vcard" data-k="cone">
-        <div class="vhead"><h3>V3-2 Cone + gentle split<span class="tagl">cone shroud, 35° legs</span></h3><button type="button" class="vedit" data-k="cone">Edit this version</button></div>
-        <div id="view-cone"></div>
-        <ul>
-          <li>A rolled 8° cone replaces the straight tube, so the blades stay shrouded and bypass changes smoothly across the travel.</li>
-          <li>The split starts about 19 mm behind the wheel, which lets the back-pressure pattern die out before it reaches the blades. Keep the wheel inside the cone: the boot narrows to the pipe height, so past the cone's end the tips would hit it.</li>
-          <li>Legs leave at 35° with 1.5D bends; 1¾ in pipes and a 36 mm gap pull the width in.</li>
-          <li>Spinner and rounded bearing fairing as in V3-1.</li>
-        </ul>
-        <div class="vstats" id="vs-cone"></div>
-      </div>
+      <div id="view-main"></div>
+      <ul id="vdesc"></ul>
+      <div class="vstats" id="vstats"></div>
     </div>
 
     <div class="panel card">
@@ -285,6 +264,14 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
       <div class="panel card"><h2>Wheel speed vs wheel position</h2><p class="sub">Loaded at 90%, and with no load at full throttle.</p><div class="legend"><span><i style="border-color:var(--s1)"></i>Loaded, 90%</span><span><i class="dash" style="border-color:var(--s2)"></i>No load, full throttle</span></div><div id="chN"></div></div>
     </div>
 
+    <div class="grid2">
+      <div class="panel card"><h2>Where the gas goes vs wheel position</h2><p class="sub">90% speed, current load. Power follows the gas through the blades.</p><div class="legend"><span><i style="border-color:var(--s1)"></i>Through the blades</span><span><i class="dash" style="border-color:var(--s2)"></i>Window ahead of the wheel</span><span><i style="border-color:var(--muted)"></i>Tip gap</span></div><div id="chF"></div></div>
+      <div class="panel card prose"><h2>Reading these charts</h2>
+        <p>The gas can reach the pipes two ways: through the blades and out of the window behind them, or straight out of the window ahead of the wheel. Both paths see the same pressure drop, so the gas splits until they balance. The wheel's own pressure drop (the work it extracts plus its losses) pushes gas toward the bypass, so a harder-working wheel passes less gas.</p>
+        <p>Sliding the wheel aft puts more window ahead of it and less behind, so bypass grows, power and speed fall, and once the blades' mid-chord passes the windows almost nothing goes through them. Blade efficiency rises as the wheel slows, because the gas meets the blades at a less extreme angle.</p>
+      </div>
+    </div>
+
     <div class="panel card">
       <h2>6. Score estimate</h2>
       <p class="sub">The selected version, for the items this page models.</p>
@@ -292,16 +279,16 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
     </div>
 
     <div class="panel card prose notes">
-      <h2>7. How this model differs from Aft Turbine V2</h2>
+      <h2>7. How the model works</h2>
       <ul>
-        <li><b>Same engine and wheel core.</b> Stock nozzle area back-calculated from published thrust and mass flow; Euler work on the wheel with a uniform axial velocity; a fixed load resistor sets the speed; the core turbine-exit pressure is solved so the flow passes the exits, and EGT change is estimated from the change in core-turbine expansion.</li>
-        <li><b>Window bypass.</b> The window shape comes from where each pipe bore meets the tube wall. The window area alongside the blade row (k × area; k is the window effectiveness) is added to the flow area at the wheel, with a mixing loss of 0.25 × (open area ÷ blade outer area) dynamic heads. For the end-of-tube layout, overhang past the end counts as k × π × D × overhang, and the page flags the collision.</li>
-        <li><b>Split losses</b>, on the dynamic head just behind the wheel: the turn into the legs, K = (0.08 + 1 − cos θ) for legs leaving at θ (× 0.75 with flared side windows, × 0.55 with a faired boot); window edges 0.10 sharp or 0.03 flared; Borda–Carnot for the sudden expansion into the legs (× 0.6 flared, × 0.35 boot); 0.12 for a flat end cap or bracket, 0.03 with a cone splitter or rounded fairing.</li>
-        <li><b>Leg losses</b>, on the pipe dynamic head: return bends (θ ÷ 90°) × (0.13 + 0.12 ÷ (R/D)^1.2), and friction f = 0.02.</li>
-        <li><b>Hub</b>, on the engine-exit dynamic head: 0.15 for an open cavity, 0.03 + 0.035 per strut for a cone on struts, 0.04 for a spinner.</li>
-        <li><b>Necked exits.</b> Discharge coefficient 0.985 − 0.085 × (half-angle ÷ 45°)^1.3, so a steep neck flows less than its diameter suggests.</li>
-        <li><b>Uneven loading.</b> Back-pressure swing at the split = q × (0.15 + 0.85 × (1 − cos θ)), × 0.6 with flared windows or 0.45 with a boot, × 1.15 with a flat end cap or bracket, then decayed as e<sup>−2L/r</sup> over the settling distance L. That swing is compared with the pressure drop across the blades, strut wakes are added, and wheel efficiency becomes η × (1 − k × swing²).</li>
-        <li><b>All loss coefficients are handbook-range estimates</b>, not measurements; treat differences between versions as more reliable than the absolute numbers. CFD or a back-to-back test should replace them.</li>
+        <li><b>Engine.</b> Stock nozzle area is back-calculated from published thrust and mass flow; the 90% point uses the thrust and temperature on the left. Mass flow is held fixed (the core turbine nozzle is choked), and the core turbine-exit pressure is solved so the flow passes the necked exits. EGT change is estimated from the change in core-turbine expansion at constant work.</li>
+        <li><b>Openings.</b> Side windows are where each pipe bore meets the tube wall, with each side capped at its pipe area. They are split at the blade mid-chord: area ahead of it is bypass, area behind it is the exit for gas that went through the wheel. For the end-of-tube and boot layouts, the open tube end is the exit and overhang past the end counts as bypass (the page flags the collision).</li>
+        <li><b>Flow split.</b> Turbine path = blades in parallel with the tip gap, then the opening behind the wheel. Bypass = the opening ahead of the wheel. Openings lose a full dynamic head at their effective area (discharge coefficient × area), the tip gap has K = 1.2, and the blade flow is found so both paths share the same total-pressure drop.</li>
+        <li><b>Blades.</b> Axial velocity V<sub>x</sub> = blade flow ÷ (ρ × blade passage area, 90% open). Euler work w = U(C − U) with C = V<sub>x</sub>(tan α₁ + tan β₂), so U follows from the resistive load: P = ṁ·w = k·U². The blade-row total-pressure drop is ρw + ½ρζW₂² + ½ρζ<sub>i</sub>(W₁ sin i)², where W₂ = V<sub>x</sub>/cos β₂ and i is the relative inflow angle minus the blade inlet angle. Without guide vanes the gas meets the blades about 90° off their design inlet angle, which is why incidence matters.</li>
+        <li><b>Guide vanes</b> add swirl α₁ (raising C and the speed), a loss of K<sub>v</sub> ÷ cos²α₁ vane-exit dynamic heads, and their own wake forcing at the vane count.</li>
+        <li><b>Duct losses</b> (handbook-range estimates): hub cavity, struts, vanes or spinner on the engine-exit dynamic head; the turn into the pipes (side windows, 0.6 × (1 − cos θ) sharp or 0.3 flared, on the pipe head); end cap 0.12 flat or 0.03 with a cone splitter; tee, expansion and bracket terms for the end and boot layouts; return bends; friction; neck discharge coefficient.</li>
+        <li><b>Uneven loading.</b> Back-pressure swing at the split = q × (0.15 + 0.85 × (1 − cos θ)) × layout factors, decayed as e<sup>−2L/r</sup> over the settling distance, compared with the blade-row pressure drop. Strut or vane wakes add their own swing, and k × swing² of the work is lost.</li>
+        <li><b>Not modelled:</b> compressibility within the split (ρ is taken just ahead of the wheel); swirl in the bypass gas; the motor's winding resistance and inductance, which cut voltage at 1.5–2 kHz; heat loss; changes in engine mass flow. Loss coefficients are estimates, so differences between designs are more reliable than absolute numbers.</li>
       </ul>
     </div>
 
@@ -325,12 +312,15 @@ td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
 // ============================================================ Aft Turbine V3 "Big Ben" model
 // Same 1-D engine and wheel model as Aft Turbine V2, with the Big Ben geometry: a straight
 // inlet tube, big pipes joined through windows in the tube's side wall (or at its end),
-// necked exits, a hub fairing on struts or a spinner, and the twice-per-revolution
-// loading the split puts on the wheel. Bypass opens as the blades slide over the windows.
+// necked exits, a hub cone on struts or guide vanes (or a spinner), and the twice-per-revolution
+// loading the split puts on the wheel. The split between gas through the blades and gas that
+// bypasses them is found from a pressure balance between the parallel paths.
 const G = 1.335, RG = 287, CP = G * RG / (G - 1), PA = 101325;
 const RM = (58 / 2 + 37.5 / 2) / 2 / 1000, HUB = 37.5, WHEEL = 58, INLET = 58.4, WHEEL_W = 6.8, SPAN = (58 - 37.5) / 2;
 const N_RATED = 110500, N_OVER = 140000, CASE_R = 48.5, MOTOR_L = 57.5, MOTOR_D = 29.3, R_BRG = 11, STOCK_LEN = 241 - 40.4;
 const A5 = Math.PI / 4 * (INLET * INLET - HUB * HUB) * 1e-6;
+const A_BL = 0.9 * Math.PI / 4 * (WHEEL * WHEEL - HUB * HUB) * 1e-6;   // blade passage area (10% metal blockage)
+const K_GAP = 1.2, CD_LIP = 0.62, VANE_X0 = 2, VANE_X1 = 14;
 const TR = M => 1 + (G - 1) / 2 * M * M;
 const PR = M => Math.pow(TR(M), G / (G - 1));
 const mfp = M => Math.sqrt(G / RG) * M * Math.pow(TR(M), -(G + 1) / (2 * (G - 1)));
@@ -367,10 +357,16 @@ function layout(v) {
     if (boot) { ys = 0.5 * rp; const flare = Math.max(0, ys + ay - Rte); Lboot = Math.max(12, flare / Math.tan(rad(40))); xj = xte + Lboot; xs = xj; }
     else { ys = 0; xs = xte + Math.max(0, ay - Rte) / Math.tan(th); xj = xte; }
   }
-  // Open area beside the blade row: the side windows it overlaps, or the full circumference past a lip.
-  const over = side ? 0 : Math.max(0, Math.min(WHEEL_W, xtr - xte));
-  const Aover = side ? 2 * windowArea({ xs, Rw, th, ri }, Math.max(xw, xw0), Math.min(xtr, xw1)) : Math.PI * Ds * over;
-  const eps = Aover / (Math.PI * Ds * WHEEL_W);
+  // Openings split at the blade mid-chord. Gas leaving through the opening ahead of it never does work (bypass);
+  // gas that went through the wheel leaves through the opening behind it (side windows) or the open tube end.
+  // Each side's window is capped at its pipe bore, which is the most it can pass.
+  const over = side ? 0 : Math.max(0, Math.min(WHEEL_W, xtr - xte)), xmid = xw + WHEEL_W / 2;
+  let Aup = 0, Adn = Infinity;
+  if (side) {
+    const g = { xs, Rw, th, ri }, Aside = windowArea(g, xw0, xw1), cap = Math.min(1, Math.PI * ri * ri / Math.max(1, Aside));
+    Aup = 2 * cap * windowArea(g, xw0, Math.min(xmid, xw1)); Adn = 2 * cap * windowArea(g, Math.max(xmid, xw0), xw1);
+  } else Aup = Math.PI * Ds * Math.max(0, Math.min(xmid, xtr) - xte);
+  const Aover = Aup;
   // First straight sized so the legs end up the requested gap apart, and (side entry) clear of the tube wall before bending.
   const ycReq = rp + v.gap / 2, Ls = Math.max(LsMin, (ycReq - ys - R * (1 - Math.cos(th))) / Math.sin(th));
   const yc = ys + Ls * Math.sin(th) + R * (1 - Math.cos(th)), xPar = xs + Ls * Math.cos(th) + R * Math.sin(th);
@@ -383,11 +379,11 @@ function layout(v) {
   const xn0 = Math.max(xPar + 5, xBoxEnd - Lneck), xExit = xn0 + Lneck;
   const Lmod = Math.max(xExit, xBoxEnd), W = 2 * (yc + rp), out = Math.max(0, yc + rp - CASE_R);
   const Lleg = Ls + R * th + (xn0 - xPar) + Lneck;
-  const settle = side ? xw0 - xtr : xte - xtr, inWin = side && Aover > 0;
-  return { a, side, boot, Rt0, xte, Rte, Rw, xw0, xw1, xw, xtr, Ds, over, Aover, eps, inWin, settle, ri, rp, th, R, ay, xs, ys, xj, Lboot, Ls, yc,
+  const settle = side ? xw0 - xtr : xte - xtr, inWin = side && xtr > xw0 && xw < xw1;
+  return { a, side, boot, Rt0, xte, Rte, Rw, xw0, xw1, xw, xtr, xmid, Ds, over, Aup, Adn, Aover, inWin, settle, ri, rp, th, R, ay, xs, ys, xj, Lboot, Ls, yc,
     wide: !side && yc > ycReq + 0.5, xPar, bw, bh, xBox, xMot, xBoxEnd, re, Lneck, xn0, xExit, Lmod, W, out, Lleg, Lall: STOCK_LEN + Lmod,
     winArea: side ? windowArea({ xs, Rw, th, ri }, xw0, xw1) : 0,
-    hitPipes: !side && over > 0.3 && rp < WHEEL / 2, hitCap: side && xtr > xte - 1.5, pastWin: side && xw > xw1 };
+    hitPipes: !side && over > 0.3 && rp < WHEEL / 2, hitCap: side && xtr > xte - 1.5, pastWin: side && xmid >= xw1, vaneHit: !!v.gv && xw < VANE_X1 + 2 };
 }
 // Arc width (mm) of one side window at station x: points on the tube wall that lie inside the pipe bore.
 function winWidth(g, x) {
@@ -427,49 +423,88 @@ const K = {
 };
 
 // One operating point with the core turbine-exit pressure scaled by x.
+// Discharge coefficient of the openings: side windows (sharp, or flared edges), or the lip.
+const cdOpen = (v, s, L) => L.side ? (v.fair ? Math.min(0.98, s.cdw * 1.15) : s.cdw) : CD_LIP;
+// Turbine path for a given mass flow through the blade passages: Euler work on the load line, blade losses,
+// the tip gap in parallel with the blades, then the opening behind the wheel in series.
+function wheelPath(mbl, rho, v, s, L, a1, kU) {
+  const tb2 = Math.tan(rad(s.beta2)), Ag = Math.max(0, Math.PI / 4 * (L.Ds * L.Ds - WHEEL * WHEEL) * 1e-6);
+  const Vx = mbl / (rho * A_BL), C = Vx * (Math.tan(a1) + tb2), U = kU > 0 ? C * mbl / (mbl + kU) : C;
+  const w = U * (C - U), W2 = Vx / Math.cos(rad(s.beta2)), wt1 = Vx * Math.tan(a1) - U, W1 = Math.hypot(Vx, wt1);
+  const inc = Math.atan2(wt1, Vx) - rad(s.beta1m), zi = inc < 0 ? s.zinc : 4 * s.zinc;
+  const dPloss = 0.5 * rho * (s.zeta * W2 * W2 + zi * (W1 * Math.sin(inc)) ** 2), dProw = rho * w + dPloss;
+  const mg = Ag * Math.sqrt(2 * rho * Math.max(0, dProw) / K_GAP), mt = mbl + mg;
+  const Ad = L.Adn * 1e-6 * cdOpen(v, s, L);
+  const dPdn = !Number.isFinite(Ad) ? 0 : Ad > 0 ? mt * mt / (2 * rho * Ad * Ad) : (mt > 0 ? Infinity : 0);
+  return { mbl, Vx, C, U, w, W1, W2, inc, dPloss, dProw, mg, mt, dPdn, dPt: dProw + dPdn };
+}
+// Split the flow so the turbine path and the bypass (opening ahead of the wheel) see the same total-pressure drop.
+function splitFlow(md, rho, v, s, L, a1, kU) {
+  const Au = L.Aup * 1e-6 * cdOpen(v, s, L), byp = mb => Au > 0 ? mb * mb / (2 * rho * Au * Au) : (mb > 1e-9 ? Infinity : 0);
+  let lo = 0, hi = md;
+  for (let i = 0; i < 60; i++) {
+    const m = (lo + hi) / 2, r = wheelPath(m, rho, v, s, L, a1, kU), mb = md - r.mt;
+    if (mb < 0) hi = m; else if (Au > 0) { if (byp(mb) > r.dPt) lo = m; else hi = m; } else lo = m;
+  }
+  const r = wheelPath(lo, rho, v, s, L, a1, kU), mb = Math.max(0, md - r.mt);
+  return { ...r, mb, dP: Au > 0 ? byp(mb) : r.dPt };
+}
+
+// One operating point with the core turbine-exit pressure scaled by x.
 function chain(op, x, v, s, L, loaded) {
   const P04 = 0.95 * PA * (1 + 1.9 * Math.pow(op.N / 154000, 2)), ex = (G - 1) / G;
   const f0 = 1 - Math.pow(P04 / op.P0, -ex), f1 = 1 - Math.pow(P04 / (op.P0 * x), -ex);
   const dEGT = f1 > 0.01 ? (f0 / f1 - 1) * (op.T0 + op.dTt) : 9999, T5 = op.T0 + dEGT, md = op.md;
-  const loss = [], drop = (k, name, q, K) => { const d = K * q; loss.push({ k, name, K, dP: d }); return d; };
+  const loss = [], drop = (k, name, q, Kc) => { const d = Kc * q; loss.push({ k, name, K: Kc, dP: d }); return d; };
   let P0 = op.P0 * x;
-  const M5 = machFromMfp(md * Math.sqrt(T5) / (P0 * A5)), q5 = qOf(P0, M5);
-  P0 -= drop("hub", v.hub === "none" ? "Open hub cavity" : v.hub === "struts" ? `Hub cone on ${v.nStruts} struts` : "Spinner gap", q5, K.hub(v));
+  const M5 = machFromMfp(md * Math.sqrt(T5) / (P0 * A5)), q5 = qOf(P0, M5), a1 = v.gv ? rad(v.alpha) : 0;
+  if (v.gv) {
+    P0 -= drop("hub", "Hub cone carried by the guide vanes", q5, 0.03);
+    P0 -= drop("vanes", `${v.nVanes} guide vanes turning ${v.alpha}°`, q5, s.Kvane / Math.cos(a1) ** 2);
+  } else P0 -= drop("hub", v.hub === "none" ? "Open hub cavity" : v.hub === "struts" ? `Hub cone on ${v.nStruts} struts` : "Spinner gap", q5, K.hub(v));
   P0 -= drop("shroud", v.shroud === "cone" ? "Cone shroud" : "Inlet tube", q5, K.shroud(v));
-  // Wheel: Euler work with a uniform axial velocity over blades plus tip gap. Open area beside the blade row
-  // (side windows it overlaps, or the circumference past a lip) bypasses gas, partly effective (kspill).
-  const At = (Math.PI / 4 * (L.Ds * L.Ds - HUB * HUB) + s.kspill * L.Aover) * 1e-6;
-  const frac = Math.min(1, Math.PI / 4 * (WHEEL * WHEEL - HUB * HUB) * 1e-6 / At);
-  const Mx = machFromMfp(md * Math.sqrt(T5) / (P0 * At)), Vx = Mx * Math.sqrt(G * RG * T5 / TR(Mx)), qw = qOf(P0, Mx);
-  if (L.eps > 0) P0 -= drop("spill", L.side ? "Gas bypassing through the side windows" : "Gas spilling over the exposed blade tips", qw, 0.25 * L.eps);
-  const C = Vx * Math.tan(rad(s.beta2)), mpt = md * frac;
+  // Gas just ahead of the wheel (density for the flow split).
+  const Aw = Math.PI / 4 * (L.Ds * L.Ds - HUB * HUB) * 1e-6, Mu = machFromMfp(md * Math.sqrt(T5) / (P0 * Aw));
+  const rho = P0 / PR(Mu) / (RG * T5 / TR(Mu));
   const kU = loaded ? Math.pow(60 / (2 * Math.PI * RM), 2) / (s.Kv_rpm * s.Kv_rpm * v.R * s.etaGen) : 0;
-  const U = C * mpt / (mpt + kU), Psh = kU * U * U, N = rpmOf(U), V = N / s.Kv_rpm, Pel = Psh * s.etaGen;
-  const T6 = T5 - Psh / (md * CP);
-  // Twice-per-rev loading: the split's back-pressure pattern, decayed over the settling distance.
+  const n = splitFlow(md, rho, v, s, L, a1, kU);
+  const Psh = n.mbl * n.w, N = rpmOf(n.U), V = N / s.Kv_rpm, Pel = Psh * s.etaGen, T6 = T5 - Psh / (md * CP);
+  loss.push({ k: "work", name: "Turbine path: work extracted (ρ·w)", K: null, dP: rho * n.w, work: true });
+  loss.push({ k: "blade", name: "Turbine path: blade passage and incidence losses", K: null, dP: n.dPloss });
+  if (L.side) loss.push({ k: "wdn", name: "Turbine path: window behind the wheel", K: null, dP: Number.isFinite(n.dPdn) ? n.dPdn : 0 });
+  const rest = n.dP - (rho * n.w + n.dPloss + (Number.isFinite(n.dPdn) ? n.dPdn : 0));
+  if (rest > 1) loss.push({ k: "byp", name: "Bypass only (turbine path blocked)", K: null, dP: rest });
+  if (n.mb > 1e-6) loss.push({ k: "bypinfo", name: `Bypass path: window ahead of the wheel (${(n.mb / md * 100).toFixed(0)}% of the gas)`, K: null, dP: n.dP, info: true });
+  P0 -= n.dP;
+  // Twice-per-rev loading: the back-pressure pattern of gas leaving behind the wheel, decayed over the settling distance.
   const Rj = L.side ? L.Rw : L.Rte, Aj = (Math.PI * Rj * Rj - Math.PI * R_BRG * R_BRG) * 1e-6, Mj = machFromMfp(md * Math.sqrt(T6) / (P0 * Aj)), qj = qOf(P0, Mj);
-  const wb = mpt > 0 ? Psh / mpt : 0, dPb = P0 * (1 - Math.pow(Math.max(0.5, 1 - wb / (s.eta0 * CP * T5)), G / (G - 1)));
-  const Leff = L.eps > 0 ? 0 : Math.max(0, L.settle) + 0.5 * L.Lboot, decay = Math.exp(-2 * Leff / (L.Ds / 2));
-  const dPpp = qj * (0.15 + 0.85 * (1 - Math.cos(L.th))) * K.distort(v, L) * decay;
-  const sw = dPb > 1 ? dPpp / 2 / dPb : 0, swS = v.hub === "struts" && dPb > 1 ? 0.12 * q5 * Math.exp(-6 / 12) / dPb : 0;
-  const swT = Math.hypot(sw, swS), eta = s.eta0 * (1 - s.kd * Math.min(swT, 1.5) ** 2);
-  const dPwheel = P0 * (1 - Math.pow(Math.max(0.5, 1 - Psh / (eta * md * CP) / T5), G / (G - 1)));
-  loss.push({ k: "wheel", name: "Turbine wheel (work + losses)", K: null, dP: dPwheel, work: true });
-  P0 -= dPwheel;
+  const tf = md > 0 ? n.mt / md : 0, dPb = n.dProw;
+  const Leff = (L.side ? L.xtr > L.xw0 : L.over > 0) ? 0 : Math.max(0, L.settle) + 0.5 * L.Lboot, decay = Math.exp(-2 * Leff / (L.Ds / 2));
+  const dPpp = qj * (0.15 + 0.85 * (1 - Math.cos(L.th))) * K.distort(v, L) * decay * (L.side ? tf * tf : 1);
+  const sw = dPb > 1 ? dPpp / 2 / dPb : 0;
+  const swS = dPb > 1 ? (v.gv ? 0.05 * q5 * Math.exp(-Math.max(0, v.xw - VANE_X1) / 12) / dPb : v.hub === "struts" ? 0.12 * q5 * Math.exp(-6 / 12) / dPb : 0) : 0;
+  const swT = Math.hypot(sw, swS), wl = n.w + n.dPloss / rho, etaRow = wl > 0 ? n.w / wl : 0;
+  const dPd = s.kd * Math.min(swT, 1.5) ** 2 * rho * n.w * (md > 0 ? n.mbl / md : 0);
+  if (dPd > 0) { loss.push({ k: "dist", name: "Uneven blade loading (2/rev)", K: null, dP: dPd }); P0 -= dPd; }
+  const eta = wl > 0 ? n.w / (wl + (md > 0 && n.mbl > 0 ? dPd * md / n.mbl / rho : 0)) : 0;
   // Junction, legs and exits.
   const Ap2 = 2 * circA(v.pipeID), ratio = Ap2 / Aj;
-  P0 -= drop("dump", ratio >= 1 ? "Sudden expansion into the legs" : "Contraction into the legs", qj, K.dump(v, L, ratio));
-  P0 -= drop("tee", L.side ? "Turn into the side windows" : L.boot ? "Faired split" : "Tee split", qj, K.tee(v, L));
-  if (L.side) P0 -= drop("edge", v.fair ? "Flared window edges" : "Sharp window edges", qj, K.edge(v, L));
-  P0 -= drop("nose", L.side ? (v.nose === "flat" ? "Flat end cap" : "Cone splitter on the end cap") : v.nose === "flat" ? "Flat bearing bracket in the crotch" : "Rounded bearing fairing", qj, K.nose(v));
   const Ml = machFromMfp(md * Math.sqrt(T6) / (P0 * Ap2)), ql = qOf(P0, Ml);
+  if (L.side) {
+    P0 -= drop("entry", v.fair ? "Turn into the pipe, flared windows" : "Turn into the pipe, sharp windows", ql, (v.fair ? 0.3 : 0.6) * (1 - Math.cos(L.th)));
+    P0 -= drop("nose", v.nose === "flat" ? "Flat end cap (gas behind the wheel)" : "Cone splitter on the end cap", qj * tf * tf, K.nose(v));
+  } else {
+    P0 -= drop("dump", ratio >= 1 ? "Sudden expansion into the legs" : "Contraction into the legs", qj, K.dump(v, L, ratio));
+    P0 -= drop("tee", L.boot ? "Faired split" : "Tee split", qj, K.tee(v, L));
+    P0 -= drop("nose", v.nose === "flat" ? "Flat bearing bracket in the crotch" : "Rounded bearing fairing", qj, K.nose(v));
+  }
   P0 -= drop("bends", "Return bends", ql, K.bends(v, L));
   P0 -= drop("fric", "Pipe friction", ql, K.friction(v, L));
   const npr = Math.max(1.0001, P0 / PA), Me = Math.min(1, Math.sqrt((Math.pow(npr, ex) - 1) * 2 / (G - 1)));
   const Ts = T6 / TR(Me), Ve = Me * Math.sqrt(G * RG * Ts), Aneed = md / (PA / (RG * Ts) * Ve);
-  return { x, dEGT, T5, Vx, Mx, C, U, N, V, I: V > 0 ? Pel / V : 0, Psh, Pel, Ml, Mj, Me, Ve, F: md * Ve, Aneed, frac, bypass: 1 - frac,
-    Nfree: rpmOf(C), inc: Math.atan2(U, Vx) * 180 / Math.PI, Pceil: mpt * C * C / 4 * s.etaGen, dP5: op.P0 * (x - 1),
-    sw, swS, swT, eta, dPb, dPpp, decay, loss, qj, q5 };
+  return { x, dEGT, T5, Vx: n.Vx, C: n.C, U: n.U, N, V, I: V > 0 ? Pel / V : 0, Psh, Pel, Ml, Mj, Me, Ve, F: md * Ve, Aneed,
+    frac: n.mbl / md, bypass: 1 - n.mbl / md, shWin: n.mb / md, shGap: n.mg / md, Nfree: rpmOf(n.C), inc: n.inc * 180 / Math.PI,
+    Pceil: n.mbl * n.C * n.C / 4 * s.etaGen, dP5: op.P0 * (x - 1), sw, swS, swT, eta, etaRow, dPb, dPpp, decay, loss, qj, q5, rho, dPregion: n.dP };
 }
 function solvePoint(op, v, s, L, loaded) {
   const Ae = 2 * circA(Math.min(v.exitID, v.pipeID)) * K.Cd(v);
@@ -507,21 +542,21 @@ const score = {
   length: lin => lin <= 10 ? 15 : lin > 15 ? 0 : 45 - 3 * lin
 };
 // Forcing orders the wheel sees: the two-leg split (and its harmonics) plus any struts.
-function orders(v) { const o = [2, 4, 6, 8]; if (v.hub === "struts" && v.nStruts) { o.push(v.nStruts, 2 * v.nStruts); } return [...new Set(o)].sort((a, b) => a - b); }
+function orders(v) { const o = [2, 4, 6, 8]; if (v.gv) o.push(v.nVanes, 2 * v.nVanes); else if (v.hub === "struts" && v.nStruts) o.push(v.nStruts, 2 * v.nStruts); return [...new Set(o)].sort((a, b) => a - b); }
 
 // Presets: best estimates from the CAD screenshots. Replace with Ben's measured values.
 const VERSIONS = {
   drawn: { name: "Ben's layout", tag: "pipes joined on the tube sides",
-    junction: "side", tubeID: 60, tubeLen: 34, xWin: 50, shroud: "lip", cone: 8, xw: 22, theta1: 60, rd: 1.5, gap: 52, pipeID: 47.5, pipeWall: 1.65,
-    exitID: 37.5, neck: 15, fair: false, hub: "struts", nStruts: 2, nose: "flat", R: 4.7 },
+    junction: "side", tubeID: 60, tubeLen: 34, xWin: 50, shroud: "lip", cone: 8, xw: 31, theta1: 60, rd: 1.5, gap: 52, pipeID: 47.5, pipeWall: 1.65,
+    exitID: 36.8, neck: 15, fair: false, hub: "struts", nStruts: 2, nose: "flat", R: 3.97, gv: false, alpha: 20, nVanes: 11 },
   faired: { name: "V3-1 Faired", tag: "side windows, cleaned up",
-    junction: "side", tubeID: 60, tubeLen: 34, xWin: 55, shroud: "lip", cone: 8, xw: 22, theta1: 45, rd: 1.5, gap: 52, pipeID: 47.5, pipeWall: 1.65,
-    exitID: 34.3, neck: 15, fair: true, hub: "spinner", nStruts: 2, nose: "round", R: 4.2 },
+    junction: "side", tubeID: 60, tubeLen: 34, xWin: 55, shroud: "lip", cone: 8, xw: 31, theta1: 45, rd: 1.5, gap: 52, pipeID: 47.5, pipeWall: 1.65,
+    exitID: 34.5, neck: 15, fair: true, hub: "spinner", nStruts: 2, nose: "round", R: 3.68, gv: false, alpha: 20, nVanes: 11 },
   cone: { name: "V3-2 Cone + gentle split", tag: "cone shroud, 35° legs",
-    junction: "boot", tubeID: 60, tubeLen: 40, xWin: 50, shroud: "cone", cone: 8, xw: 14, theta1: 35, rd: 1.5, gap: 36, pipeID: 42.65, pipeWall: 0.9,
-    exitID: 33.2, neck: 12, fair: true, hub: "spinner", nStruts: 2, nose: "round", R: 2.7 }
+    junction: "boot", tubeID: 60, tubeLen: 40, xWin: 50, shroud: "cone", cone: 8, xw: 20, theta1: 35, rd: 1.5, gap: 36, pipeID: 42.65, pipeWall: 0.9,
+    exitID: 33.7, neck: 12, fair: true, hub: "spinner", nStruts: 2, nose: "round", R: 3.93, gv: false, alpha: 20, nVanes: 11 }
 };
-const SHARED = { beta2: 47.4, Kv_rpm: 1441, etaGen: 0.87, unloadMax: true, eta0: 0.5, kspill: 0.5, kd: 0.2, fb: 20, egtT: 30,
+const SHARED = { beta2: 47.4, beta1m: 45, zeta: 0.06, zinc: 0.05, cdw: 0.85, Kvane: 0.06, Kv_rpm: 1441, etaGen: 0.87, unloadMax: true, kd: 0.2, fb: 20, egtT: 30,
   Fmax: 100, mdMax: 0.235, T5max: 1000, F90: 71.3, T590: 940 };
 
 </script>
@@ -538,7 +573,10 @@ const GROUPS = [
     { k: "tubeID", l: "Inlet tube ID", s: "mm; 60 gives a 1 mm tip gap", min: 58.5, max: 70, step: 0.1 },
     { k: "shroud", l: "Shroud", type: "seg", opts: [["lip", "Straight tube"], ["cone", "Cone"]] },
     { k: "cone", l: "Cone half-angle", s: "deg (cone shroud only)", min: 2, max: 14, step: 0.5, dim: v => v.shroud !== "cone" },
-    { k: "xw", l: "Wheel position", s: "mm, leading edge aft of the flange", min: 0, max: 70, step: 0.5 }
+    { k: "xw", l: "Wheel position", s: "mm, leading edge aft of the flange", min: 0, max: 80, step: 0.5 },
+    { k: "gv", l: "Guide vanes ahead of the wheel", type: "chk" },
+    { k: "alpha", l: "Vane exit angle α₁", s: "deg of pre-swirl with the rotation", min: 0, max: 40, step: 1, dim: v => !v.gv },
+    { k: "nVanes", l: "Number of vanes", s: "odd counts avoid the split's orders", min: 5, max: 21, step: 1, dim: v => !v.gv }
   ]],
   ["Split and legs", "v", [
     { k: "junction", l: "Where the pipes join the tube", type: "seg", opts: [["side", "Side windows"], ["end", "End of tube"], ["boot", "Faired boot"]] },
@@ -551,8 +589,8 @@ const GROUPS = [
     { k: "pipeWall", l: "Pipe wall", s: "mm (20 ga = 0.9, 16 ga = 1.65)", min: 0.5, max: 3, step: 0.05 },
     { k: "fair", l: "Flared window edges (the red markups)", type: "chk", dim: v => v.junction !== "side" },
     { k: "nose", l: "End cap or bearing support", type: "seg", opts: [["flat", "Flat"], ["round", "Cone splitter / rounded"]] },
-    { k: "hub", l: "Hub between engine and wheel (blue markups)", type: "seg", opts: [["none", "Open"], ["struts", "Cone on struts"], ["spinner", "Spinner"]] },
-    { k: "nStruts", l: "Number of struts", s: "", min: 2, max: 4, step: 1, dim: v => v.hub !== "struts" }
+    { k: "hub", l: "Hub between engine and wheel (blue markups)", type: "seg", opts: [["none", "Open"], ["struts", "Cone on struts"], ["spinner", "Spinner"]], dim: v => v.gv },
+    { k: "nStruts", l: "Number of struts", s: "", min: 2, max: 4, step: 1, dim: v => v.gv || v.hub !== "struts" }
   ]],
   ["Necked exits and load", "v", [
     { k: "exitID", l: "Exit ID after necking", s: "mm, each", min: 20, max: 55, step: 0.1 },
@@ -566,10 +604,13 @@ const GROUPS = [
     { k: "egtT", l: "EGT target for exit sizing", s: "K change at 90% vs stock", min: -50, max: 150, step: 1 }
   ]],
   ["Wheel and loss assumptions · all versions", "s", [
-    { k: "beta2", l: "Blade exit angle β₂", s: "deg, measure on the spare wheel", min: 35, max: 60, step: 0.1 },
-    { k: "eta0", l: "Wheel efficiency, even inflow", s: "", min: 0.2, max: 0.9, step: 0.01 },
-    { k: "kspill", l: "Lip window effectiveness", s: "share of π·D·overhang that bypasses", min: 0, max: 1, step: 0.05 },
-    { k: "kd", l: "Uneven-loading efficiency factor", s: "η × (1 − k·swing²)", min: 0, max: 0.6, step: 0.01 }
+    { k: "beta2", l: "Blade exit angle β₂", s: "deg (effective, after deviation)", min: 35, max: 60, step: 0.1 },
+    { k: "beta1m", l: "Blade inlet angle β₁", s: "deg, metal; measure on the spare wheel", min: 0, max: 70, step: 0.5 },
+    { k: "zeta", l: "Blade passage loss ζ", s: "× exit relative dynamic head", min: 0, max: 0.4, step: 0.005 },
+    { k: "zinc", l: "Incidence loss factor", s: "× normal inflow head (×4 if positive)", min: 0, max: 0.4, step: 0.005 },
+    { k: "cdw", l: "Window discharge coefficient", s: "sharp edges; flared ×1.15", min: 0.4, max: 1, step: 0.01 },
+    { k: "Kvane", l: "Guide vane loss", s: "× vane-exit dynamic head", min: 0, max: 0.3, step: 0.01 },
+    { k: "kd", l: "Uneven-loading loss factor", s: "share of work lost = k·swing²", min: 0, max: 0.6, step: 0.01 }
   ], true],
   ["Blade vibration · all versions", "s", [
     { k: "fb", l: "Blade first mode", s: "kHz; ping-test the spare wheel", min: 3, max: 60, step: 0.5 }
@@ -582,21 +623,34 @@ const GROUPS = [
     { k: "T5max", l: "Exhaust total temp, full throttle", s: "K", min: 850, max: 1150, step: 5 }
   ], true]
 ];
+const DESC = {
+  drawn: ["Straight 60 mm tube (1 mm tip gap) that runs past the pipes to a flat end cap; the bearing housing passes through the cap into the motor box.",
+    "2 in pipes leave the side wall at 60° and bend back at 1.5D. The windows run from about 23 to 77 mm aft of the flange. At the preset the blade mid-chord sits about 12 mm into them, so roughly a quarter of the gas leaves through the window ahead of the wheel.",
+    "Hub cone on two struts (blue markups), sharp window edges, exits necked for a +30 K EGT rise."],
+  faired: ["Same side-window layout, with the window edges flared or filleted (the red markups) and a sheet-metal cone splitter on the end cap.",
+    "Pipes leave at 45° instead of 60°, which brings the legs in by about 16 mm per side.",
+    "Spinner on the wheel instead of the strut-mounted cone, so no wakes reach the blades."],
+  cone: ["A rolled 8° cone replaces the straight tube. Bypass is through the tip gap, which widens smoothly as the wheel slides aft.",
+    "The split starts about 13 mm behind the wheel, which lets the back-pressure pattern die out before it reaches the blades. Keep the wheel inside the cone: the boot narrows to the pipe height, so past the cone's end the tips would hit it.",
+    "Legs leave at 35° with 1.5D bends; 1¾ in pipes and a 36 mm gap pull the width in. Spinner and rounded bearing fairing."]
+};
 const fresh = () => ({ sel: "drawn", v: Object.fromEntries(VKEYS.map(k => [k, { ...VERSIONS[k] }])), s: { ...SHARED } });
 let st = fresh();
 try {
-  const saved = JSON.parse(localStorage.getItem("p100-aft-v3b") || "{}");
+  const saved = JSON.parse(localStorage.getItem("p100-aft-v3c") || "{}");
   if (saved.v) for (const k of VKEYS) for (const f in VERSIONS[k]) if (saved.v[k] && typeof saved.v[k][f] === typeof VERSIONS[k][f]) st.v[k][f] = saved.v[k][f];
   if (saved.s) for (const f in SHARED) if (typeof saved.s[f] === typeof SHARED[f]) st.s[f] = saved.s[f];
   if (VKEYS.includes(saved.sel)) st.sel = saved.sel;
 } catch (e) {}
-const persist = () => { try { localStorage.setItem("p100-aft-v3b", JSON.stringify(st)); } catch (e) {} };
+const persist = () => { try { localStorage.setItem("p100-aft-v3c", JSON.stringify(st)); } catch (e) {} };
 const V = () => st.v[st.sel];
 const scopeObj = sc => sc === "v" ? V() : st.s;
 
 function buildInputs() {
-  $("vsel").innerHTML = VKEYS.map(k => `<button type="button" data-k="${k}">${VERSIONS[k].name}</button>`).join("");
-  $("vsel").addEventListener("click", e => { const b = e.target.closest("button"); if (b) select(b.dataset.k); });
+  for (const id of ["vsel", "vsel2"]) {
+    $(id).innerHTML = VKEYS.map(k => `<option value="${k}">${VERSIONS[k].name}</option>`).join("");
+    $(id).addEventListener("change", e => select(e.target.value));
+  }
   const form = $("inputs"); form.innerHTML = "";
   for (const [name, sc, fields, closed] of GROUPS) {
     const box = document.createElement(closed ? "details" : "fieldset");
@@ -637,9 +691,9 @@ function sync() {
     else { const dp = (String(f.step).split(".")[1] || "").length; $("n-" + f.k).value = (+o[f.k]).toFixed(dp); $("r-" + f.k).value = o[f.k]; }
     el.classList.toggle("dimmed", !!(f.dim && f.dim(V())));
   }
-  $("vsel").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === st.sel));
-  $("vhint").textContent = `${VERSIONS[st.sel].name}: ${VERSIONS[st.sel].tag}. Inputs in the top three groups belong to this version; the rest apply to all three.`;
-  document.querySelectorAll(".vcard").forEach(c => c.classList.toggle("sel", c.dataset.k === st.sel));
+  $("vsel").value = $("vsel2").value = st.sel;
+  $("vhint").textContent = `${VERSIONS[st.sel].tag}. The top three groups belong to this design; the rest apply to all three.`;
+  $("vtag").textContent = VERSIONS[st.sel].tag;
   persist(); schedule();
 }
 function select(k) { st.sel = k; sync(); }
@@ -657,7 +711,7 @@ function render() {
   const v = V(), S = R[st.sel], { L, r90, rmax, rfree, b } = S;
   // KPIs
   $("k-P").innerHTML = `${fx(r90.Pel)}<span>W</span>`;
-  $("k-Pc").innerHTML = (r90.Pel >= 1000 ? dot("good") + "Meets 1000 W" : dot("warn") + `${fx(1000 - r90.Pel)} W short`) + ` · ${fx(r90.V)} V, ${fx(r90.I, 1)} A`;
+  $("k-Pc").innerHTML = (r90.Pel >= 999.5 ? dot("good") + "Meets 1000 W" : dot("warn") + `${fx(1000 - r90.Pel)} W short`) + ` · ${fx(r90.V)} V, ${fx(r90.I, 1)} A`;
   $("k-F").innerHTML = `${fx(r90.F, 1)}<span>N</span>`;
   $("k-Fc").innerHTML = `${fx(r90.F / LBF, 1)} lbf · ${fx((r90.F / b.p90.F - 1) * 100)}% vs stock · EGT ${r90.dEGT >= 0 ? "+" : ""}${fx(r90.dEGT)} K`;
   $("k-N").innerHTML = `${fx(r90.N / 1000, 1)}<span>k rpm</span>`;
@@ -665,7 +719,7 @@ function render() {
   $("k-R").innerHTML = `${fx(rfree.N / 1000, 1)}<span>k rpm</span>`;
   $("k-Rc").innerHTML = rfree.N > N_OVER ? dot("bad") + "Loss of load would overspeed" : rfree.N > N_RATED ? dot("warn") + "Over rating, under 140k" : dot("good") + "Under the rating with no load";
   $("k-W").innerHTML = `±${fx(r90.swT * 100)}<span>%</span>`;
-  $("k-Wc").innerHTML = (r90.swT > 0.5 ? dot("bad") : r90.swT > 0.2 ? dot("warn") : dot("good")) + `2/rev swing in blade load · η ${fx(st.s.eta0, 2)} → ${fx(r90.eta, 3)}`;
+  $("k-Wc").innerHTML = (r90.swT > 0.5 ? dot("bad") : r90.swT > 0.2 ? dot("warn") : dot("good")) + `2/rev swing in blade load · blade η ${fx(r90.etaRow, 2)} → ${fx(r90.eta, 2)}`;
   $("k-G").innerHTML = `${fx(L.W)}<span>mm wide</span>`;
   $("k-Gc").innerHTML = `${fx(L.out, 1)} mm outside the case · ${fx(L.Lall / IN, 1)} in long overall`;
   // Warnings for the selected version
@@ -673,7 +727,9 @@ function render() {
   const w = [], ord = orders(v), cross = ord.map(o => ({ o, N: 60 * st.s.fb * 1000 / o })).filter(c => c.N > 0.85 * r90.N && c.N < 1.1 * rfree.N);
   if (L.hitPipes) w.push(`The wheel's trailing edge is ${fx(L.over, 1)} mm past the end of the tube, where the ${fx(2 * L.rp, 1)} mm pipes are smaller than the 58 mm wheel: its tips would hit the walls. Join the pipes through side windows instead.`);
   if (L.hitCap) w.push("The wheel reaches the end cap. Move it forward or move the windows aft.");
-  if (L.pastWin) w.push("The whole blade row is downstream of the windows, so gas has to turn back to leave. Keep the wheel at or ahead of the window centre.");
+  if (L.pastWin) w.push("The blade mid-chord is past the windows, so the gas reaches the windows before the wheel and nearly all of it bypasses.");
+  if (L.vaneHit) w.push("The wheel is within 2 mm of the guide vanes, which end 14 mm aft of the flange. Move the wheel aft.");
+  if (v.gv && v.hub === "spinner") w.push("Guide vanes need a fixed hub, so the hub is modelled as a cone carried by the vanes rather than a spinner.");
   if (rfree.N > N_OVER) w.push(`With no load at full throttle the wheel reaches ${fx(rfree.N / 1000, 1)}k rpm, past the motor's 140k limit. ${L.side ? "Slide the wheel aft over the windows" : "Slide the wheel aft"} or open the tube ID.`);
   if (r90.N > N_RATED) w.push("Loaded speed at 90% is above the motor's 110.5k rpm rating.");
   if (r90.Pel > 0.92 * r90.Pceil) w.push(`The wheel is near its power ceiling here (${fx(r90.Pceil)} W ideal); past the peak it stalls.`);
@@ -687,27 +743,27 @@ function render() {
   if (v.exitID > v.pipeID) w.push("Exit ID is bigger than the pipe; the model uses the pipe ID.");
   if (rmax.F / LBF < 19) w.push(`Full-throttle thrust of ${fx(rmax.F / LBF, 1)} lbf is under the 19 lbf full-score threshold.`);
   $("warn").innerHTML = w.join("<br>");
-  // Version cards
-  for (const k of VKEYS) {
-    const Sk = R[k], vk = st.v[k];
-    if (views[k]) views[k].set(BigBen3D.build(vk, Sk.L));
-    $("vs-" + k).innerHTML = [["Power", `${fx(Sk.r90.Pel)} W`], ["Thrust 90%", `${fx(Sk.r90.F, 1)} N`], ["EGT", `${Sk.r90.dEGT >= 0 ? "+" : ""}${fx(Sk.r90.dEGT)} K`], ["Load swing", `±${fx(Sk.r90.swT * 100)}%`], ["Width", `${fx(Sk.L.W)} mm`], ["Overall", `${fx(Sk.L.Lall / IN, 1)} in`]]
-      .map(([a, c]) => `<span><b>${a}</b> ${c}</span>`).join("");
-  }
+  // Selected design in 3D
+  if (views.main) views.main.set(BigBen3D.build(v, L));
+  $("vdesc").innerHTML = DESC[st.sel].map(t => `<li>${t}</li>`).join("") + (v.gv ? `<li>Guide vanes on: ${v.nVanes} vanes turning the gas ${v.alpha}° with the rotation, carrying a fixed hub cone.</li>` : "");
+  $("vstats").innerHTML = [["Power", `${fx(r90.Pel)} W`], ["Thrust 90%", `${fx(r90.F, 1)} N`], ["EGT", `${r90.dEGT >= 0 ? "+" : ""}${fx(r90.dEGT)} K`], ["Through blades", `${fx(r90.frac * 100)}%`], ["Load swing", `±${fx(r90.swT * 100)}%`], ["Width", `${fx(L.W)} mm`], ["Overall", `${fx(L.Lall / IN, 1)} in`]]
+    .map(([a, c]) => `<span><b>${a}</b> ${c}</span>`).join("");
   // Side by side
   const cols = VKEYS.map(k => ({ k, S: R[k], v: st.v[k], p: pts(R[k], st.v[k]) }));
   const row = (l, f) => `<tr><td>${l}</td><td></td>${cols.map(c => `<td class="num">${f(c)}</td>`).join("")}</tr>`;
   $("cmp").innerHTML = `<tr><th>Quantity</th><th></th>${cols.map(c => `<th>${VERSIONS[c.k].name}</th>`).join("")}</tr>` +
     row("Pipes join", c => c.S.L.side ? `side windows, centre x = ${fx(c.v.xWin)}` : c.S.L.boot ? `faired boot at x = ${fx(c.S.L.xte)}` : `end of tube at x = ${fx(c.S.L.xte)}`) +
-    row("Bypass set by", c => c.S.L.side ? `blades over windows (${fx(c.S.L.Aover)} mm² open)` : c.v.shroud === "cone" ? `cone, Ø${fx(c.S.L.Ds, 1)} at wheel` : c.S.L.over > 0 ? `overhang past end (${fx(c.S.L.over, 1)} mm)` : "tip gap only") +
-    row("Bypass share at 90%", c => `${fx(c.S.r90.bypass * 100)}%`) +
+    row("Bypass set by", c => c.S.L.side ? `window ahead of mid-chord, ${fx(c.S.L.Aup)} mm²` : c.v.shroud === "cone" ? `tip gap in cone, Ø${fx(c.S.L.Ds, 1)} at wheel` : c.S.L.over > 0 ? `overhang past end (${fx(c.S.L.over, 1)} mm)` : "tip gap only") +
+    row("Gas through blades / tip gap / window", c => `${fx(c.S.r90.frac * 100)} / ${fx(c.S.r90.shGap * 100)} / ${fx(c.S.r90.shWin * 100)}%`) +
+    row("Blade efficiency (even / uneven)", c => `${fx(c.S.r90.etaRow, 2)} / ${fx(c.S.r90.eta, 2)}`) +
+    row("Guide vanes", c => c.v.gv ? `${c.v.nVanes} at ${c.v.alpha}°` : "none") +
     row("Exit ID, each", c => `${fx(Math.min(c.v.exitID, c.v.pipeID), 1)} mm`) +
     row("EGT change at 90%", c => `${c.S.r90.dEGT >= 0 ? "+" : ""}${fx(c.S.r90.dEGT)} K`) +
     row("Electrical power at 90%", c => `${fx(c.S.r90.Pel)} W`) +
     row("Thrust at 90%", c => `${fx(c.S.r90.F, 1)} N (${fx(c.p.l90, 1)} lbf)`) +
     row("Max thrust", c => `${fx(c.S.rmax.F, 1)} N (${fx(c.p.lmx, 1)} lbf)`) +
     row("Wheel speed loaded / runaway", c => `${fx(c.S.r90.N / 1000)}k / ${fx(c.S.rfree.N / 1000)}k`) +
-    row("Duct loss after the wheel", c => `${fx(c.S.r90.loss.filter(l => ["dump", "tee", "nose", "bends", "fric"].includes(l.k)).reduce((a, l) => a + l.dP, 0) / 1000, 1)} kPa`) +
+    row("Duct loss after the wheel", c => `${fx(c.S.r90.loss.filter(l => ["wdn", "byp", "entry", "dump", "tee", "nose", "bends", "fric"].includes(l.k)).reduce((a, l) => a + l.dP, 0) / 1000, 1)} kPa`) +
     row("2/rev blade-load swing", c => `±${fx(c.S.r90.swT * 100)}%`) +
     row("Width × module length", c => `${fx(c.S.L.W)} × ${fx(c.S.L.Lmod)} mm`) +
     row("Outside the engine case by", c => `${fx(c.S.L.out, 1)} mm`) +
@@ -721,16 +777,18 @@ function render() {
     op("Thrust", r => `${fx(r.F, 1)} N / ${fx(r.F / LBF, 1)}`, " lbf") +
     `<tr><td>Stock thrust</td><td></td><td class="num">${fx(b.p90.F, 1)} N</td><td class="num">${fx(b.max.F, 1)} N</td></tr>` +
     op("Estimated EGT change", r => `${r.dEGT >= 0 ? "+" : ""}${fx(r.dEGT)}`, " K") +
-    op("Bypass share", r => fx(r.bypass * 100), "%") +
+    op("Gas through blades / tip gap / window", r => `${fx(r.frac * 100)} / ${fx(r.shGap * 100)} / ${fx(r.shWin * 100)}`, "%") +
+    op("Relative inflow incidence on the blades", r => fx(r.inc), "°") +
+    op("Blade-row efficiency (even inflow)", r => fx(r.etaRow, 2)) +
     op("Axial velocity at the wheel", r => fx(r.Vx), " m/s") +
     op("Mach behind the wheel / in pipes / at exits", r => `${fx(r.Mj, 2)} / ${fx(r.Ml, 2)} / ${fx(r.Me, 2)}`) +
-    op("Wheel efficiency with uneven loading", r => fx(r.eta, 3)) +
+    op("Blade-row efficiency with uneven loading", r => fx(r.eta, 2)) +
     op("No-load speed at this point", r => fx(r.Nfree / 1000, 1), "k rpm");
   // Loss breakdown
-  const ducts = r90.loss.filter(l => !l.work), tot = ducts.reduce((a, l) => a + l.dP, 0), mx = Math.max(...ducts.map(l => l.dP));
+  const ducts = r90.loss.filter(l => !l.work && !l.info), tot = ducts.reduce((a, l) => a + l.dP, 0), mx = Math.max(...ducts.map(l => l.dP));
   $("lossTable").innerHTML = `<tr><th>Element</th><th></th><th>K</th><th>Total-pressure drop</th><th style="width:34%">Share of duct loss</th></tr>` +
-    r90.loss.map(l => l.work ? `<tr class="sel"><td>${l.name}</td><td></td><td class="num">–</td><td class="num">${fx(l.dP / 1000, 2)} kPa</td><td class="fn" style="margin:0">Work extraction, not counted as duct loss</td></tr>`
-      : `<tr><td>${l.name}</td><td></td><td class="num">${fx(l.K, 2)}</td><td class="num">${fx(l.dP / 1000, 2)} kPa</td><td><div class="bar"><i style="width:${(l.dP / mx * 100).toFixed(1)}%"></i><span>${fx(l.dP / tot * 100)}%</span></div></td></tr>`).join("") +
+    r90.loss.map(l => l.work || l.info ? `<tr class="sel"><td>${l.name}</td><td></td><td class="num">–</td><td class="num">${fx(l.dP / 1000, 2)} kPa</td><td class="fn" style="margin:0">${l.work ? "Work extraction, not counted as duct loss" : "In parallel with the turbine-path rows above: same total drop, not added"}</td></tr>`
+      : `<tr><td>${l.name}</td><td></td><td class="num">${l.K == null ? "–" : fx(l.K, 2)}</td><td class="num">${fx(l.dP / 1000, 2)} kPa</td><td><div class="bar"><i style="width:${(l.dP / mx * 100).toFixed(1)}%"></i><span>${fx(l.dP / tot * 100)}%</span></div></td></tr>`).join("") +
     `<tr><td><b>Duct losses</b></td><td></td><td></td><td class="num"><b>${fx(tot / 1000, 2)} kPa</b></td><td></td></tr>`;
   // Loading and forcing
   $("loadSum").innerHTML = [
@@ -739,22 +797,24 @@ function render() {
     ["Left after settling", `${fx(r90.decay * 100)}%`],
     ["Pressure drop across the blades", `${fx(r90.dPb / 1000, 2)} kPa`],
     ["Load swing from the split", `±${fx(r90.sw * 100)}%`],
-    ["Load swing from strut wakes", v.hub === "struts" ? `±${fx(r90.swS * 100)}% at ${v.nStruts}×${v.nStruts % 2 ? "" : ", same order as the split, so they add"}` : "none"],
-    ["Wheel efficiency", `${fx(st.s.eta0, 2)} → ${fx(r90.eta, 3)}`],
+    ["Load swing from wakes upstream", v.gv ? `±${fx(r90.swS * 100)}% at ${v.nVanes}× (vanes)` : v.hub === "struts" ? `±${fx(r90.swS * 100)}% at ${v.nStruts}×${v.nStruts % 2 ? "" : ", same order as the split, so they add"}` : "none"],
+    ["Blade-row efficiency", `${fx(r90.etaRow, 2)} even → ${fx(r90.eta, 2)} with uneven loading`],
     ["Forcing at loaded / runaway speed", `${ord.slice(0, 3).map(o => `${o}× ${fx(o * r90.N / 60000, 1)}/${fx(o * rfree.N / 60000, 1)}`).join(" · ")} kHz`],
     ["Resonance in the running range", cross.length ? cross.map(c => `${c.o}× at ${fx(c.N / 1000)}k rpm`).join(", ") : `none (lowest crossing: ${fx(Math.max(...ord) )}× at ${fx(60 * st.s.fb / Math.max(...ord))}k rpm)`]
   ].map(([a, c]) => `<div><span>${a}</span><span class="mono">${c}</span></div>`).join("");
   campbell($("chC"), ord, r90.N, rfree.N, st.s.fb);
   // Wheel-position charts
-  const xs = [], P = [], N = [], NF = [], xmax = L.side ? Math.max(20, L.xte - WHEEL_W - 1) : Math.max(L.xte + 12, v.xw + 6, 40);
-  for (let x = 0; x <= xmax; x += xmax / 40) { const Sx = solve({ ...v, xw: x }, st.s); xs.push(x); P.push([x, Sx.r90.Pel]); N.push([x, Sx.r90.N / 1000]); NF.push([x, Sx.rfree.N / 1000]); }
-  const vl = L.side ? [{ v: L.xw0 - WHEEL_W, c: "muted", t: "blades reach windows" }, { v: v.xWin - WHEEL_W / 2, c: "muted", t: "centre" }]
+  const xs = [], P = [], N = [], NF = [], FB = [], FW = [], FG = [], xmax = L.side ? Math.max(20, L.xte - WHEEL_W - 1) : Math.max(L.xte + 12, v.xw + 6, 40);
+  for (let x = 0; x <= xmax; x += xmax / 40) { const Sx = solve({ ...v, xw: x }, st.s); xs.push(x); P.push([x, Sx.r90.Pel]); N.push([x, Sx.r90.N / 1000]); NF.push([x, Sx.rfree.N / 1000]); FB.push([x, Sx.r90.frac * 100]); FW.push([x, Sx.r90.shWin * 100]); FG.push([x, Sx.r90.shGap * 100]); }
+  const vl = L.side ? [{ v: L.xw0 - WHEEL_W / 2, c: "muted", t: "mid-chord reaches windows" }, { v: v.xWin - WHEEL_W / 2, c: "muted", t: "at centre" }]
     : [{ v: L.xte - WHEEL_W, c: L.rp < WHEEL / 2 ? "bad" : "muted", t: L.rp < WHEEL / 2 ? "hits pipes past here" : "trailing edge at tube end" }];
   chart($("chP"), { x0: 0, x1: xmax, y0: 0, y1: Math.max(1500, Math.ceil(Math.max(...P.map(p => p[1])) / 500) * 500), xl: "Wheel position, mm aft of flange", yl: "W",
     series: [{ c: "s1", pts: P, cur: [v.xw, r90.Pel] }], hl: [{ v: 1000, c: "good", t: "1000 W" }], vl, aria: "Electrical power at 90% against wheel position" });
   chart($("chN"), { x0: 0, x1: xmax, y0: 40, y1: 180, xl: "Wheel position, mm aft of flange", yl: "k rpm",
     series: [{ c: "s2", pts: NF, dash: true, cur: [v.xw, rfree.N / 1000] }, { c: "s1", pts: N, cur: [v.xw, r90.N / 1000] }],
     hl: [{ v: 110.5, c: "warn", t: "110.5k rating" }, { v: 140, c: "bad", t: "140k limit" }], vl, aria: "Wheel speed against wheel position" });
+  chart($("chF"), { x0: 0, x1: xmax, y0: 0, y1: 100, xl: "Wheel position, mm aft of flange", yl: "% of gas",
+    series: [{ c: "s1", pts: FB, cur: [v.xw, r90.frac * 100] }, { c: "s2", pts: FW, dash: true }, { c: "muted", pts: FG }], vl, aria: "Share of gas through the blades, the window ahead of the wheel and the tip gap, against wheel position" });
   // Score
   const p = pts(S, v), sc = [["Power generation", `${fx(r90.Pel)} W`, score.power(r90.Pel), 100], ["Thrust at 90%", `${fx(p.l90, 1)} lbf`, score.f90(p.l90), 20],
     ["Maximum thrust", `${fx(p.lmx, 1)} lbf`, score.fmax(p.lmx), 10], ["Radial distance", `${fx(p.din, 2)} in`, score.radial(p.din), 15], ["Overall length", `${fx(p.lin, 1)} in`, score.length(p.lin), 15]];
@@ -792,9 +852,8 @@ $("auto").addEventListener("click", () => { const a = loadFor(V(), st.s, 1000); 
 $("sizeExit").addEventListener("click", () => { const a = exitFor(V(), st.s, st.s.egtT); V().exitID = Math.round(a.exitID * 10) / 10; sync(); if (!a.ok) $("warn").insertAdjacentHTML("afterbegin", `Even full-size exits can't get the EGT change down to ${fx(st.s.egtT)} K; cut duct loss first.<br>`); });
 $("resetV").addEventListener("click", () => { st.v[st.sel] = { ...VERSIONS[st.sel] }; sync(); });
 $("resetAll").addEventListener("click", () => { st = fresh(); sync(); });
-document.querySelectorAll(".vedit").forEach(b => b.addEventListener("click", () => { select(b.dataset.k); document.querySelector("aside.panel").scrollTo({ top: 0, behavior: "smooth" }); }));
 buildInputs();
-for (const k of VKEYS) views[k] = new BigBen3D.View($("view-" + k), `${VERSIONS[k].name}: 3D model of the Big Ben aft turbine`);
+views.main = new BigBen3D.View($("view-main"), "3D model of the selected Big Ben design");
 document.getElementById("swatches").innerHTML = [["tube", "Straight tube"], ["cone", "Cone section / neck"], ["bend", "Bent pipe"], ["filler", "Fairing (filler sheet)"], ["box", "Motor box and bracket"], ["strut", "Hub cone and struts"], ["wheel", "Turbine wheel / spinner"], ["cart", "Shaft and coupler"], ["motor", "Motor"]]
   .map(([k, l]) => `<span><i style="background:${BigBen3D.colors[k]}"></i>${l}</span>`).join("") + `<span><i style="background:transparent;border:1px dashed ${BigBen3D.colors.ref}"></i>97 mm engine case</span>`;
 sync();
