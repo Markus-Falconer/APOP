@@ -27,7 +27,7 @@ const SITE = [
       { id: "aft-turbine-v2", href: "aft-turbine-v2.html", menu: "Aft turbine V2",
         title: "Aft Turbine V2", sub: "JetCat P100-RX · spare turbine wheel in a cone shroud, direct-coupled motor, exhaust split into two round pipes" },
       { id: "aft-turbine-v3", href: "aft-turbine-v3.html", menu: "Aft turbine V3 “Big Ben”",
-        title: "Aft Turbine V3 “Big Ben”", sub: "JetCat P100-RX · lip-bypass wheel at the end of a straight tube, tee split into two big pipes, necked exits" }
+        title: "Aft Turbine V3 “Big Ben”", sub: "JetCat P100-RX · wheel slides past side windows in a straight tube into two big pipes, necked exits" }
     ]
   },
   {
