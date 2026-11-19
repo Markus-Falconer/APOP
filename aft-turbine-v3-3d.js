@@ -18,6 +18,15 @@
     ]);
   }
   const internal = { cut: false, ex: [0, 0, 55] };
+  // Cambered sheet guide vanes: axial at the leading edge, turned to alpha at the trailing edge.
+  function vanes(n, x0, x1, r0, r1, alpha) {
+    const c = x1 - x0, ta = Math.tan(alpha * D2R), list = [];
+    for (let i = 0; i < n; i++) {
+      const ph = Math.PI / 2 + i / n * 2 * Math.PI;
+      list.push(grid([r0, (r0 + r1) / 2, r1].map(r => Array.from({ length: 7 }, (_, k) => { const u = k / 6, a = ph + c * ta * u * u / 2 / r; return [x0 + u * c, r * Math.cos(a), r * Math.sin(a)]; })), false, true));
+    }
+    return merge(list);
+  }
 
   function build(v, L) {
     const parts = [], P = (g, k, o = {}) => parts.push({ g, k, c: COL[k], cut: true, ex: [0, 0, 0], ...o });
@@ -61,7 +70,10 @@
       quad(C(x0, -hw, hh), C(x1, -hw, hh), C(x1, hw, hh), C(x0, hw, hh)), quad(C(x0, -hw, -hh), C(x1, -hw, -hh), C(x1, hw, -hh), C(x0, hw, -hh))
     ].concat(L.side ? [] : [quad(C(x0, -hw, -hh), C(x0, hw, -hh), C(x0, hw, hh), C(x0, -hw, hh))])), "box", { ex: [30, 0, 0] });
     // Hub treatment between the engine hub and the wheel.
-    if (v.hub === "struts") {
+    if (v.gv) {
+      P(revolve([[0.8, R_HUB], [Math.max(2, v.xw - 7), R_HUB], [Math.max(3, v.xw - 2.5), 15]]), "strut");
+      P(vanes(v.nVanes, VANE_X0, VANE_X1, R_HUB, L.Rt0 + VANE_X0 * Math.tan(L.a) - 0.3, v.alpha), "strut");
+    } else if (v.hub === "struts") {
       P(revolve([[0.8, R_HUB], [Math.max(2, v.xw - 7), R_HUB], [Math.max(3, v.xw - 2.5), 15]]), "strut");
       // Flat struts from the hub cone to the inside of the tube wall.
       const xa = 3, xb = Math.max(5, v.xw - 8), ro = L.Rt0 + xa * Math.tan(L.a) - 0.3, ang = [];
