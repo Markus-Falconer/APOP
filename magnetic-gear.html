@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magnetic Gear Options</title>
+<meta name="description" content="Coaxial and face-to-face magnetic gears between the JetCat P100-RX front shaft and a Lehner 1535 generator: how they work, pole-number choice, 2-D field results, stresses, losses, and how they compare with a direct magnetic coupler.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+.mono,td.num,.kpi .v{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+main.wrap{display:grid;grid-template-columns:320px 1fr;gap:20px;padding-top:20px;padding-bottom:40px}
+@media (max-width:900px){main.wrap{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+aside.panel{padding:6px 16px 16px;align-self:start;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+@media (max-width:900px){aside.panel{position:static;max-height:none;overflow:visible}}
+fieldset{border:0;border-top:1px solid var(--line);margin:0;padding:12px 0 4px}
+fieldset:first-of-type{border-top:0}
+legend{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0}
+.field{display:grid;grid-template-columns:1fr 92px;align-items:center;gap:8px;margin:8px 0}
+.field label{font-size:14px;color:var(--text-2)}
+.field label small{color:var(--muted);display:block;font-size:12px;line-height:1.2}
+.field input{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:14px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px}
+button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--muted)}
+.presets button{font-size:12px;padding:3px 9px;font-family:"IBM Plex Mono",monospace}
+.presets button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.hint{font-size:12px;color:var(--muted);margin:2px 0 8px;line-height:1.35}
+section.out{display:flex;flex-direction:column;gap:20px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{padding:12px 14px}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi .v{font-size:24px;font-weight:500;margin:2px 0 0;line-height:1.2}
+.kpi .v span{font-size:14px;color:var(--text-2);margin-left:3px}
+.kpi .c{font-size:12px;color:var(--text-2);margin-top:4px}
+.kpi .c.ok{color:var(--good)} .kpi .c.no{color:var(--bad)}
+.card{padding:16px}
+.card h2{font-size:15px;font-weight:600;margin:0 0 2px}
+.card .sub{font-size:13px;color:var(--text-2);margin:0 0 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:1100px){.grid2{grid-template-columns:1fr}}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-weight:500;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;text-align:right;padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:bottom}
+th:first-child,td:first-child{text-align:left}
+td{padding:7px 10px;border-bottom:1px solid var(--grid);text-align:right;vertical-align:top}
+td.l,th.l{text-align:left}
+tr.sel td{background:var(--surface-2)}
+td.st-ok{color:var(--good)} td.st-no{color:var(--bad)} td.st-warn{color:var(--warn)}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:4px 20px;margin-top:10px;font-size:14px}
+.summary div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--grid);padding:4px 0}
+.summary span:first-child{color:var(--text-2)}
+.summary span:last-child{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;text-align:right}
+.warn{border-left:3px solid var(--warn);background:var(--surface);padding:10px 14px;border-radius:6px;font-size:14px}
+.warn:empty{display:none}
+.toc{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;margin-top:10px}
+.toc a{color:var(--text-2)}
+.prose{font-size:15px;line-height:1.6;color:var(--text)}
+.prose p{margin:8px 0;max-width:80ch}
+.prose li{margin:6px 0;max-width:78ch}
+.prose h2{font-size:17px;margin:4px 0 6px}
+.prose h3{font-size:15px;color:var(--text);margin:18px 0 4px;font-weight:600}
+.eq{font-family:"IBM Plex Mono",monospace;font-size:14px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.callout{border-left:3px solid var(--accent);background:var(--surface-2);padding:10px 14px;border-radius:6px;margin:12px 0;font-size:14px}
+.rec{font-size:15px;line-height:1.55;margin:0}
+.verdict{display:inline-block;font-size:12px;font-weight:500;padding:1px 8px;border-radius:10px;border:1px solid;white-space:nowrap}
+.verdict.ok{color:var(--good)} .verdict.warn{color:var(--warn)} .verdict.no{color:var(--bad)}
+svg text{font-family:"IBM Plex Sans",sans-serif}
+.figs{display:grid;grid-template-columns:minmax(260px,360px) 1fr;gap:20px;align-items:start}
+@media (max-width:900px){.figs{grid-template-columns:1fr}}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin:6px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px}
+.legend i.ln{width:16px;height:0;border-top:2px solid;border-radius:0}
+.legend i.dash{width:16px;height:0;border-top:2px dashed var(--muted);border-radius:0}
+.fn{font-size:12px;color:var(--muted);margin:6px 0 0}
+.notes{font-size:14px;color:var(--text-2)}
+.notes h2{color:var(--text)}
+.notes li{margin:4px 0}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--text);color:var(--surface);font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity .1s;font-family:"IBM Plex Mono",monospace}
+</style>
+</head>
+<body>
+<header id="site-header" data-page="magnetic-gear"></header>
+<script src="site.js"></script>
+
+<main class="wrap">
+  <aside class="panel" aria-label="Gear calculator inputs">
+    <form id="inputs" onsubmit="return false">
+      <fieldset>
+        <legend>Pole numbers</legend>
+        <div class="presets" id="presets" role="group" aria-label="Pole combinations">
+          <button type="button" data-ph="2" data-pl="5">2/5/7</button>
+          <button type="button" data-ph="3" data-pl="7">3/7/10</button>
+          <button type="button" data-ph="3" data-pl="8">3/8/11</button>
+          <button type="button" data-ph="4" data-pl="9">4/9/13</button>
+          <button type="button" data-ph="4" data-pl="11">4/11/15</button>
+        </div>
+        <p class="hint">Engine pole pairs / motor pole pairs / pole pieces. 4/9/13 is the baseline below.</p>
+        <div class="field"><label for="ph">Engine rotor pole pairs<small>high-speed rotor, on the compressor nut</small></label><input id="ph" type="number" min="1" max="12" step="1" value="4"></div>
+        <div class="field"><label for="pl">Motor rotor pole pairs<small>low-speed rotor, drives the Lehner</small></label><input id="pl" type="number" min="2" max="30" step="1" value="9"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Engine</legend>
+        <div class="field"><label for="n90">Speed at 90% corrected<small>physical rpm; 136,600 on a 5 °C day, 143,700 at 35 °C</small></label><input id="n90" type="number" step="100" value="139000"></div>
+        <div class="field"><label for="nmax">Maximum speed<small>max-thrust step of the test</small></label><input id="nmax" type="number" step="100" value="154000"></div>
+        <div class="field"><label for="nidle">Idle speed<small>starter hands over here</small></label><input id="nidle" type="number" step="100" value="44000"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Motor and load</legend>
+        <div class="field"><label for="kv">Motor Kv<small>rpm per volt; 1535/17 delta is 1441</small></label><input id="kv" type="number" step="1" value="1441"></div>
+        <div class="field"><label for="nlim">Motor speed limit<small>Lehner catalogue limit, series 15xx</small></label><input id="nlim" type="number" step="500" value="85000"></div>
+        <div class="field"><label for="pw">Generator shaft power<small>1.2 × 1 kW DC ÷ 0.873 (generator × rectifier)</small></label><input id="pw" type="number" step="5" value="1375"></div>
+        <div class="field"><label for="eta">Gear efficiency<small>baseline estimate below</small></label><input id="eta" type="number" step="0.01" min="0.5" max="1" value="0.93"></div>
+      </fieldset>
+      <div class="btns" style="margin-top:12px"><button type="button" id="reset">Reset inputs</button></div>
+      <p class="hint" style="margin-top:10px">The calculator covers kinematics and electrical numbers for any pole combination. Torque, stress and loss numbers on the page come from the field model and apply only to the designs shown.</p>
+    </form>
+  </aside>
+
+  <section class="out">
+    <div class="panel card">
+      <h2>Goal</h2>
+      <p class="sub" style="margin-bottom:0">Find out whether a magnetic gear between the engine's front shaft and the Lehner 1535 can keep the motor below its 85,000 rpm rating. That would remove the need for a 140,000 rpm overspeed rotor and a decoupling actuator. Compare a coaxial gear with a face-to-face gear, and both with the direct magnetic coupler.</p>
+      <div class="toc"><a href="#how">1. How a magnetic gear works</a><a href="#poles">2. Choosing pole numbers</a><a href="#coax">3. Coaxial gear design</a><a href="#face">4. Face-to-face gear</a><a href="#compare">5. Against the direct coupler</a><a href="#system">6. Effects on the rest of the system</a><a href="#next">7. Next steps</a><a href="#notes">Model notes</a></div>
+    </div>
+
+    <div class="kpis">
+      <div class="panel kpi"><div class="l">Gear ratio</div><div class="v" id="k-ratio"></div><div class="c" id="k-ratio-c"></div></div>
+      <div class="panel kpi"><div class="l">Motor speed at 90%</div><div class="v" id="k-n90"></div><div class="c" id="k-n90-c"></div></div>
+      <div class="panel kpi"><div class="l">Motor speed at max</div><div class="v" id="k-nmax"></div><div class="c" id="k-nmax-c"></div></div>
+      <div class="panel kpi"><div class="l">Generator output</div><div class="v" id="k-v"></div><div class="c" id="k-v-c"></div></div>
+    </div>
+    <div class="warn" id="warn" role="status"></div>
+
+    <div class="panel card">
+      <p class="rec"><b>Verdict.</b> A coaxial magnetic gear works on paper. The 4/9/13 baseline, 36 mm across with 20 mm long magnets, carries the full generator load with 2.1× pull-out margin. The motor never exceeds 68,400 rpm, even at maximum thrust, so the Lehner runs inside its rating and no decoupler is needed. The costs:</p>
+      <ul class="rec" style="margin:6px 0 0;padding-left:20px">
+        <li>a 42 g rotor on the compressor nut (the stock front nut is about 4 g);</li>
+        <li>a 77 g outer rotor that needs its own bearings;</li>
+        <li>about 95 W of losses;</li>
+        <li>a stationary pole-piece ring that must run concentric with both rotors inside 0.5 mm gaps.</li>
+      </ul>
+      <p class="rec" style="margin-top:8px">A face-to-face gear is not feasible: its engine-side disc cannot hold its magnets at 154,000 rpm. Keep the direct coupler as the baseline, and treat the coaxial gear as the fallback if the Lehner fails its 140,000 rpm overspeed test, provided JetCat's rotor can take the extra mass at the nut.</p>
+    </div>
+
+    <div class="panel card prose" id="how">
+      <h2>1. How a magnetic gear works</h2>
+      <p>A magnetic coupler locks two magnet rotors with the same number of poles, so they turn at the same speed. A magnetic gear adds a third part between them: a stationary ring of steel <b>pole pieces</b> separated by non-magnetic gaps. The pole pieces chop up each rotor's field. The engine rotor has a few poles, and seen through the ring its field contains a strong component with as many poles as the motor rotor. The motor rotor's field is filtered the same way. The two rotors lock to these modulated fields, so they turn at different speeds, in opposite directions, with no contact.</p>
+      <div class="eq">n<sub>s</sub> = p<sub>h</sub> + p<sub>l</sub>&nbsp;&nbsp;&nbsp;&nbsp;n<sub>motor</sub> = −(p<sub>h</sub> / p<sub>l</sub>)·n<sub>engine</sub></div>
+      <div class="eq">T<sub>motor</sub> = −(p<sub>l</sub> / p<sub>h</sub>)·T<sub>engine</sub>&nbsp;&nbsp;&nbsp;&nbsp;T<sub>ring</sub> = −(T<sub>engine</sub> + T<sub>motor</sub>)</div>
+      <p>p<sub>h</sub> and p<sub>l</sub> are the pole-pair counts of the high-speed (engine) and low-speed (motor) rotors, and n<sub>s</sub> is the number of pole pieces. Power is conserved apart from losses: the motor side turns slower and carries proportionally more torque. The stationary ring reacts the sum of both torques, so it needs a solid mount to the engine case.</p>
+      <div class="figs">
+        <div>
+          <svg id="xsec" viewBox="0 0 360 360" role="img" aria-label="Cross-section of a coaxial magnetic gear with the selected pole numbers"></svg>
+          <div class="legend"><span><i style="background:var(--s2)"></i>N pole</span><span><i style="background:var(--s1)"></i>S pole</span><span><i style="background:var(--text-2)"></i>Pole piece (stationary)</span><span><i style="background:var(--muted);opacity:.45"></i>Back-iron</span></div>
+          <p class="fn" id="xsec-cap"></p>
+        </div>
+        <div>
+          <h3>Two layouts</h3>
+          <ul>
+            <li><b>Coaxial (radial flux).</b> The engine rotor is a hub on the compressor nut. The pole-piece ring sits around it, and the motor rotor is a cup around that, as in the drawing. Each rotor carries magnet torque around its circumference, and the axial forces cancel when the parts are centred.</li>
+            <li><b>Face-to-face (axial flux).</b> Engine disc, flat ring of pole pieces, motor disc, all stacked along the shaft. It is short along the shaft, but the field that makes torque also makes a large attraction: each rotor is pulled toward the steel ring.</li>
+          </ul>
+          <h3>Rules for picking pole numbers</h3>
+          <ul>
+            <li>p<sub>l</sub> &gt; p<sub>h</sub> for a speed reduction. To get under 85,000 rpm at 154,000 rpm engine speed, p<sub>l</sub>/p<sub>h</sub> must be at least 1.81.</li>
+            <li>Few engine-side poles means long pole pitches, which push more flux through the pole pieces and back-irons. The field model shows 2 pole pairs saturating the pole pieces at this size.</li>
+            <li>The torque ripple from cogging depends on the factor C = 2p<sub>h</sub>·n<sub>s</sub> / LCM(2p<sub>h</sub>, n<sub>s</sub>). A value of 1 is best and usually needs an odd number of pole pieces.</li>
+            <li>Every pole piece sees the engine rotor's field flip at f = p<sub>h</sub>·n<sub>engine</sub>/60, about 9.3 kHz for 4 pole pairs. That frequency sets the iron and magnet losses.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="summary" id="calc-sum"></div>
+    </div>
+
+    <div class="panel card prose" id="poles">
+      <h2>2. Choosing pole numbers</h2>
+      <p>Five combinations were run through the field model at 30, 34 and 38 mm outside diameter. Magnets are SmCo 30H at 120 °C (Br 1.04 T), with a 1.0 mm inner magnetic gap, a 0.5 mm outer gap and pole pieces filling half the ring. Designs were rejected where 95% of the pole-piece material exceeds 1.4 T, or the back-irons exceed 1.5 T. Torques are 2-D values per metre of magnet length, before any allowance for end effects.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Pole pairs / pieces</th><th>Ratio</th><th>Motor rpm at 139k / 154k</th><th>Cogging factor</th><th>Engine-side torque, 30 mm OD</th><th>34 mm OD</th><th>38 mm OD</th><th class="l">Note</th></tr></thead>
+          <tbody id="combo-body"></tbody>
+        </table>
+      </div>
+      <p class="fn">Torque columns in N·m per metre of length, engine side, best geometry inside the flux limits. A dash means no geometry in the sweep stayed inside them. The 30 mm column uses a 2.0 mm outer back-iron; the 34 and 38 mm columns use 2.5 mm and a sweep of magnet and pole-piece thickness. Field-model check: the ratio of motor-side to engine-side peak torque matched p<sub>l</sub>/p<sub>h</sub> within 1–3% for every combination.</p>
+      <p><b>4/9/13 is the baseline.</b> At 34–38 mm it gives the most torque inside the flux limits. Its cogging factor is 1, so the torque is smooth. It puts the motor at 61,800 rpm at 139,000 engine rpm and 68,400 rpm at maximum, a 20% margin under the Lehner limit. 3/8/11 is the runner-up, with a higher ratio and a slower motor (57,800 rpm at maximum), but its pole pieces run closer to saturation.</p>
+    </div>
+
+    <div class="panel card prose" id="coax">
+      <h2>3. Coaxial gear design (4/9/13 baseline)</h2>
+      <p>Requirement, as for the coupler: carry the running engine-side torque of 96 mN·m (1,375 W at 136,600 rpm, the cold-day 90% point) with a pull-out torque of at least twice that, 192 mN·m, with magnets at 120 °C. Gears leak more flux at their ends than couplers, so the 2-D torque is scaled by 0.75 here, against 0.85 for the coupler. The required magnet length follows from that.</p>
+      <div class="grid2">
+        <div>
+          <h3>Radial build, inside out</h3>
+          <div class="tablewrap"><table>
+            <thead><tr><th>Part</th><th>Diameter (mm)</th><th class="l">Material</th></tr></thead>
+            <tbody>
+              <tr><td>Hub core, threaded to the nut</td><td class="num">6.3–13.8</td><td class="l">Steel ring at least 2 mm thick + Ti hub; laminated if possible</td></tr>
+              <tr><td>Engine magnets, 8 poles</td><td class="num">13.8–18.8</td><td class="l">SmCo 30H, radial, 1 mm axial segments</td></tr>
+              <tr><td>Retaining sleeve, 1.1 mm</td><td class="num">18.8–21.0</td><td class="l">Hoop-wound CFRP</td></tr>
+              <tr><td>Clearance</td><td class="num">21.0–22.0</td><td class="l">0.5 mm radial</td></tr>
+              <tr><td>Pole-piece ring, 13 pieces</td><td class="num">22.0–26.0</td><td class="l">Somaloy SMC in a non-conductive carrier, stationary</td></tr>
+              <tr><td>Clearance</td><td class="num">26.0–27.0</td><td class="l">0.5 mm radial</td></tr>
+              <tr><td>Motor magnets, 18 poles</td><td class="num">27.0–31.0</td><td class="l">SmCo 30H, 1 mm axial segments</td></tr>
+              <tr><td>Outer back-iron, 2.5 mm</td><td class="num">31.0–36.0</td><td class="l">Laminated silicon steel in a thin shell</td></tr>
+            </tbody></table></div>
+          <p class="fn">Magnet length 20 mm. The sleeve thickness was solved so the sleeve keeps a safety factor of 1.5 at proof speed with thermal mismatch (section on stress below).</p>
+        </div>
+        <div>
+          <h3>Pull-out curve</h3>
+          <div class="chart" id="curve"></div>
+          <div class="legend"><span><i class="ln" style="border-color:var(--s1)"></i>Motor-side torque</span><span><i class="ln" style="border-color:var(--accent)"></i>Engine-side torque</span><span><i class="dash"></i>Running torque, engine side</span></div>
+          <p class="fn">Torque against motor-rotor angle with the engine rotor held still, after the 0.75 end-effect factor. The peaks are the pull-out torques; at running load the rotors sit at about 3° of lag.</p>
+        </div>
+      </div>
+
+      <h3>Results</h3>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Quantity</th><th>Engine side</th><th>Motor side</th><th class="l">Comment</th></tr></thead>
+        <tbody>
+          <tr><td>Pull-out torque, 120 °C</td><td class="num">202 mN·m</td><td class="num">446 mN·m</td><td class="l">2.1× running torque; requirement 192 on the engine side</td></tr>
+          <tr><td>Running torque</td><td class="num">97.5 mN·m</td><td class="num">219 mN·m</td><td class="l">Ratio 2.25, opposite rotation</td></tr>
+          <tr><td>Torque ripple under load, peak to peak</td><td class="num">0.9 mN·m</td><td class="num">6.8 mN·m</td><td class="l">0.9% and 3.1%; cogging alone about the same</td></tr>
+          <tr><td>Stationary ring reaction torque</td><td class="num" colspan="2">about 0.32 N·m running, 0.65 N·m at pull-out</td><td class="l">Mount to the engine front case</td></tr>
+          <tr><td>Speed, 90% corrected (5 °C to 35 °C day)</td><td class="num">136,600–143,700</td><td class="num">60,700–63,900</td><td class="l">rpm</td></tr>
+          <tr><td>Speed at maximum / proof</td><td class="num">154,000 / 177,100</td><td class="num">68,400 / 78,700</td><td class="l">Motor always under 85,000 rpm</td></tr>
+          <tr><td>Flux, 95th percentile</td><td class="num">core 0.94 T</td><td class="num">back-iron 1.11 T</td><td class="l">Pole pieces 1.33 T; all inside the limits</td></tr>
+          <tr><td>Rotating mass</td><td class="num">42 g</td><td class="num">77 g</td><td class="l">Pole-piece ring 10.8 g, stationary</td></tr>
+          <tr><td>Inertia</td><td class="num">2.2×10⁻⁶ kg·m²</td><td class="num">1.9×10⁻⁵ kg·m²</td><td class="l">The hub adds 4% to the engine rotor's inertia</td></tr>
+        </tbody></table></div>
+
+      <h3>Rotational stress</h3>
+      <p>The engine hub's magnets reach a 9.4 mm radius, against 6.5 mm in the coupler hub, so they press on their sleeve much harder at 154,000 rpm. The sleeve has to be 1.1 mm thick, which is why the inner magnetic gap is 1.6 mm instead of 1.0 mm.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Part</th><th>At 154k engine</th><th>At proof (177k)</th><th>Thermal, 100 K</th><th>Governing</th><th>Safety factor</th></tr></thead>
+        <tbody>
+          <tr><td>CFRP hub sleeve, 1.1 mm</td><td class="num">393 MPa</td><td class="num">519 MPa</td><td class="num">+139 MPa</td><td class="num">658 MPa</td><td class="num">1.52 on 1,000 MPa</td></tr>
+          <tr><td>Outer rotor shell, at 68.4k / 78.7k</td><td class="num">204 MPa</td><td class="num">269 MPa</td><td class="num">n/a</td><td class="num">269 MPa</td><td class="num">~1.5 (laminations)</td></tr>
+        </tbody></table></div>
+      <p>The sleeve needs about 75 µm of diametral interference, which is too much to press on, so wind it in place under tension. The outer rotor turns at less than half the engine speed, so its stress is low even though it is the largest part.</p>
+
+      <h3>Losses at 139,000 rpm</h3>
+      <p>A magnetic gear is not lossless the way a synchronous coupler is. The pole pieces see a field flipping at 9.3 kHz, and every magnet and back-iron sees the other rotor's chopped field passing at kilohertz rates. The estimates below come from the field model stepped through a full rotation cycle.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Where</th><th>Estimate</th><th class="l">Basis and what controls it</th></tr></thead>
+        <tbody>
+          <tr><td>Pole pieces (Somaloy 700HR 3P)</td><td class="num">~80 W</td><td class="l">Datasheet loss extrapolated from 2 kHz to 9.3 kHz at 1.29 T typical, ×1.3 for harmonics. Stationary, so air from the inlet can cool it.</td></tr>
+          <tr><td>Motor magnets, one piece per pole</td><td class="num">≤ 310 W</td><td class="l">Upper bound for eddy currents in 5.1 mm wide magnets. Not acceptable.</td></tr>
+          <tr><td>Motor magnets, cut into 1 mm segments</td><td class="num">~12 W</td><td class="l">Segmenting is mandatory.</td></tr>
+          <tr><td>Engine magnets, one piece / 1 mm segments</td><td class="num">≤ 32 / ~1 W</td><td class="l">Same method.</td></tr>
+          <tr><td>Back-irons, 0.2 mm laminations</td><td class="num">~1 W</td><td class="l">Solid steel back-irons would heat in a thin skin, with losses well above this. Laminate both.</td></tr>
+          <tr><td><b>Total with segmented magnets</b></td><td class="num"><b>~95 W</b></td><td class="l">About 7% of 1,375 W, so the engine must deliver about 1,470 W of shaft power. Efficiency about 93%.</td></tr>
+        </tbody></table></div>
+      <p class="fn">Magnet and lamination figures assume resistance-limited eddy currents, an upper bound when segments approach the skin depth (about 4.6 mm in SmCo at 10 kHz). The pole-piece figure extrapolates the datasheet well beyond its 2 kHz range; measure it on a spin rig.</p>
+
+      <h3>Mounting the rotors</h3>
+      <ul>
+        <li><b>Engine hub, 42 g on the compressor nut.</b> This is ten times the mass of the stock front nut, and it is cantilevered ahead of the front bearing. Most of it is magnet (21.5 g), so lightening the core saves little. It changes the engine rotor's critical speeds and front-bearing load. JetCat or a rotordynamics check must clear it before anything spins.</li>
+        <li><b>Outer rotor, 77 g.</b> On the Lehner's 5 mm shaft its first bending speed is about 64,000–96,000 rpm, on top of its 61,000–68,000 rpm operating range. It needs its own pair of bearings on the stationary housing, with the motor driven through a short shaft or a flexible coupling.</li>
+        <li><b>Stationary ring.</b> The ring must stay concentric with two separately supported rotors inside 0.5 mm radial clearances, and react 0.65 N·m at pull-out. It is the hardest part to build accurately.</li>
+      </ul>
+    </div>
+
+    <div class="panel card prose" id="face">
+      <h2>4. Face-to-face gear <span class="verdict no">not feasible</span></h2>
+      <p>The face gear was modelled ring by ring: each radius is unrolled into a flat strip, solved in 2-D, and the strips are summed. The layout is an engine disc, a flat ring of pole pieces 3.5 mm thick and a motor disc, with 0.6 mm axial gaps and 4 mm back-iron discs. To meet the torque requirement, the magnets have to reach 36 mm diameter.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>4/9/13 face gear, magnets 19.8–36 mm</th><th>Value</th><th class="l">Problem</th></tr></thead>
+        <tbody>
+          <tr><td>Engine-side pull-out, ×0.8 for edge effects</td><td class="num">211 mN·m</td><td class="l">Meets the requirement, but only with linear iron. The pole pieces reach 1.68 T, so real torque will be lower.</td></tr>
+          <tr><td>Axial pull on engine disc / motor disc</td><td class="num">98 / 106 N</td><td class="l">Each rotor is pulled toward the steel ring all the time; 67–78 N remain at pull-out.</td></tr>
+          <tr><td>Magnet pressure on the retaining band at 154k</td><td class="num">197 MPa</td><td class="l">Magnets out at 18 mm radius, surface speed 290 m/s</td></tr>
+          <tr><td>CFRP band hoop stress, 4 mm / 6 mm thick</td><td class="num">1,150 / 870 MPa</td><td class="l">At proof the 6 mm band reaches 1,150 MPa, above the 1,000 MPa allowable. No practical band holds them.</td></tr>
+          <tr><td>Engine disc mass / motor disc mass</td><td class="num">58 / 46 g</td><td class="l">Worse than the coaxial hub</td></tr>
+          <tr><td>Stack length</td><td class="num">18.7 mm</td><td class="l">Plus bands at about 42 mm diameter</td></tr>
+        </tbody></table></div>
+      <p>The face layout fails for the same reason as the face coupler, made worse. Its torque comes from radius, so the magnets end up far out on the engine-speed disc, and nothing can hold them there at 154,000 rpm. It could only work if the engine-side disc turned much slower, which is the problem the gear was meant to solve.</p>
+    </div>
+
+    <div class="panel card prose" id="compare">
+      <h2>5. Against the direct coupler</h2>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Item</th><th class="l">Direct coaxial coupler</th><th class="l">Coaxial gear 4/9/13</th><th class="l">Face gear</th></tr></thead>
+        <tbody>
+          <tr><td>Motor speed, 90% / max</td><td class="l">137k–144k / 154k rpm; needs an overspeed-rated rotor</td><td class="l">61k–64k / 68k rpm; inside the catalogue rating</td><td class="l">Same as coaxial</td></tr>
+          <tr><td>Decoupler for max thrust</td><td class="l">Yes, actuator and 12 mm stroke</td><td class="l">Not needed</td><td class="l">Not needed</td></tr>
+          <tr><td>Outside diameter</td><td class="l">22 mm</td><td class="l">36 mm</td><td class="l">About 42 mm</td></tr>
+          <tr><td>Mass on the engine nut</td><td class="l">6 g</td><td class="l">42 g</td><td class="l">58 g</td></tr>
+          <tr><td>Motor-side rotor</td><td class="l">13 g on the motor shaft</td><td class="l">77 g on its own bearings</td><td class="l">46 g, plus about 100 N axial load</td></tr>
+          <tr><td>Losses when engaged</td><td class="l">About zero (synchronous)</td><td class="l">About 95 W</td><td class="l">Similar or more</td></tr>
+          <tr><td>Axial load on bearings</td><td class="l">About zero</td><td class="l">About zero when centred</td><td class="l">98–106 N on each rotor</td></tr>
+          <tr><td>Parts and precision</td><td class="l">2 rotors</td><td class="l">2 rotors and a stationary ring, two 0.5 mm gaps, extra bearings</td><td class="l">Same, with axial gaps</td></tr>
+          <tr><td>Rough parts cost</td><td class="l">$450–1,550</td><td class="l">$1,000–2,500 (estimate: 26 segmented magnet sets, SMC ring, laminations, bearings)</td><td class="l">n/a</td></tr>
+          <tr><td>Verdict</td><td class="l"><span class="verdict ok">baseline</span></td><td class="l"><span class="verdict warn">fallback</span></td><td class="l"><span class="verdict no">rejected</span></td></tr>
+        </tbody></table></div>
+      <p>The gear exchanges one hard problem, the motor at 1.7× its rated speed, for several moderate ones. The new problems are mass on the engine rotor, a third precision part, an extra bearing set and 7% loss. It becomes the better choice if the Lehner overspeed test fails or Lehner will not support 140,000 rpm, and only if JetCat's rotor can carry the hub.</p>
+    </div>
+
+    <div class="panel card prose" id="system">
+      <h2>6. Effects on the rest of the system</h2>
+      <ul>
+        <li><b>Generator voltage.</b> At about 62,000 rpm the 1535/17 (Kv 1441) makes about 43 V open circuit. The 1,200 W design load then needs about 30 A DC at roughly 40 V, against about 12 A at 97 V for the direct coupler, so copper and rectifier losses rise. A higher-turn 1535 winding with Kv near 800 would restore about 75 V; check what Lehner offers.</li>
+        <li><b>Starting.</b> Through the gear the motor turns at 19,600 rpm when the engine reaches its 44,000 rpm idle. It needs 2.25 times the cranking torque, about 70–135 mN·m, or 10–20 A. Slipping a gear pole during a hard start is less likely than with the coupler, because the gear's motor-side pull-out is 446 mN·m.</li>
+        <li><b>Max thrust.</b> The gear stays engaged. If the load bank stays in constant-resistance mode, power rises with speed squared, to about 1.7 kW of shaft power at 154,000 rpm. That is 236 mN·m on the motor side, still well below pull-out. Alternatively, open the load during the hold before acceleration.</li>
+        <li><b>Score.</b> The gear, its bearings and the ring weigh roughly 150–170 g, against about 75 g for the coupler plus its actuator. That is about 1–2 points at the weight score's 7.5 points per lbf. The axial package grows by about 10–16 mm, about 1–2 points on length.</li>
+        <li><b>Engine cycle.</b> The extra 95 W of loss is extracted from the engine like generator power, so cover it in the cycle analysis.</li>
+      </ul>
+    </div>
+
+    <div class="panel card prose" id="next">
+      <h2>7. Next steps if the gear is pursued</h2>
+      <ol>
+        <li><b>Ask JetCat about mass at the nut.</b> Can the P100 rotor carry about 42 g overhung on the compressor nut? If not, stop here.</li>
+        <li><b>Confirm the 2-D model in FEMM</b> for the 4/9/13 baseline, with non-linear SMC and steel curves, then estimate the 3-D end loss for the 20 mm length.</li>
+        <li><b>Get SMC loss data near 10 kHz</b> from Höganäs, or measure a ring sample. That figure drives the efficiency estimate.</li>
+        <li><b>Lay out the housing.</b> Outer-rotor bearings, the ring mount on the engine front case, and the concentricity stack-up for the two 0.5 mm gaps.</li>
+        <li><b>Re-run the cycle analysis</b> with about 1,470 W of shaft extraction and check thrust at 90% and EGT.</li>
+      </ol>
+    </div>
+
+    <div class="panel card notes" id="notes">
+      <h2>Model notes and assumptions</h2>
+      <ul>
+        <li><b>Field model.</b> 2-D finite-volume solution for magnetic vector potential on a polar grid (coaxial) or on unrolled flat strips (face, six radii summed). Magnets are treated with relative permeability 1.0 and iron is linear (back-iron μr 1000, SMC μr 500), so saturation is handled by rejecting designs over 1.4 T in the pole pieces or 1.5 T in the back-irons. Torque comes from Maxwell stress averaged over each air gap.</li>
+        <li><b>Validation.</b> A flat strip reproduces the closed-form coupler shear stress to 0.1%. On the full polar model the direct coupler comes out 5% below the closed form, which ignores curvature: about 229 mN·m instead of 242 mN·m at 120 °C after the 0.85 factor, still above the 192 mN·m requirement. Gear torque ratios match p<sub>l</sub>/p<sub>h</sub> within 1–3%.</li>
+        <li><b>Coupler cup flux.</b> The polar model shows the direct coupler's 1.5 mm cup at about 1.9 T at the 95th percentile, more than the 1.3 T fundamental-only estimate. A 2.0 mm wall brings it to 1.5 T.</li>
+        <li><b>End effects.</b> 2-D torque is multiplied by 0.75 for the coaxial gear and 0.8 for the face gear. These are assumed values until a 3-D model or bench test confirms them.</li>
+        <li><b>Loads.</b> Load cases, the 2× pull-out factor and the 120 °C magnet temperature are the same as in the coupler sizing. Engine speeds are 90% corrected (139,000 rpm at 15 °C), with maximum 154,000 rpm and proof 1.15× maximum.</li>
+        <li><b>Losses.</b> Somaloy 700HR 3P losses are fitted to the datasheet's 1 and 2 kHz points and extrapolated, with a 1.3 factor for harmonics. Magnet and lamination eddy losses use a resistance-limited thin-plate estimate from the field swing in each rotor's frame. These are first estimates, not measurements.</li>
+        <li><b>Materials.</b> SmCo 30H (Br 1.08 T at 20 °C, −0.035 %/K), CFRP sleeve allowable 1,000 MPa, Somaloy density 7,520 kg/m³. Masses assume solid rings; the hub is a steel back-iron ring on a titanium hub.</li>
+      </ul>
+      <h2 style="margin-top:14px">Sources</h2>
+      <ul>
+        <li><a href="https://www.hoganas.com/globalassets/downloads/libary/somaloy_somaloy-3p-material-data_2273hog.pdf">Höganäs, Somaloy 3P material data</a>: core loss up to 2 kHz, density, resistivity.</li>
+        <li>Lehner Motoren Technik, <i>Operating Instructions and Technical Data, Series 10xx 15xx 19xx 22xx</i>, p. 34: 85,000 rpm mechanical limit for series 15xx.</li>
+        <li>The flux-modulated magnetic gear principle was first described by K. Atallah and D. Howe, <i>A novel high-performance magnetic gear</i>, IEEE Transactions on Magnetics 37(4), 2001.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const DEF = { ph: 4, pl: 9, n90: 139000, nmax: 154000, nidle: 44000, kv: 1441, nlim: 85000, pw: 1375, eta: 0.93 };
+  // field-model results: best engine-side torque per metre (N m/m) inside the flux limits
+  const COMBOS = [
+    { ph: 2, pl: 5, t30: null, t34: null, t38: null, note: "Pole pieces saturate (1.6–2.2 T) at every size tried" },
+    { ph: 3, pl: 7, t30: 9.61, t34: 13.04, t38: null, note: "Cogging factor 2; no geometry inside the flux limits at 38 mm" },
+    { ph: 3, pl: 8, t30: 8.23, t34: 12.71, t38: 17.57, note: "Runner-up; motor slowest of the workable options" },
+    { ph: 4, pl: 9, t30: 7.86, t34: 14.69, t38: 21.12, note: "Baseline: most torque inside the limits at 34–38 mm" },
+    { ph: 4, pl: 11, t30: 6.09, t34: 11.74, t38: 19.07, note: "Motor at 56k at max; less torque per size" }
+  ];
+  // pull-out curve, baseline 4/9/13, OD 36 mm, L 20 mm, after 0.75 factor (mN m)
+  const CURVE = [[0,0,0],[1.25,34.8,72.8],[2.5,77.1,165.3],[3.75,108.6,227.4],[5,142.7,306.0],[6.25,166.2,345.6],[7.5,186.8,402.3],[8.75,200.7,425.2],[10,202.3,446.4],[11.25,198.6,446.4],[12.5,186.8,424.8],[13.75,170.4,396.0],[15,142.7,328.8],[16.25,118.8,269.4],[17.5,77.1,178.5],[18.75,47.0,108.9],[20,0,0]];
+
+  const fields = Object.keys(DEF);
+  const num = id => parseFloat($(id).value);
+  const fmt = (x, d = 0) => Number.isFinite(x) ? x.toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d }) : "–";
+  const gcd = (a, b) => b ? gcd(b, a % b) : a;
+  const lcm = (a, b) => a / gcd(a, b) * b;
+
+  function annular(cx, cy, r0, r1, a0, a1) {
+    const p = (r, a) => `${(cx + r * Math.cos(a)).toFixed(2)},${(cy + r * Math.sin(a)).toFixed(2)}`;
+    const large = (a1 - a0) > Math.PI ? 1 : 0;
+    return `M${p(r1, a0)} A${r1},${r1} 0 ${large} 1 ${p(r1, a1)} L${p(r0, a1)} A${r0},${r0} 0 ${large} 0 ${p(r0, a0)} Z`;
+  }
+
+  function drawXsec(ph, pl) {
+    const ns = ph + pl, cx = 180, cy = 180, s = 9.4;   // px per mm (radius 18 mm -> 169 px)
+    const R = { bore: 3.15, core: 6.9, m1: 9.4, sl: 10.5, mod0: 11, mod1: 13, m2a: 13.5, m2b: 15.5, out: 18 };
+    let h = "";
+    h += `<circle cx="${cx}" cy="${cy}" r="${R.out * s}" fill="var(--muted)" fill-opacity=".45"/>`;
+    h += `<circle cx="${cx}" cy="${cy}" r="${R.m2b * s}" fill="var(--surface)"/>`;
+    for (let k = 0; k < 2 * pl; k++) {
+      const a0 = k * Math.PI / pl, a1 = (k + 1) * Math.PI / pl;
+      h += `<path d="${annular(cx, cy, R.m2a * s, R.m2b * s, a0, a1)}" fill="${k % 2 ? "var(--s1)" : "var(--s2)"}" stroke="var(--surface)" stroke-width=".6"/>`;
+    }
+    for (let k = 0; k < ns; k++) {
+      const c = k * 2 * Math.PI / ns, w = Math.PI / ns * 0.5 * 2;
+      h += `<path d="${annular(cx, cy, R.mod0 * s, R.mod1 * s, c - w / 2, c + w / 2)}" fill="var(--text-2)"/>`;
+    }
+    h += `<circle cx="${cx}" cy="${cy}" r="${(R.m1 + 0.55) * s}" fill="none" stroke="var(--good)" stroke-width="${1.1 * s}" stroke-opacity=".35"/>`;
+    for (let k = 0; k < 2 * ph; k++) {
+      const a0 = k * Math.PI / ph, a1 = (k + 1) * Math.PI / ph;
+      h += `<path d="${annular(cx, cy, R.core * s, R.m1 * s, a0, a1)}" fill="${k % 2 ? "var(--s1)" : "var(--s2)"}" stroke="var(--surface)" stroke-width=".6"/>`;
+    }
+    h += `<circle cx="${cx}" cy="${cy}" r="${R.core * s}" fill="var(--muted)" fill-opacity=".45"/>`;
+    h += `<circle cx="${cx}" cy="${cy}" r="${R.bore * s}" fill="var(--surface)" stroke="var(--line)"/>`;
+    $("xsec").innerHTML = h;
+    $("xsec-cap").textContent = `${ph}/${pl}/${ns}: ${2 * ph} engine poles inside, ${ns} stationary pole pieces, ${2 * pl} motor poles outside. Drawn on the 36 mm baseline radii; the green ring is the CFRP sleeve.`;
+  }
+
+  function comboTable(sel) {
+    const body = COMBOS.map(c => {
+      const ns = c.ph + c.pl, r = c.pl / c.ph;
+      const C = 2 * c.ph * ns / lcm(2 * c.ph, ns);
+      const cell = v => v == null ? "<td class=\"num\">–</td>" : `<td class="num">${v.toFixed(2)}</td>`;
+      const here = sel.ph === c.ph && sel.pl === c.pl;
+      return `<tr${here ? ' class="sel"' : ""}><td>${c.ph}/${c.pl}/${ns}</td><td class="num">${r.toFixed(2)}</td>` +
+        `<td class="num">${fmt(139000 / r)} / ${fmt(154000 / r)}</td><td class="num ${C === 1 ? "st-ok" : "st-warn"}">${C}</td>` +
+        cell(c.t30) + cell(c.t34) + cell(c.t38) + `<td class="l">${c.note}</td></tr>`;
+    }).join("");
+    $("combo-body").innerHTML = body;
+  }
+
+  function drawCurve() {
+    const W = 420, H = 280, L = 44, Rr = 10, T = 18, B = 40;
+    const x = d => L + d / 20 * (W - L - Rr), y = v => T + (1 - v / 500) * (H - T - B);
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Pull-out torque against motor-rotor angle: motor side peaks at 446 mN m, engine side at 202 mN m">`;
+    for (let v = 0; v <= 500; v += 100) {
+      s += `<line x1="${L}" x2="${W - Rr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/>`;
+      s += `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`;
+    }
+    for (let d = 0; d <= 20; d += 5) s += `<text x="${x(d)}" y="${H - B + 16}" text-anchor="middle" font-size="11" fill="var(--muted)">${d}°</text>`;
+    s += `<text x="${(L + W - Rr) / 2}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--text-2)">Motor-rotor angle from aligned, mechanical degrees</text>`;
+    s += `<text x="${L}" y="${T - 2}" font-size="11" fill="var(--muted)">mN·m</text>`;
+    s += `<line x1="${L}" x2="${W - Rr}" y1="${y(96.1)}" y2="${y(96.1)}" stroke="var(--muted)" stroke-dasharray="5 4"/>`;
+    s += `<text x="${x(10)}" y="${y(96.1) + 16}" text-anchor="middle" font-size="11" fill="var(--text-2)">Engine-side running torque, 96</text>`;
+    const line = (k, col) => `<polyline fill="none" stroke="${col}" stroke-width="2" points="${CURVE.map(p => `${x(p[0])},${y(p[k])}`).join(" ")}"/>`;
+    s += line(2, "var(--s1)") + line(1, "var(--accent)");
+    s += `<text x="${x(10)}" y="${y(446.4) - 8}" text-anchor="middle" font-size="11" fill="var(--s1)">446 pull-out</text>`;
+    s += `<text x="${x(10)}" y="${y(202.3) - 8}" text-anchor="middle" font-size="11" fill="var(--accent)">202 pull-out</text>`;
+    s += CURVE.map(p => `<circle cx="${x(p[0])}" cy="${y(p[2])}" r="6" fill="transparent" data-t="${p[0].toFixed(2)}°: motor ${p[2].toFixed(0)}, engine ${p[1].toFixed(0)} mN·m"/>`).join("");
+    s += `</svg><div class="tip"></div>`;
+    $("curve").innerHTML = s;
+    const tip = $("curve").querySelector(".tip");
+    $("curve").querySelectorAll("circle[data-t]").forEach(c => {
+      c.addEventListener("mouseenter", () => { tip.textContent = c.dataset.t; tip.style.opacity = 1;
+        const bb = c.getBoundingClientRect(), pb = $("curve").getBoundingClientRect();
+        tip.style.left = (bb.left - pb.left + 10) + "px"; tip.style.top = (bb.top - pb.top - 28) + "px"; });
+      c.addEventListener("mouseleave", () => { tip.style.opacity = 0; });
+    });
+  }
+
+  function update() {
+    const v = {}; fields.forEach(k => v[k] = num(k));
+    const ph = Math.round(v.ph), pl = Math.round(v.pl), ns = ph + pl;
+    const msgs = [];
+    if (!(ph >= 1 && pl >= 1)) { $("warn").textContent = "Enter whole numbers of pole pairs."; return; }
+    const r = pl / ph;
+    const n90 = v.n90 / r, nmax = v.nmax / r, nidle = v.nidle / r;
+    const Tm = v.pw / (n90 * Math.PI / 30);
+    const Pe = v.pw / v.eta;
+    const Te = Pe / (v.n90 * Math.PI / 30);
+    const Pdc = v.pw * 0.9 * 0.97;
+    const f = ph * v.n90 / 60;
+    const C = 2 * ph * ns / lcm(2 * ph, ns);
+    const Voc = n90 / v.kv, Vmax = nmax / v.kv;
+    const Idc = Pdc / (Voc * 0.93);
+    if (pl <= ph) msgs.push("Motor pole pairs must exceed engine pole pairs for a speed reduction.");
+    if (nmax > v.nlim) msgs.push(`At maximum engine speed the motor would turn ${fmt(nmax)} rpm, above the ${fmt(v.nlim)} rpm limit. Raise the ratio to at least ${(v.nmax / v.nlim).toFixed(2)}.`);
+    if (C > 1) msgs.push(`Cogging factor ${C}: expect more torque ripple than an odd pole-piece count would give.`);
+    if (Vmax > 200) msgs.push(`Open-circuit voltage at maximum speed is ${fmt(Vmax)} V, above the 200 V DC limit in the ICD.`);
+    $("warn").textContent = msgs.join(" ");
+    $("k-ratio").innerHTML = `${r.toFixed(2)}<span>: 1</span>`;
+    $("k-ratio-c").textContent = `${ph}/${pl}/${ns} · motor turns the opposite way`;
+    $("k-n90").innerHTML = `${fmt(n90)}<span>rpm</span>`;
+    $("k-n90-c").textContent = `${(n90 / v.nlim * 100).toFixed(0)}% of the ${fmt(v.nlim)} rpm limit`;
+    $("k-n90-c").className = "c " + (n90 <= v.nlim ? "ok" : "no");
+    $("k-nmax").innerHTML = `${fmt(nmax)}<span>rpm</span>`;
+    $("k-nmax-c").textContent = nmax <= v.nlim ? `${fmt(v.nlim - nmax)} rpm under the limit` : `${fmt(nmax - v.nlim)} rpm over the limit`;
+    $("k-nmax-c").className = "c " + (nmax <= v.nlim ? "ok" : "no");
+    $("k-v").innerHTML = `${fmt(Voc)}<span>V open circuit</span>`;
+    $("k-v-c").textContent = `about ${fmt(Idc)} A DC for ${fmt(Pdc)} W`;
+    const rows = [
+      ["Pole pieces", `${ns}`],
+      ["Engine shaft power needed", `${fmt(Pe)} W`],
+      ["Speed ratio", `${r.toFixed(3)} : 1`],
+      ["Engine-side running torque", `${fmt(Te * 1e3, 1)} mN·m`],
+      ["Motor-side running torque", `${fmt(Tm * 1e3, 1)} mN·m`],
+      ["Ring reaction torque", `${fmt((Te + Tm) * 1e3, 0)} mN·m`],
+      ["Field frequency in pole pieces", `${fmt(f / 1000, 2)} kHz`],
+      ["Cogging factor (1 is best)", `${C}`],
+      ["Motor speed at engine idle", `${fmt(nidle)} rpm`],
+      ["Open-circuit volts, 90% / max", `${fmt(Voc)} / ${fmt(Vmax)} V`],
+      ["Motor-side torque to crank 30–60 mN·m", `${fmt(30 * r)}–${fmt(60 * r)} mN·m`]
+    ];
+    $("calc-sum").innerHTML = rows.map(([a, b]) => `<div><span>${a}</span><span>${b}</span></div>`).join("");
+    document.querySelectorAll("#presets button").forEach(b =>
+      b.setAttribute("aria-pressed", String(+b.dataset.ph === ph && +b.dataset.pl === pl)));
+    drawXsec(ph, pl);
+    comboTable({ ph, pl });
+  }
+
+  fields.forEach(k => $(k).addEventListener("input", update));
+  document.querySelectorAll("#presets button").forEach(b => b.addEventListener("click", () => {
+    $("ph").value = b.dataset.ph; $("pl").value = b.dataset.pl; update();
+  }));
+  $("reset").addEventListener("click", () => { fields.forEach(k => $(k).value = DEF[k]); update(); });
+  drawCurve();
+  update();
+})();
+</script>
+</body>
+</html>
