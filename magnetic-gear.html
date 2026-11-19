@@ -81,6 +81,8 @@ svg text{font-family:"IBM Plex Sans",sans-serif}
 .notes h2{color:var(--text)}
 .notes li{margin:4px 0}
 .chart{position:relative}
+#low-table td.num{white-space:nowrap}
+.prose a{color:var(--accent)}
 .tip{position:absolute;pointer-events:none;background:var(--text);color:var(--surface);font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity .1s;font-family:"IBM Plex Mono",monospace}
 </style>
 </head>
@@ -99,8 +101,12 @@ svg text{font-family:"IBM Plex Sans",sans-serif}
           <button type="button" data-ph="3" data-pl="8">3/8/11</button>
           <button type="button" data-ph="4" data-pl="9">4/9/13</button>
           <button type="button" data-ph="4" data-pl="11">4/11/15</button>
+          <button type="button" data-ph="4" data-pl="7">4/7/11</button>
+          <button type="button" data-ph="4" data-pl="6">4/6/10</button>
+          <button type="button" data-ph="6" data-pl="9">6/9/15</button>
+          <button type="button" data-ph="2" data-pl="3">2/3/5</button>
         </div>
-        <p class="hint">Engine pole pairs / motor pole pairs / pole pieces. 4/9/13 is the baseline below.</p>
+        <p class="hint">Engine pole pairs / motor pole pairs / pole pieces. 4/9/13 is the baseline below; 4/7/11, 4/6/10, 6/9/15 and 2/3/5 are the lower ratios for a carbon-sleeve motor rated to about 110,000 rpm. Set the motor speed limit to 110000 to check them.</p>
         <div class="field"><label for="ph">Engine rotor pole pairs<small>high-speed rotor, on the compressor nut</small></label><input id="ph" type="number" min="1" max="12" step="1" value="4"></div>
         <div class="field"><label for="pl">Motor rotor pole pairs<small>low-speed rotor, drives the Lehner</small></label><input id="pl" type="number" min="2" max="30" step="1" value="9"></div>
       </fieldset>
@@ -113,7 +119,7 @@ svg text{font-family:"IBM Plex Sans",sans-serif}
       <fieldset>
         <legend>Motor and load</legend>
         <div class="field"><label for="kv">Motor Kv<small>rpm per volt; 1535/17 delta is 1441</small></label><input id="kv" type="number" step="1" value="1441"></div>
-        <div class="field"><label for="nlim">Motor speed limit<small>Lehner catalogue limit, series 15xx</small></label><input id="nlim" type="number" step="500" value="85000"></div>
+        <div class="field"><label for="nlim">Motor speed limit<small>85,000 catalogue; about 110,000 with the carbon-sleeve rotor</small></label><input id="nlim" type="number" step="500" value="85000"></div>
         <div class="field"><label for="pw">Generator shaft power<small>1.2 × 1 kW DC ÷ 0.873 (generator × rectifier)</small></label><input id="pw" type="number" step="5" value="1375"></div>
         <div class="field"><label for="eta">Gear efficiency<small>baseline estimate below</small></label><input id="eta" type="number" step="0.01" min="0.5" max="1" value="0.93"></div>
       </fieldset>
@@ -146,6 +152,7 @@ svg text{font-family:"IBM Plex Sans",sans-serif}
         <li>a stationary pole-piece ring that must run concentric with both rotors inside 0.5 mm gaps.</li>
       </ul>
       <p class="rec" style="margin-top:8px">A face-to-face gear is not feasible: its engine-side disc cannot hold its magnets at 154,000 rpm. Keep the direct coupler as the baseline, and treat the coaxial gear as the fallback if the Lehner fails its 140,000 rpm overspeed test, provided JetCat's rotor can take the extra mass at the nut.</p>
+      <p class="rec" style="margin-top:8px">If the carbon-sleeve motor (about 110,000 rpm) is bought, a lower-ratio 4/7/11 gear becomes the better gear: 117 g instead of 130 g, 15 mm long instead of 20 mm, and 55 V instead of 43 V at the generator. In exchange the motor rotor runs to 88,000 rpm and needs high-strength laminations or a carbon band (<a href="#lowratio">section 2</a>).</p>
     </div>
 
     <div class="panel card prose" id="how">
@@ -189,6 +196,27 @@ svg text{font-family:"IBM Plex Sans",sans-serif}
       </div>
       <p class="fn">Torque columns in N·m per metre of length, engine side, best geometry inside the flux limits. A dash means no geometry in the sweep stayed inside them. The 30 mm column uses a 2.0 mm outer back-iron; the 34 and 38 mm columns use 2.5 mm and a sweep of magnet and pole-piece thickness. Field-model check: the ratio of motor-side to engine-side peak torque matched p<sub>l</sub>/p<sub>h</sub> within 1–3% for every combination.</p>
       <p><b>4/9/13 is the baseline.</b> At 34–38 mm it gives the most torque inside the flux limits. Its cogging factor is 1, so the torque is smooth. It puts the motor at 61,800 rpm at 139,000 engine rpm and 68,400 rpm at maximum, a 20% margin under the Lehner limit. 3/8/11 is the runner-up, with a higher ratio and a slower motor (57,800 rpm at maximum), but its pole pieces run closer to saturation.</p>
+      <h3 id="lowratio">Lower ratios with a 110,000 rpm carbon-sleeve motor</h3>
+      <p>With the carbon-sleeve rotor rated to about 110,000 rpm, the motor only needs to run at 2/3 to 4/7 of engine speed. Each option below is the lightest design that meets the same requirement as the baseline: 192 mN·m engine-side pull-out at 120 °C after the 0.75 end factor, inside the same flux limits. The sweep covered 34 and 38 mm outside diameter, magnet thickness, pole-piece thickness and outer back-iron thickness. The 4/9/13 row is the 36 mm baseline from section 3.</p>
+      <div class="tablewrap">
+        <table id="low-table">
+          <thead><tr><th>Pole pairs / pieces</th><th>Motor rpm at max (margin to 110k)</th><th>OD × magnet length (mm)</th><th>Hub / motor rotor / ring (g)</th><th>Total weight (g)</th><th>Weight score cost (points)</th><th>Motor-rotor stress, max / proof (MPa)</th><th>Cogging factor</th><th>Volts / amps at 90%</th></tr></thead>
+          <tbody>
+            <tr data-ph="4" data-pl="9"><td>4/9/13 (baseline)</td><td class="num st-ok">68,400 (38%)</td><td class="num">36 × 20.0</td><td class="num">42 / 77 / 11</td><td class="num"><b>130</b></td><td class="num">2.2</td><td class="num st-ok">204 / 269</td><td class="num st-ok">1</td><td class="num">43 / 30</td></tr>
+            <tr data-ph="4" data-pl="7"><td>4/7/11</td><td class="num st-ok">88,000 (20%)</td><td class="num">38 × 15.4</td><td class="num">34 / 69 / 14</td><td class="num"><b>117</b></td><td class="num">1.9</td><td class="num st-warn">379 / 501</td><td class="num st-ok">1</td><td class="num">55 / 23</td></tr>
+            <tr data-ph="4" data-pl="6"><td>4/6/10</td><td class="num st-warn">102,700 (7%)*</td><td class="num">38 × 13.9</td><td class="num">31 / 63 / 12</td><td class="num"><b>106</b></td><td class="num">1.8</td><td class="num st-no">515 / 681</td><td class="num st-warn">2</td><td class="num">64 / 20</td></tr>
+            <tr data-ph="6" data-pl="9"><td>6/9/15</td><td class="num st-warn">102,700 (7%)*</td><td class="num">34 × 22.9</td><td class="num">41 / 85 / 12</td><td class="num"><b>138</b></td><td class="num">2.3</td><td class="num st-warn">405 / 535</td><td class="num st-warn">3</td><td class="num">64 / 20</td></tr>
+            <tr data-ph="2" data-pl="3"><td>2/3/5</td><td class="num st-warn">102,700 (7%)*</td><td class="l" colspan="7">No design inside the flux limits: with only 2 engine pole pairs the poles are long, and the pole pieces and back-irons saturate, as 2/5/7 did above.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fn">Weights are the rotating parts plus the stationary pole-piece ring. They exclude the motor rotor's own bearings, the housing and the ring mount, roughly 20–40 g more for any gear. The direct coupler for comparison is 19 g, plus a 56 g decoupling actuator. Weight score cost uses the 7.5 points per lbf penalty. Motor-rotor stress is at the motor speed for 154,000 rpm (max) and 177,100 rpm (proof) engine speed; standard silicon-steel laminations yield at roughly 350–450 MPa. Volts are open circuit for the 1535/17 (Kv 1441) at 90% engine speed, where the motor runs at 61,800, 79,400 and 92,700 rpm for the 2.25, 1.75 and 1.5 ratios; amps are DC at the load bank. *At proof speed (177,100 rpm engine) the 1.5 ratios put the motor at 118,000 rpm, over 110,000.</p>
+      <ul>
+        <li><b>4/7/11 is the best lower-ratio option.</b> It is 13 g lighter and 23% shorter than the baseline, has smooth torque and gives the generator more voltage. Its motor rotor sees about twice the baseline stress (501 MPa at proof), so it needs a high-strength lamination grade or a carbon band over the laminations. It still needs its own bearings: on the motor shaft its bending speed would be about 68,000–77,000 rpm, inside its 79,000–88,000 rpm operating band.</li>
+        <li><b>4/6/10 (exactly 2/3)</b> is the lightest, but leaves only 7% speed margin at maximum thrust and passes 110,000 rpm at proof. Its 681 MPa motor-rotor stress at proof needs a solid 4340 shell, which raises eddy losses, and its cogging factor is 2.</li>
+        <li><b>6/9/15</b> fixes the cogging of 4/6/10 with more poles but is the heaviest option. It also raises the pole-piece frequency from 9.3 to 13.9 kHz, which raises losses.</li>
+        <li><b>Losses</b> do not improve at lower ratio. With 4 engine pole pairs the pole pieces still see 9.3 kHz, so expect about the same 90–110 W as the baseline; this was not re-run with the time-stepped loss model.</li>
+      </ul>
     </div>
 
     <div class="panel card prose" id="coax">
@@ -285,18 +313,19 @@ svg text{font-family:"IBM Plex Sans",sans-serif}
     <div class="panel card prose" id="compare">
       <h2>5. Against the direct coupler</h2>
       <div class="tablewrap"><table>
-        <thead><tr><th>Item</th><th class="l">Direct coaxial coupler</th><th class="l">Coaxial gear 4/9/13</th><th class="l">Face gear</th></tr></thead>
+        <thead><tr><th>Item</th><th class="l">Direct coaxial coupler</th><th class="l">Coaxial gear 4/9/13</th><th class="l">Coaxial gear 4/7/11 (110k motor)</th><th class="l">Face gear</th></tr></thead>
         <tbody>
-          <tr><td>Motor speed, 90% / max</td><td class="l">137k–144k / 154k rpm; needs an overspeed-rated rotor</td><td class="l">61k–64k / 68k rpm; inside the catalogue rating</td><td class="l">Same as coaxial</td></tr>
-          <tr><td>Decoupler for max thrust</td><td class="l">Yes, actuator and 12 mm stroke</td><td class="l">Not needed</td><td class="l">Not needed</td></tr>
-          <tr><td>Outside diameter</td><td class="l">22 mm</td><td class="l">36 mm</td><td class="l">About 42 mm</td></tr>
-          <tr><td>Mass on the engine nut</td><td class="l">6 g</td><td class="l">42 g</td><td class="l">58 g</td></tr>
-          <tr><td>Motor-side rotor</td><td class="l">13 g on the motor shaft</td><td class="l">77 g on its own bearings</td><td class="l">46 g, plus about 100 N axial load</td></tr>
-          <tr><td>Losses when engaged</td><td class="l">About zero (synchronous)</td><td class="l">About 95 W</td><td class="l">Similar or more</td></tr>
-          <tr><td>Axial load on bearings</td><td class="l">About zero</td><td class="l">About zero when centred</td><td class="l">98–106 N on each rotor</td></tr>
-          <tr><td>Parts and precision</td><td class="l">2 rotors</td><td class="l">2 rotors and a stationary ring, two 0.5 mm gaps, extra bearings</td><td class="l">Same, with axial gaps</td></tr>
-          <tr><td>Rough parts cost</td><td class="l">$450–1,550</td><td class="l">$1,000–2,500 (estimate: 26 segmented magnet sets, SMC ring, laminations, bearings)</td><td class="l">n/a</td></tr>
-          <tr><td>Verdict</td><td class="l"><span class="verdict ok">baseline</span></td><td class="l"><span class="verdict warn">fallback</span></td><td class="l"><span class="verdict no">rejected</span></td></tr>
+          <tr><td>Motor speed, 90% / max</td><td class="l">137k–144k / 154k rpm; needs an overspeed-rated rotor</td><td class="l">61k–64k / 68k rpm; inside the catalogue rating</td><td class="l">78k–82k / 88k rpm; needs the carbon-sleeve rotor</td><td class="l">Same as coaxial</td></tr>
+          <tr><td>Decoupler for max thrust</td><td class="l">Yes, actuator and 12 mm stroke</td><td class="l">Not needed</td><td class="l">Not needed</td><td class="l">Not needed</td></tr>
+          <tr><td>Outside diameter</td><td class="l">22 mm</td><td class="l">36 mm</td><td class="l">38 mm, 15 mm long</td><td class="l">About 42 mm</td></tr>
+          <tr><td>Mass on the engine nut</td><td class="l">6 g</td><td class="l">42 g</td><td class="l">34 g</td><td class="l">58 g</td></tr>
+          <tr><td>Motor-side rotor</td><td class="l">13 g on the motor shaft</td><td class="l">77 g on its own bearings</td><td class="l">69 g on its own bearings, running to 88k rpm</td><td class="l">46 g, plus about 100 N axial load</td></tr>
+          <tr><td>Total weight, rotors and ring</td><td class="l">19 g, plus a 56 g actuator</td><td class="l">130 g, plus bearings and housing</td><td class="l">117 g, plus bearings and housing</td><td class="l">About 113 g, plus bearings and housing</td></tr>
+          <tr><td>Losses when engaged</td><td class="l">About zero (synchronous)</td><td class="l">About 95 W</td><td class="l">About 90–110 W (estimate)</td><td class="l">Similar or more</td></tr>
+          <tr><td>Axial load on bearings</td><td class="l">About zero</td><td class="l">About zero when centred</td><td class="l">About zero when centred</td><td class="l">98–106 N on each rotor</td></tr>
+          <tr><td>Parts and precision</td><td class="l">2 rotors</td><td class="l">2 rotors and a stationary ring, two 0.5 mm gaps, extra bearings</td><td class="l">Same as 4/9/13; motor rotor needs high-strength laminations or a band</td><td class="l">Same, with axial gaps</td></tr>
+          <tr><td>Rough parts cost</td><td class="l">$450–1,550</td><td class="l">$1,000–2,500 (estimate: 26 segmented magnet sets, SMC ring, laminations, bearings)</td><td class="l">$1,000–2,500 (estimate), plus the carbon-sleeve motor option</td><td class="l">n/a</td></tr>
+          <tr><td>Verdict</td><td class="l"><span class="verdict ok">baseline</span></td><td class="l"><span class="verdict warn">fallback</span></td><td class="l"><span class="verdict warn">fallback if the 110k motor is bought</span></td><td class="l"><span class="verdict no">rejected</span></td></tr>
         </tbody></table></div>
       <p>The gear exchanges one hard problem, the motor at 1.7× its rated speed, for several moderate ones. The new problems are mass on the engine rotor, a third precision part, an extra bearing set and 7% loss. It becomes the better choice if the Lehner overspeed test fails or Lehner will not support 140,000 rpm, and only if JetCat's rotor can carry the hub.</p>
     </div>
@@ -329,6 +358,7 @@ svg text{font-family:"IBM Plex Sans",sans-serif}
         <li><b>Field model.</b> 2-D finite-volume solution for magnetic vector potential on a polar grid (coaxial) or on unrolled flat strips (face, six radii summed). Magnets are treated with relative permeability 1.0 and iron is linear (back-iron μr 1000, SMC μr 500), so saturation is handled by rejecting designs over 1.4 T in the pole pieces or 1.5 T in the back-irons. Torque comes from Maxwell stress averaged over each air gap.</li>
         <li><b>Validation.</b> A flat strip reproduces the closed-form coupler shear stress to 0.1%. On the full polar model the direct coupler comes out 5% below the closed form, which ignores curvature: about 229 mN·m instead of 242 mN·m at 120 °C after the 0.85 factor, still above the 192 mN·m requirement. Gear torque ratios match p<sub>l</sub>/p<sub>h</sub> within 1–3%.</li>
         <li><b>Coupler cup flux.</b> The polar model shows the direct coupler's 1.5 mm cup at about 1.9 T at the 95th percentile, more than the 1.3 T fundamental-only estimate. A 2.0 mm wall brings it to 1.5 T.</li>
+        <li><b>Lower-ratio designs.</b> 4/7/11, 4/6/10, 6/9/15 and 2/3/5 were sized with the same solver and requirement, choosing the lightest geometry inside the flux limits from a sweep of 34 and 38 mm outside diameter, 2.5–3.0 mm engine magnets, 2.0–3.0 mm motor magnets, 2.0–3.0 mm pole pieces and 2.5–4.0 mm outer back-iron. Their losses were not computed separately.</li>
         <li><b>End effects.</b> 2-D torque is multiplied by 0.75 for the coaxial gear and 0.8 for the face gear. These are assumed values until a 3-D model or bench test confirms them.</li>
         <li><b>Loads.</b> Load cases, the 2× pull-out factor and the 120 °C magnet temperature are the same as in the coupler sizing. Engine speeds are 90% corrected (139,000 rpm at 15 °C), with maximum 154,000 rpm and proof 1.15× maximum.</li>
         <li><b>Losses.</b> Somaloy 700HR 3P losses are fitted to the datasheet's 1 and 2 kHz points and extrapolated, with a 1.3 factor for harmonics. Magnet and lamination eddy losses use a resistance-limited thin-plate estimate from the field swing in each rotor's frame. These are first estimates, not measurements.</li>
@@ -486,6 +516,8 @@ svg text{font-family:"IBM Plex Sans",sans-serif}
       b.setAttribute("aria-pressed", String(+b.dataset.ph === ph && +b.dataset.pl === pl)));
     drawXsec(ph, pl);
     comboTable({ ph, pl });
+    document.querySelectorAll("#low-table tbody tr").forEach(tr =>
+      tr.classList.toggle("sel", +tr.dataset.ph === ph && +tr.dataset.pl === pl));
   }
 
   fields.forEach(k => $(k).addEventListener("input", update));
