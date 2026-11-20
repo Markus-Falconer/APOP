@@ -40,7 +40,9 @@ const SITE = [
       { id: "load-bank", href: "load-bank.html", menu: "Load bank shopping",
         title: "Load Bank Shopping", sub: "Test equipment for the power-generation side: what the ICD requires and what to buy" },
       { id: "magnetic-gear", href: "magnetic-gear.html", menu: "Magnetic gear options",
-        title: "Magnetic Gear Options", sub: "Coaxial and face-to-face magnetic gears to run the Lehner 1535 below its 85,000 rpm limit" }
+        title: "Magnetic Gear Options", sub: "Coaxial and face-to-face magnetic gears to run the Lehner 1535 below its 85,000 rpm limit" },
+      { id: "motor-dynamics", href: "motor-dynamics.html", menu: "Motor dynamics",
+        title: "Motor Dynamics", sub: "Donor motor as a high-speed starter-generator: rotor stress, sleeve fit, Kv, losses, bearings, critical speeds, starting" }
     ]
   }
 ];

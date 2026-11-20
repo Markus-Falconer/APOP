@@ -1,0 +1,893 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Motor Dynamics</title>
+<meta name="description" content="Interactive physics for turning a hobby inrunner into a high-speed starter-generator: rotor and sleeve stress, interference fit, gap field, Kv scaling, generating point, losses, bearings, critical speeds, balance and starting.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+:root{--mag-n:#5d5c57;--mag-s:#b9b7ae;--steel:#cfcdc5;--sleeve:#2f2e2b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--mag-n:#a9a79e;--mag-s:#4a4945;--steel:#3c3b37;--sleeve:#d8d6cf}}
+:root[data-theme="dark"]{--mag-n:#a9a79e;--mag-s:#4a4945;--steel:#3c3b37;--sleeve:#d8d6cf}
+.mono,td.num,.kpi .v,.eq{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+main.wrap{display:grid;grid-template-columns:340px 1fr;gap:20px;padding-top:20px;padding-bottom:40px}
+@media (max-width:900px){main.wrap{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+aside.panel{padding:12px 16px 16px;align-self:start;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+@media (max-width:900px){aside.panel{position:static;max-height:none;overflow:visible}}
+.preset{display:grid;gap:6px;margin-bottom:6px}
+.preset label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+select,input[type=text]{font:inherit;font-size:14px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);width:100%}
+details{border-top:1px solid var(--line);padding:8px 0 2px}
+summary{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:4px 0}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-size:15px;font-weight:400}
+details[open]>summary::after{content:"–"}
+.ghelp{font-size:12px;color:var(--muted);margin:2px 0 6px;line-height:1.35}
+.field{display:grid;grid-template-columns:1fr 96px;align-items:center;gap:4px 8px;margin:7px 0}
+.field label{font-size:14px;color:var(--text-2);line-height:1.25}
+.field label small{color:var(--muted);display:block;font-size:12px;line-height:1.2}
+.field input[type=number]{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:14px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.field.sel{grid-template-columns:1fr 170px}
+.field input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent);margin:-2px 0 0}
+.btns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button.primary{border-color:var(--accent);color:var(--accent);background:transparent}
+button.small{font-size:12px;padding:3px 8px}
+section.out{display:flex;flex-direction:column;gap:20px;min-width:0}
+.intro{padding:14px 16px;font-size:14px;color:var(--text-2)}
+.intro p{margin:4px 0}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:8px;padding:12px}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--text-2);padding:6px 8px;border-radius:6px;background:var(--surface-2)}
+.check b{display:block;color:var(--text);font-weight:500;font-size:13px}
+.check a{color:inherit;text-decoration:none}
+.ico{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;color:var(--surface)}
+.ico.ok{background:var(--good)}.ico.warn{background:var(--warn)}.ico.bad{background:var(--bad)}.ico.info{background:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{padding:12px 14px;min-width:0}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi .v{font-size:24px;font-weight:500;margin:2px 0 0;line-height:1.2}
+.kpi .v span{font-size:14px;color:var(--text-2);margin-left:3px}
+.kpi .c{font-size:12px;color:var(--text-2);margin-top:4px}
+.warn{border-left:3px solid var(--warn);background:var(--surface);padding:10px 14px;border-radius:6px;font-size:14px}
+.warn:empty{display:none}
+.warn p{margin:0}.warn p+p{margin-top:4px}
+.card{padding:16px;min-width:0}
+.bh{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.card h2{font-size:16px;font-weight:600;margin:0 0 2px}
+.card .sub{font-size:14px;color:var(--text-2);margin:2px 0 10px;max-width:880px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:2px 9px 2px 3px;border-radius:99px;border:1px solid var(--line);color:var(--text);white-space:nowrap}
+.chip .ico{width:17px;height:17px;font-size:11px}
+.eq{display:block;background:var(--surface-2);border-radius:6px;padding:7px 10px;margin:6px 0;color:var(--text);font-size:13px;white-space:pre-wrap;line-height:1.6}
+.eq.num{background:transparent;border:1px dashed var(--line);color:var(--text-2)}
+.eqgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:4px}
+.eqgrid>*,.grid2>*{min-width:0}
+.eqlab{font-size:12px;color:var(--muted);margin:8px 0 -2px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:2px 22px;font-size:14px;margin-top:10px}
+.summary div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--grid);padding:4px 0}
+.summary span:first-child{color:var(--text-2)}
+.summary span:last-child{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.look{margin-top:12px;border-left:3px solid var(--accent);padding:6px 12px;font-size:14px;color:var(--text-2)}
+.look b{color:var(--text);font-weight:500}
+.look p{margin:3px 0}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+@media (max-width:1100px){.grid2{grid-template-columns:1fr}}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-weight:500;color:var(--muted);font-size:12px;letter-spacing:.02em;text-align:right;padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:bottom}
+th:first-child,td:first-child{text-align:left}
+td{padding:6px 10px;border-bottom:1px solid var(--grid)}
+td.num{text-align:right;white-space:nowrap}
+.bar{display:inline-block;height:8px;border-radius:0 4px 4px 0;background:var(--s1);vertical-align:middle}
+svg text{font-family:"IBM Plex Sans",sans-serif}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--text);color:var(--surface);font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity .1s;font-family:"IBM Plex Mono",monospace;z-index:2}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--text-2);margin:0 0 6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:3px;border-radius:2px;display:inline-block}
+.sw.box{height:10px;width:10px;border-radius:3px}
+.ctrl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:14px;color:var(--text-2);margin-bottom:10px}
+.ctrl label{display:flex;gap:6px;align-items:center}
+.ctrl select{width:auto;max-width:280px}
+.xsec{max-width:300px;margin:0 auto}
+.figw{max-width:640px}
+.sens table,#candTab{font-size:13px}
+.sens td,.sens th,#candTab td,#candTab th{padding:5px 7px}
+.sens td:first-child,#candTab td:first-child{white-space:nowrap}
+.notes{font-size:14px;color:var(--text-2)}
+.notes li{margin:4px 0}
+.save{display:flex;gap:8px;margin:0 0 10px;flex-wrap:wrap}
+.save input{max-width:260px}
+.muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<header id="site-header" data-page="motor-dynamics"></header>
+<script src="site.js"></script>
+
+<main class="wrap">
+  <aside class="panel" aria-label="Motor and rotor inputs">
+    <div class="preset">
+      <label for="preset">Start from</label>
+      <select id="preset"></select>
+    </div>
+    <form id="inputs" onsubmit="return false"></form>
+    <div class="btns">
+      <button type="button" id="reset">Reset to preset</button>
+      <button type="button" id="share" class="primary">Copy link to these inputs</button>
+    </div>
+    <p class="ghelp" id="shareMsg" role="status"></p>
+  </aside>
+
+  <section class="out">
+    <div class="panel intro">
+      <p>Enter a donor motor and a candidate rotor on the left. Each block below shows one piece of physics: the equation, the same equation with your numbers in it, and what to look for. Green, amber and red marks are first-order screening checks, not a design sign-off. Every default is an assumption until you measure the real part.</p>
+      <p>The donor's rated Kv calibrates the winding. Change the rotor, sleeve, turns or wiring and the page rescales Kv, voltage and current from it.</p>
+    </div>
+
+    <div class="panel checks" id="checks" aria-label="Screening checks"></div>
+
+    <div class="kpis">
+      <div class="panel kpi"><div class="l">Kv, hot rotor</div><div class="v" id="k-kv"></div><div class="c" id="k-kvc"></div></div>
+      <div class="panel kpi"><div class="l">Open-circuit DC, overspeed</div><div class="v" id="k-v"></div><div class="c" id="k-vc"></div></div>
+      <div class="panel kpi"><div class="l">DC current at target</div><div class="v" id="k-i"></div><div class="c" id="k-ic"></div></div>
+      <div class="panel kpi"><div class="l">Efficiency, shaft to DC</div><div class="v" id="k-e"></div><div class="c" id="k-ec"></div></div>
+    </div>
+    <div class="warn" id="warn" role="status"></div>
+
+    <div class="panel card" id="b1"></div>
+    <div class="panel card" id="b2"></div>
+    <div class="panel card" id="b3"></div>
+    <div class="panel card" id="b4"></div>
+    <div class="panel card" id="b5"></div>
+    <div class="panel card" id="b6"></div>
+    <div class="panel card" id="b7"></div>
+    <div class="panel card" id="b8"></div>
+    <div class="panel card" id="b9"></div>
+    <div class="panel card" id="b10"></div>
+    <div class="panel card" id="b11"></div>
+
+    <div class="panel card" id="trade">
+      <h2>12 · Trade explorer</h2>
+      <p class="sub">Sweep one input with everything else held at your current values. The top and bottom charts share the x-axis, so you can see what a change buys and what it costs. The dashed vertical line is your current value.</p>
+      <div class="ctrl">
+        <label>Sweep <select id="tx"></select></label>
+        <label>Top <select id="ty1"></select></label>
+        <label>Bottom <select id="ty2"></select></label>
+      </div>
+      <div class="chart" id="tc1"></div>
+      <div class="chart" id="tc2" style="margin-top:8px"></div>
+    </div>
+
+    <div class="panel card sens" id="sens">
+      <h2>13 · Sensitivity: what to optimise</h2>
+      <p class="sub">The percentage change in each result for a 1% increase in each input (+10 °C for temperatures), everything else held. Darker cells move more. Use it to see which dimension is worth measuring carefully and which change buys the most.</p>
+      <div class="tablewrap"><table id="sensTab"></table></div>
+    </div>
+
+    <div class="panel card" id="cands">
+      <h2>14 · Saved candidates</h2>
+      <p class="sub">Save the current inputs under a name to compare motors and rotors side by side. Saved in this browser only. Use “Copy link” to share a set of inputs.</p>
+      <div class="save"><input type="text" id="candName" placeholder="Name, e.g. 4040 T800 1.0 mm" aria-label="Candidate name"><button type="button" id="candSave" class="primary">Save current inputs</button></div>
+      <div class="tablewrap"><table id="candTab"></table></div>
+    </div>
+
+    <div class="panel card notes">
+      <h2>Assumptions and limits</h2>
+      <ul>
+        <li><b>Sleeve:</b> thin ring over a rigid shaft, with a magnet that has no hoop strength (assume it is cracked). Good to first order for t/r up to about 0.15. A thicker sleeve, a soft core, or a final design needs an orthotropic shrink-fit calculation or FEA, including axial retention and end caps.</li>
+        <li><b>Field:</b> the 2-pole model is a uniformly magnetised (diametric) cylinder inside a smooth iron bore with a non-magnetic shaft. The 4-pole and higher model is a surface-magnet circuit with an 85% pole arc. Kv is scaled from the donor's rated Kv by the field ratio, so absolute field errors largely cancel. Saturation and armature reaction are ignored.</li>
+        <li><b>Kv convention:</b> rpm per volt of line-line peak back-EMF, which is about the no-load DC bus voltage of an ESC. Kt = 60/(2π·Kv) in N·m per DC-link amp.</li>
+        <li><b>Losses</b> do not include eddy currents in the magnet or sleeve. These are driven by slot ripple and rectifier current harmonics, and they matter because a composite sleeve insulates the magnet thermally. Segment the magnet axially and avoid metal sleeves at these speeds. Iron loss uses catalogue loss densities: replace them with the datasheet curve for the real lamination.</li>
+        <li><b>Rotordynamics:</b> rotor as a lumped mass on a two-bearing shaft, with no gyroscopic effects, coupling or overhung mass. It screens for gross problems. Confirm with a rotordynamics code and a spin test.</li>
+        <li><b>Starting:</b> spool drag torque and the speed the starter must reach are placeholders. Measure them from an ECU start log (starter current and rpm against time).</li>
+        <li>Default dimensions for the TP 4040-SCM are estimates from the catalogue size (40 × 74 mm, 2-pole). Measure the stator bore, magnet, sleeve, shaft, bearings, resistance and inductance of the real motor.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<script src="motor-dynamics-model.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const M = MotorModel;
+const opts = obj => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, v.name]));
+const WIRING = { Y: "Wye (Y)", D: "Delta (Δ)" };
+
+// ---------- inputs: [key, label, unit, default, min, max, step]  or  [key, label, "select", default, options]
+const FIELDS = [
+  { g: "Speeds and power", open: true, f: [
+    ["nDesign", "Design speed (stress, modes)", "rpm", 160000, 50000, 220000, 1000],
+    ["nGen", "Generating speed", "rpm", 139000, 20000, 200000, 1000],
+    ["nMax", "Engine max speed", "rpm", 154000, 50000, 200000, 1000],
+    ["nIdle", "Engine idle speed", "rpm", 44000, 10000, 100000, 1000],
+    ["Pdc", "DC power to deliver", "W", 1000, 100, 3000, 50],
+  ]},
+  { g: "Donor stator and winding", open: true, help: "The motor you are buying. Rated Kv is as sold, with its stock rotor.", f: [
+    ["KvRated", "Rated Kv (as sold)", "rpm/V", 2140, 300, 10000, 10],
+    ["connRated", "Donor is wound", "select", "Y", WIRING],
+    ["connRun", "Run it as", "select", "Y", WIRING],
+    ["turns", "Turns multiplier (rewind)", "× rated turns", 1, 0.3, 3, 0.05],
+    ["poles", "Pole count", "select", "2", { 2: "2 pole", 4: "4 pole", 6: "6 pole", 8: "8 pole" }],
+    ["Dbore", "Stator bore", "mm", 20, 8, 40, 0.1],
+    ["Dso", "Lamination outside diameter", "mm", 37, 15, 60, 0.5],
+    ["Lstk", "Stack length", "mm", 40, 5, 120, 1],
+    ["RllRated", "Line-line resistance at 20 °C", "mΩ, as sold", 8, 0.5, 200, 0.5],
+    ["LllRated", "Line-line inductance", "µH, as sold", 10, 1, 500, 1],
+    ["Icont", "Continuous current limit", "A (DC link)", 35, 5, 200, 1],
+  ]},
+  { g: "Donor stock rotor", open: false, help: "The rotor the rated Kv was measured with. Used only to calibrate Kv.", f: [
+    ["magStock", "Stock magnet", "select", "ndsh", opts(M.MAG)],
+    ["dmStockOD", "Stock magnet OD", "mm", 19, 4, 40, 0.05],
+    ["dmStockID", "Stock magnet bore", "mm", 5, 0, 20, 0.1],
+    ["LmStock", "Stock magnet length", "mm", 40, 5, 120, 1],
+  ]},
+  { g: "Candidate rotor", open: true, help: "The rotor you intend to run. Magnet OD + 2 × sleeve must fit inside the stator bore with clearance.", f: [
+    ["mag", "Magnet", "select", "ndsh", opts(M.MAG)],
+    ["dmOD", "Magnet OD", "mm", 17.3, 4, 40, 0.05],
+    ["dmID", "Magnet bore (shaft through it)", "mm", 5, 0, 20, 0.1],
+    ["Lm", "Magnet length", "mm", 40, 5, 120, 1],
+    ["sleeve", "Sleeve", "select", "cf700", opts(M.SLV)],
+    ["ts", "Sleeve thickness", "mm", 1.0, 0.1, 4, 0.05],
+    ["field", "Field model (2 pole)", "select", "diam", { diam: "Diametric cylinder", surf: "Surface-magnet circuit" }],
+    ["kc", "Carter (slotting) factor", "", 1.05, 1, 1.5, 0.01],
+  ]},
+  { g: "Fit and temperatures", open: true, f: [
+    ["pres", "Contact pressure kept at speed", "MPa", 5, 0, 50, 1],
+    ["SF", "Safety factor on sleeve strength", "", 2.0, 1, 4, 0.1],
+    ["Trotor", "Rotor temperature", "°C", 100, 20, 300, 5],
+    ["Tasm", "Assembly temperature", "°C", 20, -40, 100, 5],
+    ["Twind", "Winding temperature", "°C", 100, 20, 220, 5],
+  ]},
+  { g: "Losses", open: false, f: [
+    ["lam", "Lamination", "select", "no20", opts(M.LAM)],
+    ["Bratio", "Iron flux ÷ gap flux", "≈ slot pitch ÷ tooth width", 1.3, 1, 2.2, 0.05],
+    ["kfe", "Iron loss build factor", "punching, harmonics", 1.5, 1, 3, 0.1],
+    ["slotFrac", "Slot share of lamination area", "", 0.40, 0.2, 0.7, 0.01],
+    ["strand", "Copper strand diameter", "mm", 0.3, 0.05, 2, 0.01],
+    ["layers", "Conductor layers per slot", "", 4, 1, 20, 1],
+    ["Vd", "Diode forward drop (each)", "V", 0.8, 0, 1.5, 0.05],
+  ]},
+  { g: "Shaft, bearings and balance", open: false, f: [
+    ["dBrg", "Bearing bore", "mm", 5, 2, 20, 0.5],
+    ["DBrg", "Bearing outside diameter", "mm", 13, 5, 40, 0.5],
+    ["lub", "Bearing type", "select", "hmist", opts(M.LUB)],
+    ["span", "Bearing span", "mm", 55, 10, 150, 1],
+    ["dShaft", "Stub shaft diameter", "mm", 5, 2, 20, 0.5],
+    ["shaftMat", "Shaft material", "select", "steel", opts(M.SHAFT)],
+    ["kStack", "Magnet stack share of bending stiffness", "0 = none, 1 = solid", 0.2, 0, 1, 0.05],
+    ["kBrg", "Bearing radial stiffness, each", "N/µm", 10, 1, 100, 1],
+    ["G", "Balance grade G", "mm/s", 2.5, 0.4, 16, 0.1],
+  ]},
+  { g: "Starting", open: false, f: [
+    ["Vbat", "Start battery voltage", "V", 9.9, 3, 60, 0.1],
+    ["Iesc", "Start current limit", "A", 40, 5, 200, 1],
+    ["connStart", "Start it as", "select", "Y", WIRING],
+    ["Jeng", "Engine spool inertia", "kg·mm²", 60, 10, 300, 1],
+    ["Tdrag", "Spool drag torque at 20k rpm", "mN·m", 10, 0, 100, 0.5],
+    ["nHand", "Speed the starter must reach", "rpm", 25000, 5000, 60000, 500],
+  ]},
+];
+const SPEC = {}; const BASE = {};
+FIELDS.forEach(G => G.f.forEach(f => { SPEC[f[0]] = f; BASE[f[0]] = f[3]; }));
+const isSel = k => SPEC[k][2] === "select";
+
+const PRESETS = {
+  cf700: { name: "TP 4040-SCM 2140KV · 1.0 mm T700 sleeve rebuild", v: {} },
+  stock: { name: "TP 4040-SCM 2140KV · stock rotor (assumed)", v: { dmOD: 19, ts: 0.25, sleeve: "aramid", Trotor: 60 } },
+  smco: { name: "TP 4040-SCM 2140KV · SmCo + 1.0 mm T800 sleeve", v: { mag: "smco", sleeve: "cf800", Trotor: 150, Twind: 120 } },
+  delta: { name: "TP 4040-SCM 2140KV · T700 rebuild, Δ start relay", v: { connStart: "D" } },
+};
+const presetSel = $("preset");
+presetSel.innerHTML = Object.entries(PRESETS).map(([k, p]) => `<option value="${k}">${p.name}</option>`).join("");
+const fromPreset = k => ({ ...BASE, ...PRESETS[k].v });
+
+const LS_STATE = "apop-motor-dyn-state", LS_CANDS = "apop-motor-dyn-candidates";
+const state = fromPreset("cf700");
+function sanitize(src) {
+  const out = {};
+  for (const k in src) if (k in BASE) {
+    if (isSel(k)) { if (String(src[k]) in SPEC[k][4]) out[k] = String(src[k]); }
+    else if (isFinite(+src[k])) out[k] = +src[k];
+  }
+  return out;
+}
+function encodeState(s) {
+  const diff = {}; for (const k in s) if (s[k] !== BASE[k]) diff[k] = s[k];
+  return btoa(unescape(encodeURIComponent(JSON.stringify(diff)))).replace(/=+$/, "");
+}
+function decodeState(str) { return JSON.parse(decodeURIComponent(escape(atob(str)))); }
+(function restore() {
+  const m = location.hash.match(/s=([^&]+)/);
+  if (m) { try { Object.assign(state, BASE, sanitize(decodeState(m[1]))); return; } catch (e) {} }
+  try { const s = JSON.parse(localStorage.getItem(LS_STATE) || "null"); if (s) { if (s.preset in PRESETS) presetSel.value = s.preset; Object.assign(state, sanitize(s.inputs || {})); } } catch (e) {}
+})();
+
+// ---------- form
+const inputVal = v => String(+(+v).toPrecision(6));
+const form = $("inputs");
+function buildForm() {
+  form.innerHTML = "";
+  FIELDS.forEach(G => {
+    const d = document.createElement("details");
+    if (G.open) d.open = true;
+    d.innerHTML = `<summary>${G.g}</summary>` + (G.help ? `<p class="ghelp">${G.help}</p>` : "");
+    G.f.forEach(([k, label, unit, , a, b, step]) => {
+      const row = document.createElement("div");
+      if (unit === "select") {
+        row.className = "field sel";
+        row.innerHTML = `<label for="n-${k}">${label}</label><select id="n-${k}">${Object.entries(a).map(([v, t]) => `<option value="${v}"${String(state[k]) === v ? " selected" : ""}>${t}</option>`).join("")}</select>`;
+      } else {
+        row.className = "field";
+        row.innerHTML = `<label for="n-${k}">${label}${unit ? `<small>${unit}</small>` : ""}</label>
+          <input type="number" id="n-${k}" step="any" value="${inputVal(state[k])}">
+          <input type="range" aria-label="${label}" id="r-${k}" min="${a}" max="${b}" step="${step}" value="${state[k]}">`;
+      }
+      d.appendChild(row);
+    });
+    form.appendChild(d);
+  });
+  Object.keys(SPEC).forEach(k => {
+    const n = $("n-" + k);
+    if (isSel(k)) { n.addEventListener("change", () => { state[k] = n.value; update(); }); return; }
+    const r = $("r-" + k);
+    n.addEventListener("input", () => { const v = parseFloat(n.value); if (isFinite(v)) { state[k] = v; r.value = v; update(); } });
+    r.addEventListener("input", () => { const v = parseFloat(r.value); state[k] = v; n.value = inputVal(v); update(); });
+  });
+}
+function load(vals) { Object.keys(state).forEach(k => delete state[k]); Object.assign(state, vals); buildForm(); update(); }
+presetSel.addEventListener("change", () => load(fromPreset(presetSel.value)));
+$("reset").onclick = () => load(fromPreset(presetSel.value));
+$("share").onclick = () => {
+  const url = location.href.split("#")[0] + "#s=" + encodeState(state);
+  history.replaceState(null, "", url);
+  const done = () => { $("shareMsg").textContent = "Link copied. It opens the page with these inputs."; };
+  if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, () => { $("shareMsg").textContent = "Copy this link from the address bar."; });
+  else $("shareMsg").textContent = "Copy this link from the address bar.";
+};
+
+// ---------- formatting
+const fmt = (v, d = 0) => isFinite(v) ? v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }) : "—";
+function fs(v, sig = 3) { if (!isFinite(v)) return "—"; if (v === 0) return "0"; const d = Math.max(0, Math.min(5, sig - 1 - Math.floor(Math.log10(Math.abs(v))))); return fmt(v, d); }
+const k = v => isFinite(v) ? (Math.abs(v) >= 1000 ? fmt(v / 1000, Math.abs(v) >= 1e5 ? 0 : 1) + "k" : fmt(v, 0)) : "—";
+const MPa = v => fs(v / 1e6, 3) + " MPa";
+const ICON = { ok: "✓", warn: "!", bad: "✕", info: "i" };
+const WORD = { ok: "OK", warn: "Marginal", bad: "Fails", info: "Info" };
+const chip = (st, txt) => `<span class="chip"><span class="ico ${st}" aria-hidden="true">${ICON[st]}</span>${txt}</span>`;
+const row = (a, b) => `<div><span>${a}</span><span>${b}</span></div>`;
+const eq = s => `<span class="eq">${s}</span>`;
+const eqn = s => `<span class="eq num">${s}</span>`;
+const look = arr => `<div class="look">${arr.map(p => `<p>${p}</p>`).join("")}</div>`;
+const head = (n, title, st, txt) => `<div class="bh"><h2>${n} · ${title}</h2>${st ? chip(st, txt) : ""}</div>`;
+
+// ---------- status rules (screening only)
+function statuses(o, i) {
+  const S = {};
+  S.fit = !o.fits ? ["bad", "Rotor does not fit the bore"] : o.clr < 0.1e-3 ? ["bad", `Clearance ${fs(o.clr * 1e3, 2)} mm`] : o.clr < 0.25e-3 ? ["warn", `Clearance ${fs(o.clr * 1e3, 2)} mm`] : ["ok", `Clearance ${fs(o.clr * 1e3, 2)} mm`];
+  S.magnet = o.magMargin >= 2 ? ["ok", `Magnet alone ${fs(o.magMargin, 2)}× strength`] : ["warn", `Magnet alone at ${fs(1 / o.magMargin, 2)}× its strength: sleeve needed`];
+  S.sleeve = !o.fits ? ["bad", "No room for the sleeve"] : o.slvMargin >= 1 ? ["ok", `Sleeve ${fs(o.slvMargin, 2)}× allowable`] : o.slvMargin >= 0.85 ? ["warn", `Sleeve ${fs(o.slvMargin, 2)}× allowable`] : ["bad", `Sleeve ${fs(o.slvMargin, 2)}× allowable`];
+  const tl = Math.min(o.mag.Tmax, o.slv.Tlim);
+  S.temp = i.Trotor > tl ? ["bad", `Rotor ${i.Trotor} °C over ${tl} °C limit`] : i.Trotor > tl - 20 ? ["warn", `Rotor ${i.Trotor} °C near ${tl} °C limit`] : ["ok", `Rotor ${i.Trotor} °C, limit ${tl} °C`];
+  const vGen = o.canMake ? o.Vdc : NaN;
+  S.volt = o.VocMaxCold > 200 ? ["bad", `${fs(o.VocMaxCold, 3)} V over the 200 V ICD limit`] : !(vGen >= 1) ? ["bad", "Below 1 V at the generating point"] : o.VocMaxCold > 180 ? ["warn", `${fs(o.VocMaxCold, 3)} V, close to 200 V`] : ["ok", `${fs(vGen, 3)} V loaded, ${fs(o.VocMaxCold, 3)} V max open circuit`];
+  S.power = !o.canMake ? ["bad", `Cannot make ${i.Pdc} W at ${k(i.nGen)} rpm`] : o.Idc > i.Icont ? ["warn", `${fs(o.Idc, 3)} A over ${i.Icont} A continuous`] : ["ok", `${fs(o.Idc, 3)} A of ${i.Icont} A continuous`];
+  S.eff = !o.canMake ? ["bad", "No operating point"] : o.eff >= 0.85 ? ["ok", `${fs(o.eff * 100, 3)}% efficient`] : o.eff >= 0.75 ? ["warn", `${fs(o.eff * 100, 3)}% efficient`] : ["bad", `${fs(o.eff * 100, 3)}% efficient`];
+  S.brg = o.DN > o.DNlim ? ["bad", `DN ${fs(o.DN / 1e6, 2)}M over ${fs(o.DNlim / 1e6, 2)}M`] : o.DN > 0.85 * o.DNlim ? ["warn", `DN ${fs(o.DN / 1e6, 2)}M near ${fs(o.DNlim / 1e6, 2)}M`] : ["ok", `DN ${fs(o.DN / 1e6, 2)}M of ${fs(o.DNlim / 1e6, 2)}M`];
+  const lo = 0.85 * i.nGen, hi = 1.15 * Math.max(i.nDesign, i.nMax);
+  const inBand = o.modes.filter(m => m.rpm >= lo && m.rpm <= hi);
+  const r1 = o.bendRatio;
+  S.rotor = inBand.length ? ["bad", `${inBand.length} mode${inBand.length > 1 ? "s" : ""} in the running range`] : r1 >= 1.2 ? ["ok", `First mode ${fs(r1, 2)}× design speed`] : ["warn", `First mode below running range: crossed on the way up`];
+  S.start = !o.canStart ? ["bad", `Stalls at ${k(o.nEq)} rpm, needs ${k(i.nHand)}`] : o.tStart > 5 ? ["warn", `${fs(o.tStart, 2)} s to ${k(i.nHand)} rpm`] : ["ok", `${fs(o.tStart, 2)} s to ${k(i.nHand)} rpm`];
+  return S;
+}
+
+// ---------- chart helpers
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const a in attrs) e.setAttribute(a, attrs[a]); if (parent) parent.appendChild(e); return e; }
+function decimalsOf(step) { let d = 0; while (d < 6 && Math.abs(step * 10 ** d - Math.round(step * 10 ** d)) > 1e-6) d++; return d; }
+function ticks(a, b, n = 5) { if (!(b > a)) b = a + 1; const step0 = (b - a) / n, mag = Math.pow(10, Math.floor(Math.log10(step0))); const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= step0 * 0.999); const t = []; for (let v = Math.ceil(a / step - 1e-9) * step; v <= b + step * 1e-9; v += step) t.push(+v.toFixed(10)); return { t, d: decimalsOf(step), step }; }
+function nice(a, b) { const t = ticks(a, b); return [Math.floor(a / t.step) * t.step, Math.ceil(b / t.step) * t.step]; }
+function frame(host, W, H, m, xd, yd, xl, yl, xfmt, yfmt) {
+  host.innerHTML = "";
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img" }, host);
+  const x = v => m.l + (v - xd[0]) / (xd[1] - xd[0]) * (W - m.l - m.r);
+  const y = v => H - m.b - (v - yd[0]) / (yd[1] - yd[0]) * (H - m.t - m.b);
+  const yt = ticks(...yd), xt = ticks(...xd);
+  yt.t.forEach(t => { el("line", { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: "var(--grid)" }, svg); el("text", { x: m.l - 8, y: y(t) + 4, "text-anchor": "end", "font-size": 12, fill: "var(--muted)" }, svg).textContent = yfmt ? yfmt(t) : fmt(t, yt.d); });
+  xt.t.forEach(t => { el("text", { x: x(t), y: H - m.b + 17, "text-anchor": "middle", "font-size": 12, fill: "var(--muted)" }, svg).textContent = xfmt ? xfmt(t) : fmt(t, xt.d); });
+  el("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: "var(--line)" }, svg);
+  el("text", { x: (m.l + W - m.r) / 2, y: H - 4, "text-anchor": "middle", "font-size": 13, fill: "var(--text-2)" }, svg).textContent = xl;
+  el("text", { x: m.l, y: m.t - 8, "text-anchor": "start", "font-size": 13, fill: "var(--text-2)" }, svg).textContent = yl;
+  const tip = document.createElement("div"); tip.className = "tip"; host.appendChild(tip);
+  return { svg, x, y, tip };
+}
+function showTip(tip, svg, px, py, html, W) {
+  const r = svg.getBoundingClientRect(), kk = r.width / W;
+  tip.innerHTML = html; tip.style.opacity = 1;
+  let left = px * kk + 12; if (left + tip.offsetWidth > r.width) left = px * kk - tip.offsetWidth - 12;
+  tip.style.left = Math.max(0, left) + "px"; tip.style.top = Math.max(0, py * kk - tip.offsetHeight - 10) + "px";
+}
+const pathD = (pts, x, y) => { let d = "", pen = false; pts.forEach(p => { if (!isFinite(p[1])) { pen = false; return; } d += (pen ? "L" : "M") + x(p[0]).toFixed(1) + "," + y(p[1]).toFixed(1); pen = true; }); return d; };
+function hover(svg, W, H, m, x, y, tip, xs, series, html) {
+  const cross = el("line", { y1: m.t, y2: H - m.b, stroke: "var(--text-2)", "stroke-width": 1, opacity: 0 }, svg);
+  const mks = series.map(s => el("circle", { r: 5, fill: s.color, stroke: "var(--surface)", "stroke-width": 2, opacity: 0 }, svg));
+  const ov = el("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent" }, svg);
+  const move = e => {
+    const r = svg.getBoundingClientRect(), cx = (e.touches ? e.touches[0].clientX : e.clientX), px = (cx - r.left) * W / r.width;
+    let j = 0; xs.forEach((v, n) => { if (Math.abs(x(v) - px) < Math.abs(x(xs[j]) - px)) j = n; });
+    cross.setAttribute("x1", x(xs[j])); cross.setAttribute("x2", x(xs[j])); cross.setAttribute("opacity", 1);
+    let top = H;
+    series.forEach((s, n) => { const v = s.pts[j][1]; if (isFinite(v)) { mks[n].setAttribute("cx", x(xs[j])); mks[n].setAttribute("cy", y(v)); mks[n].setAttribute("opacity", 1); top = Math.min(top, y(v)); } else mks[n].setAttribute("opacity", 0); });
+    showTip(tip, svg, x(xs[j]), top === H ? m.t + 20 : top, html(j), W);
+  };
+  ov.addEventListener("mousemove", move); ov.addEventListener("touchmove", move, { passive: true });
+  ov.addEventListener("mouseleave", () => { cross.setAttribute("opacity", 0); mks.forEach(mk => mk.setAttribute("opacity", 0)); tip.style.opacity = 0; });
+}
+
+// ---------- blocks
+function b1(o, i) {
+  return head(1, "Speed, electrical frequency and surface speed") +
+  `<p class="sub">Everything at high speed scales with ω. Electrical frequency sets iron and AC copper loss; surface speed sets rotor stress and windage. A 2-pole rotor has half the electrical frequency of a 4-pole one at the same rpm.</p>
+  <div class="eqgrid"><div>
+    ${eq("ω = 2π·n / 60      f<sub>e</sub> = (p/2)·n / 60      v = ω·r")}
+    ${eqn(`ω = 2π·${fmt(i.nDesign)}/60 = ${fmt(o.wD)} rad/s      f<sub>e</sub> = ${o.pp}·${fmt(i.nGen)}/60 = ${fmt(o.feG)} Hz (generating)`)}
+    ${eqn(`v<sub>sleeve</sub> = ${fmt(o.wD)} × ${fs(o.rso * 1e3, 4)} mm = ${fs(o.vSlv, 3)} m/s at design speed`)}
+  </div><div class="summary" style="margin-top:4px">
+    ${row("Design speed", fmt(i.nDesign) + " rpm")}${row("Electrical frequency, design", fmt(o.feD) + " Hz")}
+    ${row("Electrical frequency, generating", fmt(o.feG) + " Hz")}${row("Magnet surface speed, design", fs(o.vMag, 3) + " m/s")}
+    ${row("Sleeve surface speed, design", fs(o.vSlv, 3) + " m/s")}${row("Sleeve surface speed, generating", fs(o.vSlvG, 3) + " m/s")}
+  </div></div>` +
+  look(["<b>Look for:</b> surface speeds above roughly 100 m/s need a retention sleeve; above about 250 m/s even carbon struggles. Fewer poles keep frequency, and therefore loss, down. Rectifier diodes and any active rectifier must switch at the electrical frequency."]);
+}
+
+function b2(o, i, S) {
+  const solid = o.ri <= 0;
+  return head(2, "Magnet alone: why it needs a sleeve", ...S.magnet) +
+  `<p class="sub">A spinning ring carries its own centrifugal load as hoop tension. Sintered magnets are brittle and weak in tension, so at these speeds they would burst on their own. Stress scales with n² and r², and does not depend on length.</p>
+  <div class="eqgrid"><div>
+    <div class="eqlab">Thin ring</div>${eq("σ<sub>θ</sub> = ρ·v²")}
+    ${eqn(`σ<sub>θ</sub> = ${fmt(o.mag.rho)} × ${fs(o.vMag, 3)}² = ${MPa(o.sRing)}`)}
+  </div><div>
+    <div class="eqlab">${solid ? "Solid disk, at the centre" : "Bored disk, at the bore (the peak)"}</div>
+    ${eq(solid ? "σ<sub>max</sub> = (3+ν)/8 · ρ·ω²·r<sub>o</sub>²" : "σ<sub>max</sub> = (3+ν)/4 · ρ·ω²·[r<sub>o</sub>² + (1−ν)/(3+ν)·r<sub>i</sub>²]")}
+    ${eqn(`σ<sub>max</sub> = ${MPa(o.sBore)}  vs tensile strength ${o.mag.tens} MPa (${o.mag.name})`)}
+  </div></div>
+  <div class="summary">${row("Peak magnet stress, unsupported", MPa(o.sBore))}${row("Magnet tensile strength", o.mag.tens + " MPa")}${row("Strength ÷ stress", fs(o.magMargin, 2) + "×")}${row("Speed where the bare magnet fails", isFinite(o.magMargin) ? fmt(i.nDesign * Math.sqrt(o.magMargin)) + " rpm" : "—")}</div>` +
+  look(["<b>Look for:</b> treat the magnet as already cracked, with zero hoop strength, and let the sleeve carry everything. SmCo is denser and weaker in tension than NdFeB, so it depends on the sleeve even more, but it tolerates heat far better."]);
+}
+
+function b3(o, i, S) {
+  const st = S.sleeve;
+  return head(3, "Sleeve retention and interference fit", ...st) +
+  `<p class="sub">The sleeve is pressed (or wound under tension) onto the magnet so the magnet stays clamped to the shaft at full speed and temperature. In this rigid-shaft model the sleeve stress hardly changes with speed: the preload you build in is the stress it runs at. Heating changes the fit when the magnet and sleeve expand at different rates.</p>
+  <div class="grid2"><div>
+    <div class="eqlab">Magnet pressing outward on the sleeve</div>${eq("p<sub>c</sub> = ρ<sub>m</sub>·ω²·(r<sub>m</sub>³ − r<sub>i</sub>³) / (3·r<sub>m</sub>)")}
+    ${eqn(`p<sub>c</sub> = ${fmt(o.mag.rho)}·${fmt(o.wD)}²·(${fs(o.rm * 1e3, 4)}³ − ${fs(o.ri * 1e3, 3)}³)mm³/(3·${fs(o.rm * 1e3, 4)} mm) = ${MPa(o.pc)}`)}
+    <div class="eqlab">Sleeve stress needed to keep contact pressure p<sub>res</sub> at speed</div>${eq("σ<sub>lift</sub> = (p<sub>c</sub> + p<sub>res</sub>)·r̄ / t + ρ<sub>s</sub>·ω²·r̄²")}
+    ${eqn(`σ<sub>lift</sub> = (${fs(o.pc / 1e6, 3)} + ${i.pres})·${fs(o.rsm * 1e3, 4)}/${fs(o.t * 1e3, 3)} + ${fs(o.sSelf / 1e6, 3)} = ${MPa(o.sLift)}`)}
+    <div class="eqlab">Thermal change in fit (+ tightens)</div>${eq("Δσ<sub>th</sub> = E<sub>s</sub>·(α<sub>in</sub> − α<sub>s</sub>)·(T<sub>rotor</sub> − T<sub>asm</sub>)")}
+    ${eqn(`Δσ<sub>th</sub> = ${fs(o.slv.E / 1e9, 3)} GPa·(${fs(o.aIn * 1e6, 2)} − ${fs(o.slv.alpha * 1e6, 2)})ppm/K·${fmt(o.dT)} K = ${MPa(o.sTh)}`)}
+    <div class="eqlab">Build-in preload, peak stress, and press fit</div>
+    ${eq("σ<sub>0</sub> = σ<sub>lift</sub> − min(0, Δσ<sub>th</sub>)      σ<sub>max</sub> = σ<sub>0</sub> + max(0, Δσ<sub>th</sub>)")}
+    ${eq("δ<sub>dia</sub> = 2·[σ<sub>0</sub>·r̄/E<sub>s</sub> + p<sub>0</sub>·(r<sub>m</sub>−r<sub>i</sub>)/E<sub>m</sub> + p<sub>0</sub>·r<sub>m</sub>·(1−ν)/E<sub>shaft</sub>],  p<sub>0</sub> = σ<sub>0</sub>·t/r̄")}
+    ${eqn(`σ<sub>max</sub> = ${MPa(o.sMax)} vs allowable ${fs(o.slv.ult, 4)}/${i.SF} = ${MPa(o.allow)}      δ<sub>dia</sub> = ${fs(o.interf * 1e6, 3)} µm`)}
+  </div><div>
+    <div class="xsec" id="xsec"></div>
+    <div class="legend" style="justify-content:center;margin-top:6px"><span><i class="sw box" style="background:var(--steel)"></i>Stator and shaft</span><span><i class="sw box" style="background:var(--mag-n)"></i>N</span><span><i class="sw box" style="background:var(--mag-s)"></i>S</span><span><i class="sw box" style="background:var(--sleeve)"></i>Sleeve</span></div>
+    <p class="sub" style="text-align:center">Cross-section to scale. Clearance and sleeve are hard to see at this scale: the numbers are below.</p>
+    <div class="summary">
+      ${row("Running clearance (radial)", o.fits ? fs(o.clr * 1e3, 3) + " mm" : "does not fit")}
+      ${row("Magnetic gap, magnet to bore", fs(o.gMag * 1e3, 3) + " mm")}
+      ${row("Magnet push p<sub>c</sub>", MPa(o.pc))}
+      ${row("Sleeve stress needed at speed", MPa(o.sLift))}
+      ${row("Thermal change, " + fmt(i.Tasm) + " → " + fmt(i.Trotor) + " °C", MPa(o.sTh))}
+      ${row("Peak sleeve stress", MPa(o.sMax))}
+      ${row("Allowable (" + o.slv.name.split(",")[0] + ")", MPa(o.allow))}
+      ${row("Allowable ÷ peak", fs(o.slvMargin, 3) + "×")}
+      ${row("Static contact pressure p<sub>0</sub>", MPa(o.p0))}
+      ${row("Diametral interference", fs(o.interf * 1e6, 3) + " µm")}
+      ${row("Contact is lost first when", o.governs)}
+    </div>
+  </div></div>` +
+  look(["<b>Look for:</b> a thicker sleeve lowers stress roughly as 1/t but takes the space from the magnet, which lowers the field and raises Kv (blocks 4 and 5). Sweep sleeve thickness in the trade explorer to find the balance. A stiffer fibre needs less interference for the same stress.",
+    `Metal sleeves (Inconel, titanium) conduct, so slot harmonics heat them. ${o.slv.metal ? "<b>This sleeve is metal: expect large rotor eddy losses.</b>" : "Carbon conducts little, but it insulates the magnet: rotor heat has to leave through the shaft and bearings."} Keep the rotor below the resin's limit (${o.slv.Tlim} °C here) or the preload creeps away.`]);
+}
+
+function b4(o, i, S) {
+  const diam = o.model === "diam";
+  return head(4, "Gap field and magnet temperature", ...S.temp) +
+  `<p class="sub">The field the winding sees sets the voltage per rpm (Kv) and the torque per amp (Kt). It falls when the magnet gets smaller, the gap gets bigger, or the magnet gets hotter.${o.poles !== 2 ? " For 4 poles and up, the surface-magnet model is used." : ""}</p>
+  <div class="eqgrid"><div>
+    ${eq("B<sub>r</sub>(T) = B<sub>r,20</sub>·[1 + α<sub>B</sub>·(T − 20)]")}
+    ${eqn(`B<sub>r</sub>(${i.Trotor} °C) = ${fs(o.mag.Br, 3)}·[1 ${o.mag.aBr < 0 ? "−" : "+"} ${fs(Math.abs(o.mag.aBr) * 100, 3)}%·${fmt(i.Trotor - 20)}] = ${fs(o.BrHot, 3)} T`)}
+  </div><div>
+    ${diam ? eq("B̂ = B<sub>r</sub>·(r<sub>m</sub>² − r<sub>i</sub>²) / (R<sub>s</sub>²·k<sub>c</sub>)    (2-pole diametric, iron bore)")
+           : eq("B̂<sub>1</sub> = (4/π)·sin(π·α/2)·B<sub>r</sub>·l<sub>m</sub> / (l<sub>m</sub> + μ<sub>r</sub>·k<sub>c</sub>·g)")}
+    ${diam ? eqn(`B̂ = ${fs(o.BrHot, 3)}·(${fs(o.rm * 1e3, 4)}² − ${fs(o.ri * 1e3, 3)}²)/(${fs(o.Rs * 1e3, 4)}²·${i.kc}) = ${fs(o.BHot, 3)} T`)
+           : eqn(`l<sub>m</sub> = ${fs((o.rm - o.ri) * 1e3, 3)} mm, g = ${fs(o.gMag * 1e3, 3)} mm  →  B̂<sub>1</sub> = ${fs(o.BHot, 3)} T`)}
+  </div></div>
+  <div class="summary">
+    ${row("Stock rotor, 20 °C (Kv reference)", fs(o.BStock, 3) + " T")}${row("Candidate, 20 °C", fs(o.B20, 3) + " T")}
+    ${row("Candidate, " + i.Trotor + " °C", fs(o.BHot, 3) + " T")}${row("Field vs stock, hot", fs(o.BHot / o.BStock * 100, 3) + "%")}
+    ${row("Stator iron flux (estimate)", fs(o.Bcore, 3) + " T of " + o.lam.Bsat + " T saturation")}
+    ${row("Magnet limit (" + o.mag.name + ")", o.mag.Tmax + " °C")}${row("Sleeve limit", o.slv.Tlim + " °C")}
+  </div>` +
+  look(["<b>Look for:</b> in a 2-pole diametric rotor the field goes as (r<sub>m</sub>² − r<sub>i</sub>²)/R<sub>s</sub>², so every 0.1 mm of sleeve costs magnet area. NdFeB loses about 12% of its field per 100 °C and SmCo about 3.5%. A hotter NdFeB rotor raises Kv in service and risks demagnetisation near its grade limit (SH 150 °C, UH 180 °C, EH 200 °C)."]);
+}
+
+function b5(o, i, S) {
+  const c = M.conn(i.connRated, i.connRun);
+  return head(5, "Kv, Kt and back-EMF", ...S.volt) +
+  `<p class="sub">Back-EMF per phase is E = 4.44·f·k<sub>w</sub>·N·Φ with f = (p/2)·n/60 and Φ = B̂·D·L/p. The pole count cancels, so voltage per rpm depends only on turns, field, bore diameter and length. That lets the page scale Kv from the donor's rated value.</p>
+  <div class="eqgrid"><div>
+    ${eq("K<sub>e</sub> ∝ k<sub>w</sub>·N·B̂·D·L      Kv ∝ 1 / (N·B̂·D·L)")}
+    ${eq("Kv = Kv<sub>rated</sub> · (B̂<sub>stock</sub>/B̂) · (L<sub>stock</sub>/L) · (1/N<sub>mult</sub>) · c<sub>wiring</sub>")}
+    ${eqn(`Kv<sub>20°C</sub> = ${fmt(i.KvRated)}·(${fs(o.BStock, 3)}/${fs(o.B20, 3)})·(${fs(Math.min(i.LmStock, i.Lstk), 3)}/${fs(o.Leff * 1e3, 3)})·(1/${i.turns})·${fs(c.kv, 3)} = ${fmt(o.Kv20)} rpm/V`)}
+    ${eqn(`Kv<sub>hot</sub> = ${fmt(o.Kv20)}·${fs(o.B20, 3)}/${fs(o.BHot, 3)} = ${fmt(o.KvHot)} rpm/V`)}
+  </div><div>
+    ${eq("K<sub>t</sub> = 60 / (2π·Kv)  [N·m/A]      V<sub>dc,oc</sub> = (3/π)·n / Kv")}
+    ${eqn(`K<sub>t</sub> = 60/(2π·${fmt(o.KvHot)}) = ${fs(o.Kt * 1e3, 3)} mN·m/A   (as sold: ${fs(o.KtRated * 1e3, 3)} mN·m/A)`)}
+    <div class="tablewrap" style="margin-top:6px"><table>
+      <tr><th>Speed</th><th>rpm</th><th>V<sub>LL,pk</sub> hot</th><th>V<sub>dc</sub> open, hot</th><th>V<sub>dc</sub> open, cold</th></tr>
+      ${o.volts.map(v => `<tr><td>${v.k}</td><td class="num">${fmt(v.n)}</td><td class="num">${fs(v.VpkHot, 3)}</td><td class="num">${fs(v.VdcHot, 3)}</td><td class="num">${fs(v.VdcCold, 3)}</td></tr>`).join("")}
+    </table></div>
+  </div></div>` +
+  look(["<b>Look for:</b> the ICD allows 1–200 V DC. Check the cold rotor at overspeed: that is the highest open-circuit voltage you will see if the load drops out. Turns change Kv as 1/N; delta instead of wye multiplies Kv by √3. Neither changes the torque per watt of copper loss. Rebuilding the rotor with a thicker sleeve and running it hot both raise Kv, so don't size the rectifier or load from the catalogue number."]);
+}
+
+function b6(o, i, S) {
+  return head(6, "Generating point: rectifier and load bank", ...S.power) +
+  `<p class="sub">At the generating speed the back-EMF feeds a six-diode bridge. Voltage drops with current through winding resistance, the diodes, and commutation reactance (the overlap while current transfers between phases, which drops voltage without wasting power). The quadratic gives the current that delivers the target power.</p>
+  <div class="eqgrid"><div>
+    ${eq("V<sub>dc</sub> = V<sub>0</sub> − R<sub>eq</sub>·I<sub>dc</sub>,   V<sub>0</sub> = (3/π)·n/Kv − 2·V<sub>d</sub>,   R<sub>eq</sub> = R<sub>ac</sub> + (3/π)·ω<sub>e</sub>·L<sub>ph</sub>")}
+    ${eqn(`V<sub>0</sub> = ${fs(o.Edc, 4)} − 2·${i.Vd} = ${fs(o.V0, 4)} V      R<sub>eq</sub> = ${fs(o.Rac * 1e3, 3)} + ${fs(o.Rx * 1e3, 3)} = ${fs(o.Req * 1e3, 3)} mΩ`)}
+    ${eq("I<sub>dc</sub> = [V<sub>0</sub> − √(V<sub>0</sub>² − 4·R<sub>eq</sub>·P)] / (2·R<sub>eq</sub>)      P<sub>max</sub> = V<sub>0</sub>² / (4·R<sub>eq</sub>)")}
+    ${eqn(o.canMake ? `I<sub>dc</sub> = ${fs(o.Idc, 4)} A at V<sub>dc</sub> = ${fs(o.Vdc, 4)} V      P<sub>max</sub> = ${fmt(o.Pmax)} W` : `V<sub>0</sub>² < 4·R<sub>eq</sub>·P: this winding cannot deliver ${i.Pdc} W at ${fmt(i.nGen)} rpm`)}
+    ${eq("T<sub>em</sub> = P<sub>em</sub> / ω      shear stress σ<sub>t</sub> = T<sub>em</sub> / (2π·R<sub>s</sub>²·L)")}
+    ${eqn(`T<sub>em</sub> = ${fs(o.Pem, 4)} W / ${fmt(o.wG)} = ${fs(o.Tem * 1e3, 3)} mN·m      σ<sub>t</sub> = ${fs(o.shear / 1e3, 3)} kPa`)}
+  </div><div class="summary" style="align-content:start">
+    ${row("DC voltage, loaded", fs(o.Vdc, 4) + " V")}${row("DC current", fs(o.Idc, 4) + " A")}
+    ${row("Load bank setting (constant R)", fs(o.Rload, 3) + " Ω")}${row("Phase current, rms", fs(o.Iph, 4) + " A")}
+    ${row("Continuous current limit", i.Icont + " A")}${row("DC power at that limit", fmt(o.Pthermal) + " W")}
+    ${row("Electromagnetic torque", fs(o.Tem * 1e3, 3) + " mN·m")}${row("Torque per amp check, K<sub>t</sub>·I", fs(o.Kt * o.Idc * 1e3, 3) + " mN·m")}
+    ${row("Air-gap shear stress", fs(o.shear / 1e3, 3) + " kPa")}${row("Ripple, six-pulse (unfiltered)", fs(o.ripple * 100, 3) + "% of peak")}
+    ${row("Line-line resistance, hot", fs(o.Rhot * 1e3, 3) + " mΩ")}${row("Line-line inductance", fs(o.Lll * 1e6, 3) + " µH")}
+  </div></div>` +
+  look(["<b>Look for:</b> current within the continuous limit with margin, since the can is enclosed and sits in hot surroundings. Air-gap shear stress of 2–10 kPa is comfortable for a small air-cooled machine; above about 20 kPa it needs serious cooling. The ICD allows up to about 20% ripple, and a bare six-pulse bridge gives about 13%. Run the load bank in constant-resistance mode at the value shown. Diode drop is a large share of loss at low voltage: Schottky diodes or active rectification recover most of it."]);
+}
+
+function b7(o, i, S) {
+  const L = [["Copper (I²R, AC factor)", o.Pcu], ["Rectifier diodes", o.Pdiode], ["Stator iron", o.Pfe], ["Windage in the gap", o.Pwind], ["Bearings (two)", o.Pbrg]];
+  const mx = Math.max(...L.map(l => l[1]).filter(isFinite), 1);
+  return head(7, "Losses and efficiency at the generating speed", ...S.eff) +
+  `<p class="sub">Losses grow fast with speed: iron eddy loss goes as f², windage as ω³ and bearing friction as n<sup>2/3</sup>. Magnet and sleeve eddy losses are not included (see the assumptions).</p>
+  <div class="eqgrid"><div>
+    <div class="eqlab">Copper, with Dowell AC factor over six-pulse harmonics</div>
+    ${eq("P<sub>cu</sub> = R<sub>20</sub>·[1 + 0.00393·(T − 20)]·F<sub>ac</sub>·I<sub>dc</sub>²,   δ = √(ρ / (π·f·μ<sub>0</sub>))")}
+    ${eqn(`δ = ${fs(o.delta * 1e3, 3)} mm at ${fmt(o.feG)} Hz;  d/δ = ${fs(o.dOverDelta, 2)};  F<sub>ac</sub> = ${fs(o.Fac, 4)} (fundamental only ${fs(o.Fac1, 4)})`)}
+    <div class="eqlab">Iron (Steinmetz, scaled from 1 T, 1 kHz)</div>
+    ${eq("P<sub>fe</sub> = k<sub>b</sub>·m<sub>fe</sub>·p<sub>1T,1k</sub>·[h·(f/1k) + (1−h)·(f/1k)²]·B²")}
+    ${eqn(`P<sub>fe</sub> = ${i.kfe}·${fs(o.mFe * 1e3, 3)} g·(${fs(o.pFeH, 3)} + ${fs(o.pFeE, 3)}) W/kg = ${fs(o.Pfe, 3)} W  at B = ${fs(o.Bcore, 3)} T`)}
+  </div><div>
+    <div class="eqlab">Windage (Bilgen–Boulos)</div>
+    ${eq("P<sub>w</sub> = ½·C<sub>M</sub>·π·ρ·ω³·r⁴·L,   Re = ρ·ω·r·g / μ")}
+    ${eqn(`Re = ${fmt(o.ReW)}, C<sub>M</sub> = ${fs(o.CM, 3)}  →  P<sub>w</sub> = ${fs(o.Pwind, 3)} W`)}
+    <div class="eqlab">Bearings (Palmgren) and diodes</div>
+    ${eq("M<sub>0</sub> = 10⁻⁷·f<sub>0</sub>·(ν·n)<sup>2/3</sup>·d<sub>m</sub>³ [N·mm],  P<sub>b</sub> = 2·(M<sub>0</sub>+M<sub>1</sub>)·ω;   P<sub>d</sub> = 2·V<sub>d</sub>·I<sub>dc</sub>")}
+    ${eqn(`M<sub>0</sub> = ${fs(o.M0, 3)} N·mm each  →  P<sub>b</sub> = ${fs(o.Pbrg, 3)} W;   P<sub>d</sub> = ${fs(o.Pdiode, 3)} W`)}
+  </div></div>
+  <div class="tablewrap" style="margin-top:8px"><table>
+    <tr><th>Loss</th><th>W</th><th>% of shaft power</th><th style="width:40%"></th></tr>
+    ${L.map(([n, v]) => `<tr><td>${n}</td><td class="num">${fs(v, 3)}</td><td class="num">${fs(v / o.Pshaft * 100, 2)}</td><td><span class="bar" style="width:${Math.max(0, v / mx * 100)}%"></span></td></tr>`).join("")}
+    <tr><td><b>Total loss</b></td><td class="num"><b>${fs(o.Ploss, 3)}</b></td><td class="num">${fs(o.Ploss / o.Pshaft * 100, 2)}</td><td></td></tr>
+    <tr><td>Shaft power the engine must supply</td><td class="num">${fmt(o.Pshaft)}</td><td class="num"></td><td class="muted">${fs(o.Tshaft * 1e3, 3)} mN·m at ${fmt(i.nGen)} rpm</td></tr>
+  </table></div>` +
+  look(["<b>Look for:</b> thinner laminations cut eddy loss as t². Strands well below the skin depth keep F<sub>ac</sub> near 1, but many layers of thick wire multiply it. Running a smaller rotor diameter cuts windage as r⁴. Every watt lost in the rotor is hard to remove through a carbon sleeve, so watch that side most."]);
+}
+
+function b8(o, i, S) {
+  return head(8, "Bearings: DN speed factor", ...S.brg) +
+  `<p class="sub">Bearing speed capability is judged by DN = bore (mm) × rpm. The ceiling depends on ball material, cage, preload and especially lubrication. These are rule-of-thumb limits; check the bearing maker's rating.</p>
+  <div class="eqgrid"><div>
+    ${eq("DN = d<sub>bore</sub>·n      n·d<sub>m</sub> = ½(d + D)·n")}
+    ${eqn(`DN = ${i.dBrg} × ${fmt(i.nDesign)} = ${fs(o.DN / 1e6, 3)} × 10⁶      n·d<sub>m</sub> = ${fs(o.ndm / 1e6, 3)} × 10⁶`)}
+  </div><div class="summary" style="margin-top:4px">
+    ${row("Bearing type", o.lub.name)}${row("Rule-of-thumb DN ceiling", fs(o.DNlim / 1e6, 2) + " × 10⁶")}
+    ${row("Used", fs(o.DN / o.DNlim * 100, 3) + "%")}${row("Bore for 85% of ceiling", fs(0.85 * o.DNlim / i.nDesign, 2) + " mm")}
+  </div></div>` +
+  look(["<b>Look for:</b> grease is out above roughly DN 1 × 10⁶; hybrid ceramic balls with oil mist or air-oil are the usual answer, which is what the engine's own bearings do with oil in the fuel. Smaller bearings raise the speed limit but lower radial stiffness, which pulls the bounce mode down (block 9)."]);
+}
+
+function b9(o, i, S) {
+  return head(9, "Rotordynamics: critical speeds", ...S.rotor) +
+  `<p class="sub">A rotor resonates when it spins at a natural frequency. The modes come from the shaft bending between the bearings and from the whole rotor bouncing or rocking on the bearings' radial stiffness. The magnet section is much stiffer than the stub shafts if it carries bending; set how much it does with "magnet stack share".</p>
+  <div class="eqgrid"><div>
+    ${eq("δ/P = 2·[a³/(12·EI<sub>s</sub>) + ((L/2)³ − a³)/(12·EI<sub>c</sub>)],  a = (L<sub>span</sub> − L<sub>m</sub>)/2,  k = P/δ")}
+    ${eq("ω<sub>bend</sub> = √(k/m)   ω<sub>bounce</sub> = √(2k<sub>b</sub>/m)   ω<sub>rock</sub> = √(2k<sub>b</sub>·(L/2)²/I<sub>t</sub>)   1/ω<sub>1</sub>² = 1/ω<sub>bend</sub>² + 1/ω<sub>bounce</sub>²")}
+    ${eqn(`m = ${fs(o.mRot * 1e3, 3)} g, k<sub>shaft</sub> = ${fs(o.kShaft / 1e6, 3)} N/µm, k<sub>b</sub> = ${i.kBrg} N/µm each`)}
+    <div class="tablewrap"><table><tr><th>Mode</th><th>rpm</th><th>÷ design speed</th></tr>
+      ${o.modes.map(m => `<tr><td>${m.k}</td><td class="num">${fmt(m.rpm)}</td><td class="num">${fs(m.rpm / i.nDesign, 3)}</td></tr>`).join("")}
+    </table></div>
+  </div><div class="figw" id="smap"></div></div>` +
+  look(["<b>Look for:</b> keep the first bending mode at least 20% above the highest speed. Rigid-body modes are usually placed below idle and crossed quickly on the way up, with damping in the bearing mounts. Nothing should sit inside the band from generating speed to overspeed. Shorter span, a thicker shaft and stiffer bearings raise modes; a longer, heavier rotor lowers them."]);
+}
+
+function b10(o, i) {
+  return head(10, "Balance and stored energy", "info", "Reference") +
+  `<p class="sub">Unbalance force grows as ω², so a balance grade that is fine at 20k rpm is far too coarse at 160k. A small rotor at these speeds also stores a lot of energy: plan containment.</p>
+  <div class="eqgrid"><div>
+    ${eq("e = G / ω      F = m·e·ω²      U = m·e      E = ½·J·ω²")}
+    ${eqn(`e = ${i.G} mm/s / ${fmt(o.wD)} = ${fs(o.ecc * 1e6, 3)} µm      F = ${fs(o.Fub, 3)} N      E = ${fmt(o.KE)} J`)}
+  </div><div class="summary" style="margin-top:4px">
+    ${row("Rotor mass (magnet, sleeve, shaft)", fs(o.mRot * 1e3, 3) + " g")}${row("Polar inertia", fs(o.Jrot * 1e6, 3) + " kg·mm²")}
+    ${row("Allowed eccentricity, G" + i.G, fs(o.ecc * 1e6, 3) + " µm")}${row("Residual unbalance, total", fs(o.Ures * 1e3, 3) + " mg·mm")}
+    ${row("Rotating force at that unbalance", fs(o.Fub, 3) + " N")}${row("Kinetic energy at design speed", fmt(o.KE) + " J")}
+  </div></div>` +
+  look(["<b>Look for:</b> G2.5 or better needs a proper high-speed balancing machine and a rotor that holds its balance after spinning (the sleeve settling can shift it). Compare the stored energy with the engine's own rotor and design the housing to contain a burst."]);
+}
+
+function b11(o, i, S) {
+  return head(11, "Starting mode", ...S.start) +
+  `<p class="sub">As a starter the same machine is a DC motor running from the start battery. Its torque falls in a straight line from stall to no-load speed (Kv × V); the engine spool's drag rises roughly as n². A low Kv is good for generating and bad for starting off a low-voltage battery. A delta-start relay (Kv × √3) or a higher-voltage start pack fixes it.</p>
+  <div class="eqgrid"><div>
+    ${eq("T(n) = K<sub>t</sub>·min(I<sub>lim</sub>, (V<sub>b</sub> − n/Kv) / R)      T<sub>drag</sub> = T<sub>20k</sub>·(n / 20 000)²")}
+    ${eq("t = ∫ J·dω / (T − T<sub>drag</sub>),   J = J<sub>engine</sub> + J<sub>rotor</sub>")}
+    ${eqn(`Kv<sub>start</sub> = ${fmt(o.KvStart)} rpm/V (cold, ${WIRING[i.connStart]})  →  no-load ${fmt(o.nNoLoad)} rpm on ${i.Vbat} V`)}
+    ${eqn(`stall torque = ${fs(o.KtStart * 1e3, 3)} mN·m/A × ${fs(o.Istall, 3)} A = ${fs(o.Tstall * 1e3, 3)} mN·m`)}
+    <div class="summary">${row("Speed where torque equals drag", fmt(o.nEq) + " rpm")}${row("Speed needed", fmt(i.nHand) + " rpm")}${row("Time to reach it", o.canStart ? fs(o.tStart, 3) + " s" : "never")}${row("Total inertia", fs(o.Jtot * 1e6, 3) + " kg·mm²")}</div>
+  </div><div>
+    <div class="legend"><span><i class="sw" style="background:var(--s1)"></i>Starter torque</span><span><i class="sw" style="background:var(--s2)"></i>Spool drag</span></div>
+    <div class="chart figw" id="startChart"></div>
+  </div></div>` +
+  look(["<b>Look for:</b> the equilibrium speed must clear the handoff speed with margin, since the battery sags under load. While generating, the ECU's starter output must be disconnected: it would otherwise see the full back-EMF."]);
+}
+
+// ---------- drawings
+function drawXsec(o, i) {
+  const host = $("xsec"); if (!host) return;
+  const Ro = i.Dso / 2, Rs = o.Rs * 1e3, rm = o.rm * 1e3, ri = o.ri * 1e3, rso = o.rso * 1e3, S = Ro + 1;
+  host.innerHTML = "";
+  const svg = el("svg", { viewBox: `${-S} ${-S} ${2 * S} ${2 * S}`, width: "100%", role: "img", "aria-label": `Rotor cross-section: magnet ${i.dmOD} mm, sleeve ${i.ts} mm, bore ${i.Dbore} mm` }, host);
+  const ring = (r1, r2) => `M${r2},0A${r2},${r2} 0 1 1 ${-r2},0A${r2},${r2} 0 1 1 ${r2},0ZM${r1},0A${r1},${r1} 0 1 0 ${-r1},0A${r1},${r1} 0 1 0 ${r1},0Z`;
+  el("path", { d: ring(Rs, Ro), fill: "var(--steel)", "fill-rule": "evenodd" }, svg);
+  if (rso > rm) el("path", { d: ring(rm, Math.min(rso, Rs)), fill: o.fits ? "var(--sleeve)" : "var(--bad)", "fill-rule": "evenodd" }, svg);
+  const half = (top, fill) => el("path", { d: `M${-rm},0A${rm},${rm} 0 0 ${top ? 1 : 0} ${rm},0L${ri},0A${ri},${ri} 0 0 ${top ? 0 : 1} ${-ri},0Z`, fill }, svg);
+  half(true, "var(--mag-n)"); half(false, "var(--mag-s)");
+  if (ri > 0) el("circle", { r: ri, fill: "var(--steel)", stroke: "var(--surface)", "stroke-width": 0.15 }, svg);
+  el("text", { x: 0, y: -rm * 0.5, "text-anchor": "middle", "font-size": rm * 0.28, fill: "var(--surface)" }, svg).textContent = "N";
+  el("text", { x: 0, y: rm * 0.62, "text-anchor": "middle", "font-size": rm * 0.28, fill: "var(--text)" }, svg).textContent = "S";
+}
+
+function drawSpeedMap(o, i) {
+  const host = $("smap"); if (!host) return;
+  const W = 560, H = 230, m = { l: 16, r: 16, t: 24, b: 40 };
+  const xmax = Math.max(1.3 * i.nDesign, 1.1 * i.nMax);
+  host.innerHTML = "";
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img", "aria-label": "Speed map: running range against critical speeds" }, host);
+  const x = v => m.l + Math.min(v, xmax) / xmax * (W - m.l - m.r);
+  const yb = H - m.b;
+  el("text", { x: m.l, y: 14, "font-size": 13, fill: "var(--text-2)" }, svg).textContent = "Speed map (rpm)";
+  el("rect", { x: x(i.nIdle), y: m.t, width: x(i.nMax) - x(i.nIdle), height: yb - m.t, fill: "var(--surface-2)" }, svg);
+  el("rect", { x: x(0.85 * i.nGen), y: m.t, width: x(1.15 * Math.max(i.nDesign, i.nMax)) - x(0.85 * i.nGen), height: yb - m.t, fill: "var(--bad)", opacity: 0.08 }, svg);
+  const t = ticks(0, xmax, 6);
+  t.t.forEach(v => { if (v > xmax) return; el("line", { x1: x(v), x2: x(v), y1: yb, y2: yb + 4, stroke: "var(--line)" }, svg); el("text", { x: x(v), y: yb + 17, "text-anchor": "middle", "font-size": 12, fill: "var(--muted)" }, svg).textContent = k(v); });
+  el("line", { x1: m.l, x2: W - m.r, y1: yb, y2: yb, stroke: "var(--line)" }, svg);
+  [["Idle", i.nIdle, "var(--muted)", ""], ["Generating", i.nGen, "var(--s1)", ""], ["Max", i.nMax, "var(--text-2)", ""], ["Design", i.nDesign, "var(--accent)", "4 3"]]
+    .sort((p, q) => p[1] - q[1]).forEach(([lab, v, c, da], n) => {
+      el("line", { x1: x(v), x2: x(v), y1: m.t, y2: yb, stroke: c, "stroke-width": 1.5, "stroke-dasharray": da }, svg);
+      const right = x(v) < W - m.r - 70;
+      el("text", { x: x(v) + (right ? 4 : -4), y: yb - 6 - 14 * n, "text-anchor": right ? "start" : "end", "font-size": 11, fill: "var(--text-2)", stroke: "var(--surface)", "stroke-width": 3, "paint-order": "stroke" }, svg).textContent = lab;
+    });
+  const short = ["Bounce", "Rocking", "Bending", "1st combined"];
+  o.modes.map((md, n) => ({ ...md, s: short[n] })).sort((a, b) => a.rpm - b.rpm).forEach((md, n) => {
+    const yy = m.t + 16 + n * 30, xx = x(md.rpm), off = md.rpm > xmax;
+    el("path", { d: `M${xx},${yy - 6}L${xx + 6},${yy}L${xx},${yy + 6}L${xx - 6},${yy}Z`, fill: "var(--text)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+    const right = xx < W * 0.62;
+    el("text", { x: xx + (right ? 10 : -10), y: yy + 4, "text-anchor": right ? "start" : "end", "font-size": 12, fill: "var(--text)", stroke: "var(--surface)", "stroke-width": 3, "paint-order": "stroke" }, svg).textContent = `${md.s} ${k(md.rpm)}${off ? " →" : ""}`;
+  });
+  el("text", { x: W - m.r, y: H - 4, "text-anchor": "end", "font-size": 11, fill: "var(--muted)" }, svg).textContent = "grey: idle to max · red tint: keep modes out";
+}
+
+function drawStart(o, i) {
+  const host = $("startChart"); if (!host) return;
+  const W = 560, H = 250, m = { l: 48, r: 18, t: 26, b: 40 };
+  const xmx = nice(0, Math.max(o.nNoLoad, i.nHand) * 1.08)[1];
+  const N = 120, xs = Array.from({ length: N + 1 }, (_, j) => j / N * xmx);
+  const tm = xs.map(n => [n, o.Tm(n) * 1e3]), td = xs.map(n => [n, o.Td(n) * 1e3]);
+  const ymx = nice(0, Math.max(...tm.map(p => p[1]), ...td.map(p => p[1]).filter(v => v < 3 * o.Tstall * 1e3), 1) * 1.1)[1];
+  const tdc = td.map(p => [p[0], p[1] <= ymx ? p[1] : NaN]);
+  const { svg, x, y, tip } = frame(host, W, H, m, [0, xmx], [0, ymx], "Spool speed (rpm)", "Torque (mN·m)", v => k(v));
+  svg.setAttribute("aria-label", "Starter torque and spool drag against speed");
+  el("line", { x1: x(i.nHand), x2: x(i.nHand), y1: m.t, y2: H - m.b, stroke: "var(--text-2)", "stroke-dasharray": "4 3" }, svg);
+  el("text", { x: x(i.nHand) + 4, y: m.t + 12, "font-size": 12, fill: "var(--text-2)" }, svg).textContent = "needed";
+  el("path", { d: pathD(tm, x, y), fill: "none", stroke: "var(--s1)", "stroke-width": 2 }, svg);
+  el("path", { d: pathD(tdc, x, y), fill: "none", stroke: "var(--s2)", "stroke-width": 2 }, svg);
+  if (o.nEq > 0 && o.nEq < xmx) el("circle", { cx: x(o.nEq), cy: y(o.Td(o.nEq) * 1e3), r: 5, fill: "var(--text)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+  el("text", { x: x(xmx * 0.04), y: y(tm[0][1]) - 6, "font-size": 12, fill: "var(--text-2)" }, svg).textContent = "starter";
+  const lastD = tdc.filter(p => isFinite(p[1])).pop();
+  if (lastD) el("text", { x: x(lastD[0]) - 4, y: y(lastD[1]) - 6, "text-anchor": "end", "font-size": 12, fill: "var(--text-2)" }, svg).textContent = "drag";
+  hover(svg, W, H, m, x, y, tip, xs, [{ pts: tm, color: "var(--s1)" }, { pts: tdc, color: "var(--s2)" }],
+    j => `${fmt(xs[j])} rpm<br>starter ${fs(tm[j][1], 3)} mN·m<br>drag ${fs(td[j][1], 3)} mN·m`);
+}
+
+// ---------- trade explorer
+const TX = {
+  ts: { label: "Sleeve thickness (mm)", range: s => [0.2, Math.max(0.4, Math.min(3, (s.Dbore - s.dmID) / 2 - 0.5))], set: (s, v) => ({ ...s, ts: v, dmOD: s.dmOD + 2 * (s.ts - v) }), note: "magnet OD shrinks to keep the clearance" },
+  tsFree: { label: "Sleeve thickness, magnet fixed (mm)", range: s => [0.1, 2.5], set: (s, v) => ({ ...s, ts: v }) },
+  dmOD: { label: "Magnet OD, sleeve fixed (mm)", range: s => [Math.max(s.dmID + 1, s.Dbore * 0.5), s.Dbore - 2 * s.ts - 0.05], set: (s, v) => ({ ...s, dmOD: v }) },
+  dmID: { label: "Magnet bore / shaft (mm)", range: s => [0, Math.max(1, s.dmOD - 4)], set: (s, v) => ({ ...s, dmID: v }) },
+  nDesign: { label: "Design speed (rpm)", range: s => [50000, 220000], set: (s, v) => ({ ...s, nDesign: v }) },
+  nGen: { label: "Generating speed (rpm)", range: s => [40000, Math.max(60000, s.nDesign)], set: (s, v) => ({ ...s, nGen: v }) },
+  Lboth: { label: "Active length, stack and magnet (mm)", range: s => [10, 100], set: (s, v) => ({ ...s, Lm: v, Lstk: v }) },
+  turns: { label: "Turns multiplier", range: s => [0.4, 2.5], set: (s, v) => ({ ...s, turns: v }) },
+  Trotor: { label: "Rotor temperature (°C)", range: s => [20, 250], set: (s, v) => ({ ...s, Trotor: v }) },
+  span: { label: "Bearing span (mm)", range: s => [Math.max(10, s.Lm * 0.6), 120], set: (s, v) => ({ ...s, span: v }) },
+  dShaft: { label: "Stub shaft diameter (mm)", range: s => [2, 12], set: (s, v) => ({ ...s, dShaft: v }) },
+  kBrg: { label: "Bearing stiffness (N/µm)", range: s => [2, 60], set: (s, v) => ({ ...s, kBrg: v }) },
+};
+const TY = {
+  sMax: { label: "Peak sleeve stress (MPa)", get: o => o.fits ? o.sMax / 1e6 : NaN, ref: (o, s) => ({ v: o.allow / 1e6, t: "allowable" }) },
+  slvMargin: { label: "Sleeve allowable ÷ peak (×)", get: o => o.fits ? o.slvMargin : NaN, ref: () => ({ v: 1, t: "1.0" }) },
+  interf: { label: "Diametral interference (µm)", get: o => o.fits ? o.interf * 1e6 : NaN },
+  clr: { label: "Running clearance (mm)", get: o => o.clr * 1e3, ref: () => ({ v: 0.25, t: "0.25 mm" }) },
+  BHot: { label: "Gap field, hot (T)", get: o => o.fits ? o.BHot : NaN },
+  KvHot: { label: "Kv, hot (rpm/V)", get: o => o.fits ? o.KvHot : NaN },
+  Voc: { label: "Open-circuit DC at overspeed, cold (V)", get: o => o.fits ? o.VocMaxCold : NaN, ref: () => ({ v: 200, t: "ICD 200 V" }) },
+  Idc: { label: "DC current at target power (A)", get: o => o.fits && o.canMake ? o.Idc : NaN, ref: (o, s) => ({ v: s.Icont, t: "continuous limit" }) },
+  eff: { label: "Efficiency, shaft to DC (%)", get: o => o.fits && o.canMake ? o.eff * 100 : NaN },
+  Ploss: { label: "Total loss (W)", get: o => o.fits && o.canMake ? o.Ploss : NaN },
+  Pfe: { label: "Iron loss (W)", get: o => o.fits ? o.Pfe : NaN },
+  Pcu: { label: "Copper loss (W)", get: o => o.fits && o.canMake ? o.Pcu : NaN },
+  Pwind: { label: "Windage (W)", get: o => o.fits ? o.Pwind : NaN },
+  mode1: { label: "First mode, combined (rpm)", get: o => M.rpmOf(o.w1), ref: (o, s) => ({ v: 1.2 * s.nDesign, t: "1.2 × design" }) },
+  bounce: { label: "Bounce mode (rpm)", get: o => M.rpmOf(o.wBounce), ref: (o, s) => ({ v: s.nGen, t: "generating" }) },
+  tStart: { label: "Start time to handoff (s)", get: o => o.canStart ? o.tStart : NaN },
+  magMargin: { label: "Bare magnet strength ÷ stress (×)", get: o => o.magMargin, ref: () => ({ v: 1, t: "1.0" }) },
+};
+const txSel = $("tx"), ty1 = $("ty1"), ty2 = $("ty2");
+txSel.innerHTML = Object.entries(TX).map(([kk, v]) => `<option value="${kk}">${v.label}</option>`).join("");
+const tyOpts = Object.entries(TY).map(([kk, v]) => `<option value="${kk}">${v.label}</option>`).join("");
+ty1.innerHTML = tyOpts; ty2.innerHTML = tyOpts;
+txSel.value = "ts"; ty1.value = "sMax"; ty2.value = "KvHot";
+[txSel, ty1, ty2].forEach(s => s.addEventListener("change", drawTrade));
+
+function curX(kx, s) { return kx === "Lboth" ? s.Lm : kx === "tsFree" ? s.ts : s[kx]; }
+function drawTrade() {
+  const s = { ...state }, X = TX[txSel.value];
+  let [a, b] = X.range(s); if (!(b > a)) b = a + 1;
+  const N = 80, xs = Array.from({ length: N + 1 }, (_, j) => a + (b - a) * j / N);
+  const runs = xs.map(v => { try { return M.run(X.set(s, v)); } catch (e) { return null; } });
+  const base = M.run(s), cx = curX(txSel.value, s);
+  [[ty1, "tc1"], [ty2, "tc2"]].forEach(([sel, id]) => {
+    const Y = TY[sel.value];
+    const pts = xs.map((v, j) => [v, runs[j] ? Y.get(runs[j]) : NaN]);
+    const fin = pts.map(p => p[1]).filter(isFinite);
+    const ref = Y.ref ? Y.ref(base, s) : null;
+    const host = $(id);
+    if (!fin.length) { host.innerHTML = `<p class="sub">No valid points over this range (the rotor may not fit).</p>`; return; }
+    let lo = Math.min(...fin), hi = Math.max(...fin);
+    if (ref && isFinite(ref.v) && ref.v < hi * 3 && ref.v > lo / 3) { lo = Math.min(lo, ref.v); hi = Math.max(hi, ref.v); }
+    const pos = lo >= 0;
+    if (lo > 0 && lo < 0.5 * hi) lo = 0;
+    if (hi === lo) { hi = lo + Math.abs(lo || 1) * 0.1; }
+    const yd = nice(pos ? Math.max(0, lo - (hi - lo) * 0.05) : lo - (hi - lo) * 0.05, hi + (hi - lo) * 0.08);
+    const W = 760, H = 220, m = { l: 58, r: 20, t: 26, b: 40 };
+    const xd = [a, b];
+    const { svg, x, y, tip } = frame(host, W, H, m, xd, yd, X.label, Y.label, null, v => fs(v, 3));
+    svg.setAttribute("aria-label", `${Y.label} against ${X.label}`);
+    if (ref && isFinite(ref.v) && ref.v >= yd[0] && ref.v <= yd[1]) {
+      el("line", { x1: m.l, x2: W - m.r, y1: y(ref.v), y2: y(ref.v), stroke: "var(--bad)", "stroke-dasharray": "5 4", "stroke-width": 1.5 }, svg);
+      el("text", { x: W - m.r - 4, y: y(ref.v) - 5, "text-anchor": "end", "font-size": 12, fill: "var(--text-2)" }, svg).textContent = ref.t;
+    }
+    if (cx >= a && cx <= b) {
+      el("line", { x1: x(cx), x2: x(cx), y1: m.t, y2: H - m.b, stroke: "var(--muted)", "stroke-dasharray": "3 3" }, svg);
+    }
+    el("path", { d: pathD(pts, x, y), fill: "none", stroke: "var(--s1)", "stroke-width": 2 }, svg);
+    const yc = Y.get(base);
+    if (isFinite(yc) && cx >= a && cx <= b) el("circle", { cx: x(cx), cy: y(yc), r: 5, fill: "var(--s1)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+    hover(svg, W, H, m, x, y, tip, xs, [{ pts, color: "var(--s1)" }], j => `${X.label.replace(/ \(.*\)/, "")}: ${fs(xs[j], 3)}<br>${Y.label.replace(/ \(.*\)/, "")}: ${fs(pts[j][1], 3)}`);
+  });
+}
+
+// ---------- sensitivity
+const SENS_IN = [
+  ["dmOD", "Magnet OD"], ["dmID", "Magnet bore / shaft"], ["ts", "Sleeve thickness"], ["Lboth", "Active length (stack + magnet)"],
+  ["Dbore", "Stator bore"], ["turns", "Turns"], ["nGen", "Generating speed"], ["nDesign", "Design speed"],
+  ["Trotor", "Rotor temperature (+10 °C)"], ["span", "Bearing span"], ["dShaft", "Stub shaft diameter"], ["kBrg", "Bearing stiffness"], ["dBrg", "Bearing bore"],
+];
+const SENS_OUT = [
+  ["Kv hot", o => o.KvHot], ["V<sub>oc</sub> overspeed", o => o.VocMaxCold], ["I<sub>dc</sub>", o => o.canMake ? o.Idc : NaN],
+  ["Efficiency", o => o.canMake ? o.eff : NaN], ["Sleeve σ<sub>max</sub>", o => o.fits ? o.sMax : NaN], ["Interference", o => o.fits ? o.interf : NaN],
+  ["Clearance", o => o.clr], ["First mode", o => o.w1], ["Start time", o => o.canStart ? o.tStart : NaN],
+];
+function perturb(s, key) {
+  if (key === "Trotor") return { ...s, Trotor: s.Trotor + 10 };
+  if (key === "Lboth") return { ...s, Lm: s.Lm * 1.01, Lstk: s.Lstk * 1.01 };
+  if (key === "dmID" && !(s.dmID > 0)) return { ...s, dmID: 0.1 };
+  return { ...s, [key]: s[key] * 1.01 };
+}
+function drawSens(o0) {
+  const s = { ...state };
+  const y0 = SENS_OUT.map(([, g]) => g(o0));
+  let html = `<tr><th>Input (+1%)</th>${SENS_OUT.map(([n]) => `<th>${n}</th>`).join("")}</tr>`;
+  SENS_IN.forEach(([key, lab]) => {
+    const o1 = M.run(perturb(s, key));
+    html += `<tr><td>${lab}</td>` + SENS_OUT.map(([, g], j) => {
+      const a = y0[j], b = g(o1);
+      if (!isFinite(a) || !isFinite(b) || a === 0) return `<td class="num muted">—</td>`;
+      const pct = (b - a) / Math.abs(a) * 100;
+      const sh = Math.min(60, Math.abs(pct) * 30);
+      const txt = Math.abs(pct) < 0.005 ? "0" : (pct > 0 ? "+" : "−") + fs(Math.abs(pct), 2);
+      return `<td class="num" style="background:color-mix(in srgb, var(--s1) ${sh.toFixed(0)}%, transparent)">${txt}</td>`;
+    }).join("") + `</tr>`;
+  });
+  $("sensTab").innerHTML = html;
+}
+
+// ---------- candidates
+function getCands() { try { return JSON.parse(localStorage.getItem(LS_CANDS) || "[]"); } catch (e) { return []; } }
+function setCands(c) { try { localStorage.setItem(LS_CANDS, JSON.stringify(c)); } catch (e) {} }
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function drawCands() {
+  const c = getCands();
+  const cols = [["Kv hot", o => fmt(o.KvHot)], ["V<sub>oc</sub> max", o => fs(o.VocMaxCold, 3)], ["I<sub>dc</sub> A", o => o.canMake ? fs(o.Idc, 3) : "—"], ["Eff. %", o => o.canMake ? fs(o.eff * 100, 3) : "—"],
+    ["Sleeve ×", o => o.fits ? fs(o.slvMargin, 2) : "—"], ["Interf. µm", o => o.fits ? fs(o.interf * 1e6, 3) : "—"], ["Clear. mm", o => fs(o.clr * 1e3, 2)],
+    ["Mode 1 ÷ design", o => fs(o.bendRatio, 2)], ["DN M", o => fs(o.DN / 1e6, 2)], ["Start s", o => o.canStart ? fs(o.tStart, 2) : "no"]];
+  const rowOf = (name, inp, actions) => { const o = M.run({ ...BASE, ...inp }); return `<tr><td>${name}</td>${cols.map(([, g]) => `<td class="num">${g(o)}</td>`).join("")}<td class="num">${actions}</td></tr>`; };
+  let html = `<tr><th>Candidate</th>${cols.map(([n]) => `<th>${n}</th>`).join("")}<th></th></tr>`;
+  html += rowOf("<i>Current inputs</i>", state, "");
+  c.forEach((cd, n) => { html += rowOf(esc(cd.name), sanitize(cd.inputs), `<button type="button" class="small" data-load="${n}">Load</button> <button type="button" class="small" data-del="${n}" aria-label="Delete ${esc(cd.name)}">Delete</button>`); });
+  $("candTab").innerHTML = html;
+  $("candTab").querySelectorAll("[data-load]").forEach(b => b.onclick = () => load({ ...BASE, ...sanitize(getCands()[+b.dataset.load].inputs) }));
+  $("candTab").querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const cc = getCands(); cc.splice(+b.dataset.del, 1); setCands(cc); drawCands(); });
+}
+$("candSave").onclick = () => {
+  const name = $("candName").value.trim() || `Candidate ${getCands().length + 1}`;
+  const c = getCands(); c.push({ name, inputs: { ...state } }); setCands(c); $("candName").value = ""; drawCands();
+};
+
+// ---------- update
+function update() {
+  const i = { ...state };
+  try { localStorage.setItem(LS_STATE, JSON.stringify({ preset: presetSel.value, inputs: state })); } catch (e) {}
+  const o = M.run(i), S = statuses(o, i);
+  const labels = { fit: "Fit in the bore", sleeve: "Sleeve stress", temp: "Temperatures", volt: "Voltage (ICD 1–200 V)", power: "Current at target power", eff: "Efficiency", brg: "Bearing speed", rotor: "Critical speeds", start: "Starting" };
+  const where = { fit: "b3", sleeve: "b3", temp: "b4", volt: "b5", power: "b6", eff: "b7", brg: "b8", rotor: "b9", start: "b11" };
+  $("checks").innerHTML = Object.entries(labels).map(([kk, lab]) => `<div class="check"><span class="ico ${S[kk][0]}" aria-hidden="true">${ICON[S[kk][0]]}</span><a href="#${where[kk]}"><b>${lab} · ${WORD[S[kk][0]]}</b>${S[kk][1]}</a></div>`).join("");
+
+  $("k-kv").innerHTML = `${fmt(o.KvHot)}<span>rpm/V</span>`;
+  $("k-kvc").textContent = `${fmt(o.Kv20)} cold · ${fmt(i.KvRated)} as sold`;
+  $("k-v").innerHTML = `${fs(o.VocMaxCold, 3)}<span>V</span>`;
+  $("k-vc").textContent = `cold rotor at ${k(Math.max(i.nDesign, i.nMax))} rpm · ICD max 200 V`;
+  $("k-i").innerHTML = o.canMake ? `${fs(o.Idc, 3)}<span>A</span>` : `—`;
+  $("k-ic").textContent = o.canMake ? `at ${fs(o.Vdc, 3)} V · set load to ${fs(o.Rload, 3)} Ω` : `cannot make ${i.Pdc} W at ${k(i.nGen)} rpm`;
+  $("k-e").innerHTML = o.canMake ? `${fs(o.eff * 100, 3)}<span>%</span>` : `—`;
+  $("k-ec").textContent = o.canMake ? `${fmt(o.Pshaft)} W from the shaft · ${fs(o.Ploss, 3)} W lost` : "";
+
+  const W = [];
+  if (!o.fits) W.push(`<p><b>The rotor doesn't fit:</b> magnet OD ${i.dmOD} + 2 × sleeve ${i.ts} = ${fs(i.dmOD + 2 * i.ts, 4)} mm against a ${i.Dbore} mm bore. Most results below are not meaningful until it fits.</p>`);
+  if (o.poles !== 2 && i.field === "diam") W.push(`<p>The diametric field model is 2-pole only; the surface-magnet model is used for ${o.poles} poles.</p>`);
+  if (o.slv.metal) W.push(`<p>A metal sleeve at ${fmt(o.feG)} Hz carries eddy currents from slot ripple and rectifier harmonics. That loss is not modelled here and can be large.</p>`);
+  if (o.Bcore > o.lam.Bsat * 0.95) W.push(`<p>Estimated stator iron flux ${fs(o.Bcore, 3)} T is near saturation for ${o.lam.name}. The field and Kv estimates will be optimistic.</p>`);
+  if (o.t > 0 && o.t / o.rm > 0.18) W.push(`<p>Sleeve thickness is ${fs(o.t / o.rm * 100, 2)}% of the magnet radius, beyond where the thin-ring model is accurate. Use a thick-cylinder shrink-fit calculation.</p>`);
+  $("warn").innerHTML = W.join("");
+
+  $("b1").innerHTML = b1(o, i); $("b2").innerHTML = b2(o, i, S); $("b3").innerHTML = b3(o, i, S);
+  $("b4").innerHTML = b4(o, i, S); $("b5").innerHTML = b5(o, i, S); $("b6").innerHTML = b6(o, i, S);
+  $("b7").innerHTML = b7(o, i, S); $("b8").innerHTML = b8(o, i, S); $("b9").innerHTML = b9(o, i, S);
+  $("b10").innerHTML = b10(o, i); $("b11").innerHTML = b11(o, i, S);
+  drawXsec(o, i); drawSpeedMap(o, i); drawStart(o, i);
+  drawTrade(); drawSens(o); drawCands();
+}
+
+buildForm();
+update();
+</script>
+</body>
+</html>
