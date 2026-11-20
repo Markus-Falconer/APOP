@@ -186,6 +186,8 @@ svg text{font-family:"IBM Plex Sans",sans-serif}
         <li><b>Losses</b> do not include eddy currents in the magnet or sleeve. These are driven by slot ripple and rectifier current harmonics, and they matter because a composite sleeve insulates the magnet thermally. Segment the magnet axially and avoid metal sleeves at these speeds. Iron loss uses catalogue loss densities: replace them with the datasheet curve for the real lamination.</li>
         <li><b>Rotordynamics:</b> rotor as a lumped mass on a two-bearing shaft, with no gyroscopic effects, coupling or overhung mass. It screens for gross problems. Confirm with a rotordynamics code and a spin test.</li>
         <li><b>Starting:</b> spool drag torque and the speed the starter must reach are placeholders. Measure them from an ECU start log (starter current and rpm against time).</li>
+        <li><b>Lehner 1535 presets:</b> Kv = about 15,675 ÷ wind in delta, from Lehner's 2020 rpm table; delta is Lehner's default, star divides Kv by 1.73, and the 6-lead option allows switching. The rotor (about 13 mm magnet over a 4 mm shaft, 14 mm bore, 35 mm stack, about 29 mm can), resistance and inductance are estimates: ask Lehner for the rotor drawing.</li>
+        <li><b>Stock starter:</b> RK-370SD-5028 Kv from published no-load speeds (3.7–7.4 V). Its stall current is not published; the 0.25 Ω default is scaled from the RK-370SD-2870 datasheet (8.77 A stall at 7.2 V) by Kv². Measure the stock starter's resistance and the ECU's starter voltage to firm up the requirement.</li>
         <li>Default dimensions for the TP 4040-SCM are estimates from the catalogue size (40 × 74 mm, 2-pole). Measure the stator bore, magnet, sleeve, shaft, bearings, resistance and inductance of the real motor.</li>
       </ul>
     </div>
@@ -273,6 +275,12 @@ const FIELDS = [
     ["Tdrag", "Spool drag torque at 20k rpm", "mN·m", 10, 0, 100, 0.5],
     ["nHand", "Speed the starter must reach", "rpm", 25000, 5000, 60000, 500],
   ]},
+  { g: "Stock starter (reference)", open: false, help: "The engine's own starter, a brushed RK-370SD-5028. Matching its torque line up to the handoff speed means the new starter does at least as well. Defaults: Kv from the published no-load data (about 5,170 rpm/V); resistance estimated from the Mabuchi RK-370SD family. Measure it.", f: [
+    ["refKv", "Stock starter Kv", "rpm/V", 5170, 1000, 10000, 10],
+    ["refR", "Stock starter resistance, incl. brushes", "Ω", 0.25, 0.05, 1.5, 0.01],
+    ["refI0", "Stock starter no-load current", "A", 0.8, 0, 3, 0.05],
+    ["refV", "Voltage the ECU gives it", "V", 9.9, 3, 15, 0.1],
+  ]},
 ];
 const SPEC = {}; const BASE = {};
 FIELDS.forEach(G => G.f.forEach(f => { SPEC[f[0]] = f; BASE[f[0]] = f[3]; }));
@@ -282,7 +290,15 @@ const PRESETS = {
   cf700: { name: "TP 4040-SCM 2140KV · 1.0 mm T700 sleeve rebuild", v: {} },
   stock: { name: "TP 4040-SCM 2140KV · stock rotor (assumed)", v: { dmOD: 19, ts: 0.25, sleeve: "aramid", Trotor: 60 } },
   smco: { name: "TP 4040-SCM 2140KV · SmCo + 1.0 mm T800 sleeve", v: { mag: "smco", sleeve: "cf800", Trotor: 150, Twind: 120 } },
-  delta: { name: "TP 4040-SCM 2140KV · T700 rebuild, Δ start relay", v: { connStart: "D" } },
+  delta: { name: "TP 4040-SCM 2140KV · T700 rebuild, Δ start on 3S LiPo", v: { connStart: "D", Vbat: 11.1 } },
+  leh4: { name: "Lehner 1535/4, 6 leads, Y run / Δ start, 0.6 mm T700 (assumed dims)", v: {
+    KvRated: 3919, connRated: "D", connRun: "Y", connStart: "D", RllRated: 12, LllRated: 12, Icont: 30,
+    Dbore: 14, Dso: 26, Lstk: 35, dmStockOD: 13, dmStockID: 4, LmStock: 35,
+    dmOD: 12.2, dmID: 4, Lm: 35, ts: 0.6, dBrg: 4, DBrg: 10, span: 50, dShaft: 4, kBrg: 6, Vbat: 11.1 } },
+  leh11: { name: "Lehner 1535/11 (Kv 1425 Δ), stock wiring, 0.6 mm T700 (assumed dims)", v: {
+    KvRated: 1425, connRated: "D", connRun: "D", connStart: "D", RllRated: 90, LllRated: 90, Icont: 30,
+    Dbore: 14, Dso: 26, Lstk: 35, dmStockOD: 13, dmStockID: 4, LmStock: 35,
+    dmOD: 12.2, dmID: 4, Lm: 35, ts: 0.6, dBrg: 4, DBrg: 10, span: 50, dShaft: 4, kBrg: 6, Vbat: 11.1 } },
 };
 const presetSel = $("preset");
 presetSel.innerHTML = Object.entries(PRESETS).map(([k, p]) => `<option value="${k}">${p.name}</option>`).join("");
@@ -383,7 +399,9 @@ function statuses(o, i) {
   const inBand = o.modes.filter(m => m.rpm >= lo && m.rpm <= hi);
   const r1 = o.bendRatio;
   S.rotor = inBand.length ? ["bad", `${inBand.length} mode${inBand.length > 1 ? "s" : ""} in the running range`] : r1 >= 1.2 ? ["ok", `First mode ${fs(r1, 2)}× design speed`] : ["warn", `First mode below running range: crossed on the way up`];
-  S.start = !o.canStart ? ["bad", `Stalls at ${k(o.nEq)} rpm, needs ${k(i.nHand)}`] : o.tStart > 5 ? ["warn", `${fs(o.tStart, 2)} s to ${k(i.nHand)} rpm`] : ["ok", `${fs(o.tStart, 2)} s to ${k(i.nHand)} rpm`];
+  S.start = !o.canStart ? ["bad", `Stalls at ${k(o.nEq)} rpm, needs ${k(i.nHand)}`]
+    : o.refRatio < 1 ? ["warn", `Weaker than the stock starter at ${k(o.refRatioN)} rpm (${fs(o.refRatio * 100, 2)}%)`]
+    : o.tStart > 5 ? ["warn", `${fs(o.tStart, 2)} s to ${k(i.nHand)} rpm`] : ["ok", `${fs(o.tStart, 2)} s to ${k(i.nHand)} rpm, ≥ stock starter`];
   return S;
 }
 
@@ -640,12 +658,17 @@ function b11(o, i, S) {
     ${eq("t = ∫ J·dω / (T − T<sub>drag</sub>),   J = J<sub>engine</sub> + J<sub>rotor</sub>")}
     ${eqn(`Kv<sub>start</sub> = ${fmt(o.KvStart)} rpm/V (cold, ${WIRING[i.connStart]})  →  no-load ${fmt(o.nNoLoad)} rpm on ${i.Vbat} V`)}
     ${eqn(`stall torque = ${fs(o.KtStart * 1e3, 3)} mN·m/A × ${fs(o.Istall, 3)} A = ${fs(o.Tstall * 1e3, 3)} mN·m`)}
-    <div class="summary">${row("Speed where torque equals drag", fmt(o.nEq) + " rpm")}${row("Speed needed", fmt(i.nHand) + " rpm")}${row("Time to reach it", o.canStart ? fs(o.tStart, 3) + " s" : "never")}${row("Total inertia", fs(o.Jtot * 1e6, 3) + " kg·mm²")}</div>
+    <div class="eqlab">Stock starter as the requirement (brushed DC)</div>
+    ${eq("T<sub>stock</sub>(n) = K<sub>t,s</sub>·[(V<sub>ECU</sub> − n/Kv<sub>s</sub>)/R<sub>s</sub> − I<sub>0</sub>]      match if T(n) ≥ T<sub>stock</sub>(n) for 0 ≤ n ≤ n<sub>handoff</sub>")}
+    ${eqn(`stock: stall ${fs(o.refStall * 1e3, 3)} mN·m, no-load ${fmt(o.refNoLoad)} rpm, peak ${fmt(o.refPmax)} W at ${fmt(o.refNoLoad / 2)} rpm`)}
+    ${eqn(`to match it: V<sub>start</sub> ≥ ${fmt(o.refNoLoad)}/${fmt(o.KvStart)} = ${fs(o.vMatch, 3)} V   and   I<sub>lim</sub> ≥ ${fs(o.refStall * 1e3, 3)}/${fs(o.KtStart * 1e3, 3)} = ${fs(o.iMatch, 3)} A`)}
+    <div class="summary">${row("Speed where torque equals drag", fmt(o.nEq) + " rpm")}${row("Speed needed", fmt(i.nHand) + " rpm")}${row("Time to reach it", o.canStart ? fs(o.tStart, 3) + " s" : "never")}${row("Stock starter, same drag", isFinite(o.tRef) ? fs(o.tRef, 3) + " s" : "never")}${row("Worst torque vs stock (0 to handoff)", fs(o.refRatio * 100, 3) + "% at " + fmt(o.refRatioN) + " rpm")}${row("Total inertia", fs(o.Jtot * 1e6, 3) + " kg·mm²")}</div>
   </div><div>
-    <div class="legend"><span><i class="sw" style="background:var(--s1)"></i>Starter torque</span><span><i class="sw" style="background:var(--s2)"></i>Spool drag</span></div>
+    <div class="legend"><span><i class="sw" style="background:var(--s1)"></i>Starter torque</span><span><i class="sw" style="background:var(--s2)"></i>Spool drag</span><span><i class="sw" style="background:repeating-linear-gradient(90deg,var(--text-2) 0 4px,transparent 4px 7px)"></i>Stock starter (reference)</span></div>
     <div class="chart figw" id="startChart"></div>
   </div></div>` +
-  look(["<b>Look for:</b> the equilibrium speed must clear the handoff speed with margin, since the battery sags under load. While generating, the ECU's starter output must be disconnected: it would otherwise see the full back-EMF."]);
+  look(["<b>Look for:</b> the blue line at or above the dashed stock-starter line all the way to the handoff speed, so the new starter does at least as well whatever the real drag is. The equilibrium speed must clear the handoff speed with margin, since the battery sags under load.",
+    "The ECU drives the stock starter as a brushed motor. A brushless starter-generator needs its own ESC, commanded from the ECU's starter output (read its PWM and convert it to an ESC throttle), and that output must be disconnected while generating: it would otherwise see the full back-EMF."]);
 }
 
 // ---------- drawings
@@ -697,10 +720,11 @@ function drawSpeedMap(o, i) {
 function drawStart(o, i) {
   const host = $("startChart"); if (!host) return;
   const W = 560, H = 250, m = { l: 48, r: 18, t: 26, b: 40 };
-  const xmx = nice(0, Math.max(o.nNoLoad, i.nHand) * 1.08)[1];
+  const xmx = nice(0, Math.max(o.nNoLoad, i.nHand, o.refNoLoad) * 1.08)[1];
   const N = 120, xs = Array.from({ length: N + 1 }, (_, j) => j / N * xmx);
   const tm = xs.map(n => [n, o.Tm(n) * 1e3]), td = xs.map(n => [n, o.Td(n) * 1e3]);
-  const ymx = nice(0, Math.max(...tm.map(p => p[1]), ...td.map(p => p[1]).filter(v => v < 3 * o.Tstall * 1e3), 1) * 1.1)[1];
+  const tr = xs.map(n => [n, n <= o.refNoLoad ? o.Tr(n) * 1e3 : NaN]);
+  const ymx = nice(0, Math.max(...tm.map(p => p[1]), o.refStall * 1e3, ...td.map(p => p[1]).filter(v => v < 3 * o.Tstall * 1e3), 1) * 1.1)[1];
   const tdc = td.map(p => [p[0], p[1] <= ymx ? p[1] : NaN]);
   const { svg, x, y, tip } = frame(host, W, H, m, [0, xmx], [0, ymx], "Spool speed (rpm)", "Torque (mN·m)", v => k(v));
   svg.setAttribute("aria-label", "Starter torque and spool drag against speed");
@@ -708,12 +732,14 @@ function drawStart(o, i) {
   el("text", { x: x(i.nHand) + 4, y: m.t + 12, "font-size": 12, fill: "var(--text-2)" }, svg).textContent = "needed";
   el("path", { d: pathD(tm, x, y), fill: "none", stroke: "var(--s1)", "stroke-width": 2 }, svg);
   el("path", { d: pathD(tdc, x, y), fill: "none", stroke: "var(--s2)", "stroke-width": 2 }, svg);
+  el("path", { d: pathD(tr, x, y), fill: "none", stroke: "var(--text-2)", "stroke-width": 1.5, "stroke-dasharray": "5 4" }, svg);
+  el("text", { x: x(o.refNoLoad * 0.55) + 6, y: y(o.Tr(o.refNoLoad * 0.55) * 1e3) - 6, "font-size": 12, fill: "var(--text-2)", stroke: "var(--surface)", "stroke-width": 3, "paint-order": "stroke" }, svg).textContent = "stock";
   if (o.nEq > 0 && o.nEq < xmx) el("circle", { cx: x(o.nEq), cy: y(o.Td(o.nEq) * 1e3), r: 5, fill: "var(--text)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
   el("text", { x: x(xmx * 0.04), y: y(tm[0][1]) - 6, "font-size": 12, fill: "var(--text-2)" }, svg).textContent = "starter";
   const lastD = tdc.filter(p => isFinite(p[1])).pop();
   if (lastD) el("text", { x: x(lastD[0]) - 4, y: y(lastD[1]) - 6, "text-anchor": "end", "font-size": 12, fill: "var(--text-2)" }, svg).textContent = "drag";
-  hover(svg, W, H, m, x, y, tip, xs, [{ pts: tm, color: "var(--s1)" }, { pts: tdc, color: "var(--s2)" }],
-    j => `${fmt(xs[j])} rpm<br>starter ${fs(tm[j][1], 3)} mN·m<br>drag ${fs(td[j][1], 3)} mN·m`);
+  hover(svg, W, H, m, x, y, tip, xs, [{ pts: tm, color: "var(--s1)" }, { pts: tdc, color: "var(--s2)" }, { pts: tr, color: "var(--text-2)" }],
+    j => `${fmt(xs[j])} rpm<br>starter ${fs(tm[j][1], 3)} mN·m<br>stock ${isFinite(tr[j][1]) ? fs(tr[j][1], 3) : "0"} mN·m<br>drag ${fs(td[j][1], 3)} mN·m`);
 }
 
 // ---------- trade explorer
@@ -730,6 +756,8 @@ const TX = {
   span: { label: "Bearing span (mm)", range: s => [Math.max(10, s.Lm * 0.6), 120], set: (s, v) => ({ ...s, span: v }) },
   dShaft: { label: "Stub shaft diameter (mm)", range: s => [2, 12], set: (s, v) => ({ ...s, dShaft: v }) },
   kBrg: { label: "Bearing stiffness (N/µm)", range: s => [2, 60], set: (s, v) => ({ ...s, kBrg: v }) },
+  Vbat: { label: "Start battery voltage (V)", range: s => [5, 30], set: (s, v) => ({ ...s, Vbat: v }) },
+  nHand: { label: "Handoff speed (rpm)", range: s => [5000, 50000], set: (s, v) => ({ ...s, nHand: v }) },
 };
 const TY = {
   sMax: { label: "Peak sleeve stress (MPa)", get: o => o.fits ? o.sMax / 1e6 : NaN, ref: (o, s) => ({ v: o.allow / 1e6, t: "allowable" }) },
@@ -748,6 +776,7 @@ const TY = {
   mode1: { label: "First mode, combined (rpm)", get: o => M.rpmOf(o.w1), ref: (o, s) => ({ v: 1.2 * s.nDesign, t: "1.2 × design" }) },
   bounce: { label: "Bounce mode (rpm)", get: o => M.rpmOf(o.wBounce), ref: (o, s) => ({ v: s.nGen, t: "generating" }) },
   tStart: { label: "Start time to handoff (s)", get: o => o.canStart ? o.tStart : NaN },
+  refRatio: { label: "Worst starter torque vs stock (%)", get: o => o.refRatio * 100, ref: () => ({ v: 100, t: "stock starter" }) },
   magMargin: { label: "Bare magnet strength ÷ stress (×)", get: o => o.magMargin, ref: () => ({ v: 1, t: "1.0" }) },
 };
 const txSel = $("tx"), ty1 = $("ty1"), ty2 = $("ty2");

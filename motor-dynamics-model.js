@@ -280,6 +280,28 @@
       for (let k = 0; k < N; k++) { const n = (k + 0.5) * dn; tt += o.Jtot * w(dn) / (Tm(n) - Td(n)); }
       o.tStart = tt;
     } else o.tStart = NaN;
+
+    // ---------- 11b. stock starter as the reference requirement (brushed DC, e.g. RK-370SD-5028)
+    const KtR = 60 / (2 * Math.PI * i.refKv);
+    const Tr = n => Math.max(0, KtR * ((i.refV - n / i.refKv) / i.refR - i.refI0));
+    o.Tr = Tr; o.KtRef = KtR;
+    o.refNoLoad = i.refKv * (i.refV - i.refI0 * i.refR);
+    o.refStall = Tr(0);
+    o.refPmax = i.refV * i.refV / (4 * i.refR);
+    // worst ratio of candidate torque to stock torque from 0 to the handoff speed
+    let worst = Infinity, worstN = 0;
+    for (let k = 0; k <= 200; k++) { const n = k / 200 * i.nHand, tr = Tr(n); if (tr > 1e-6) { const r = Tm(n) / tr; if (r < worst) { worst = r; worstN = n; } } }
+    o.refRatio = worst; o.refRatioN = worstN;
+    o.vMatch = (o.refNoLoad + 0) / o.KvStart;                          // start voltage for the same no-load speed
+    o.iMatch = o.refStall / o.KtStart;                                // start current for the same stall torque
+    let lo2 = 0, hi2 = o.refNoLoad;
+    for (let k = 0; k < 60; k++) { const m = (lo2 + hi2) / 2; if (Tr(m) - Td(m) > 0) lo2 = m; else hi2 = m; }
+    o.refEq = lo2;
+    if (o.refEq > i.nHand) {
+      const N = 400, dn = i.nHand / N; let tt = 0;
+      for (let k = 0; k < N; k++) { const n = (k + 0.5) * dn; tt += (i.Jeng * 1e-6) * w(dn) / (Tr(n) - Td(n)); }
+      o.tRef = tt;
+    } else o.tRef = NaN;
     return o;
   }
 
