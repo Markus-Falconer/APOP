@@ -10,6 +10,7 @@
  *   pl: [[nx,ny,nz,d], ...] keep where n.p + d >= 0 (up to 2),
  *   cy: [{ p, d, r, t0, t1 }, ...] discard inside a cylinder along unit axis d
  *       through p, between t0 and t1 along the axis (up to 2),
+ *   a: alpha below 1 draws the part see-through, after the opaque parts,
  *   ref: bool (reference lines only) }.
  */
 (function () {
@@ -160,14 +161,26 @@ void main(){
   if (uFlat > 0.5) { gl_FragColor = vec4(uCol, uA); return; }
   vec3 n = normalize(vN); vec3 v = normalize(uEye - vW); if (dot(n, v) < 0.0) n = -n;
   float d = max(dot(n, uKey), 0.0); vec3 h = normalize(uKey + v); float s = pow(max(dot(n, h), 0.0), 48.0);
-  gl_FragColor = vec4(uCol * (0.36 + 0.62 * d) + vec3(0.16 * s), 1.0);
+  gl_FragColor = vec4(uCol * (0.36 + 0.62 * d) + vec3(0.16 * s), uA);
 }`;
   const PRESETS = { iso: [-58, 30], top: [-90, 89], side: [-90, 0], rear: [0, 0] };
   function persp(f, asp, n, fa) { const t = 1 / Math.tan(f / 2); return [t / asp, 0, 0, 0, 0, t, 0, 0, 0, 0, (fa + n) / (n - fa), -1, 0, 0, 2 * fa * n / (n - fa), 0]; }
+  // General 4×4 inverse (column-major), for turning a screen click into a ray.
+  function minv(m) {
+    const a = [];
+    for (let r = 0; r < 4; r++) { a.push([]); for (let c = 0; c < 4; c++) a[r].push(m[r + 4 * c]); for (let c = 0; c < 4; c++) a[r].push(r === c ? 1 : 0); }
+    for (let c = 0; c < 4; c++) {
+      let p = c; for (let r = c + 1; r < 4; r++) if (Math.abs(a[r][c]) > Math.abs(a[p][c])) p = r;
+      [a[c], a[p]] = [a[p], a[c]]; const d = a[c][c] || 1e-30;
+      for (let k = 0; k < 8; k++) a[c][k] /= d;
+      for (let r = 0; r < 4; r++) if (r !== c) { const f = a[r][c]; for (let k = 0; k < 8; k++) a[r][k] -= f * a[c][k]; }
+    }
+    const o = new Array(16); for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) o[r + 4 * c] = a[r][c + 4]; return o;
+  }
   function mmul(a, b) { const r = new Array(16).fill(0); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) for (let k = 0; k < 4; k++) r[i + 4 * j] += a[i + 4 * k] * b[k + 4 * j]; return r; }
 
   function View(host, label) {
-    this.host = host; this.preset = "iso"; [this.yaw, this.pitch] = PRESETS.iso; this.zoom = 1; this.section = true; this.exp = 0; this.expTo = 0;
+    this.host = host; this.preset = "iso"; this.fitMinX = -16; this.clampX = -30; this.onPick = null; [this.yaw, this.pitch] = PRESETS.iso; this.zoom = 1; this.section = true; this.exp = 0; this.expTo = 0;
     host.innerHTML = `<div class="bo-bar">
       <div class="seg" role="group" aria-label="View">${Object.keys(PRESETS).map(k => `<button type="button" data-v="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join("")}</div>
       <div class="seg" role="group" aria-label="Display"><button type="button" data-t="section">Cutaway</button><button type="button" data-t="exp">Exploded</button></div>
@@ -175,6 +188,7 @@ void main(){
     this.cv = host.querySelector("canvas");
     const gl = this.gl = this.cv.getContext("webgl", { antialias: true, alpha: true, premultipliedAlpha: false });
     if (!gl) { host.querySelector(".bo-view").innerHTML = `<p class="bo-fallback">This browser has WebGL turned off, so the 3D view can't be drawn. The parts list and dimensions below still apply.</p>`; return; }
+    this.u32 = gl.getExtension("OES_element_index_uint");
     const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(o)); return o; };
     const pr = this.pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(pr);
     this.u = {}; for (const n of ["uVP", "uOff", "uCol", "uFlat", "uA", "uSec", "uPl0", "uPl1", "uEye", "uKey", "uC0P", "uC0D", "uC0T", "uC1P", "uC1D", "uC1T"]) this.u[n] = gl.getUniformLocation(pr, n);
@@ -183,8 +197,8 @@ void main(){
     host.querySelectorAll("[data-v]").forEach(b => b.addEventListener("click", () => this.setPreset(b.dataset.v)));
     host.querySelector('[data-t="section"]').addEventListener("click", () => { this.section = !this.section; this.ui(); this.draw(); });
     host.querySelector('[data-t="exp"]').addEventListener("click", () => { this.expTo = this.expTo ? 0 : 1; this.ui(); this.animate(); });
-    const ptr = new Map(); let pinch = 0;
-    this.cv.addEventListener("pointerdown", e => { this.cv.setPointerCapture(e.pointerId); ptr.set(e.pointerId, [e.clientX, e.clientY]); if (ptr.size === 2) { const [a, b] = [...ptr.values()]; pinch = Math.hypot(a[0] - b[0], a[1] - b[1]); } });
+    const ptr = new Map(); let pinch = 0, down = null;
+    this.cv.addEventListener("pointerdown", e => { this.cv.setPointerCapture(e.pointerId); ptr.set(e.pointerId, [e.clientX, e.clientY]); down = ptr.size === 1 ? [e.clientX, e.clientY] : null; if (ptr.size === 2) { const [a, b] = [...ptr.values()]; pinch = Math.hypot(a[0] - b[0], a[1] - b[1]); } });
     this.cv.addEventListener("pointermove", e => {
       if (!ptr.has(e.pointerId)) return;
       const prev = ptr.get(e.pointerId); ptr.set(e.pointerId, [e.clientX, e.clientY]);
@@ -192,7 +206,11 @@ void main(){
       else if (ptr.size === 2) { const [a, b] = [...ptr.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch) this.zoom = Math.max(0.4, Math.min(6, this.zoom * d / pinch)); pinch = d; }
       this.draw();
     });
-    const up = e => { ptr.delete(e.pointerId); pinch = 0; };
+    const up = e => {
+      // A click that didn't drag picks: hand the ray to onPick.
+      if (e.type === "pointerup" && down && this.onPick && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 5) { const r = this.pickRay(e.clientX, e.clientY); if (r) this.onPick(r, e); }
+      ptr.delete(e.pointerId); pinch = 0; down = null;
+    };
     this.cv.addEventListener("pointerup", up); this.cv.addEventListener("pointercancel", up);
     this.cv.addEventListener("dblclick", () => this.setPreset("iso"));
     this.cv.addEventListener("wheel", e => { if (!(e.ctrlKey || e.metaKey)) return; e.preventDefault(); this.zoom = Math.max(0.4, Math.min(6, this.zoom * Math.exp(-e.deltaY * 0.004))); this.draw(); }, { passive: false });
@@ -213,12 +231,15 @@ void main(){
     const gl = this.gl; if (!gl) return;
     for (const b of this.bufs) for (const x of [b.p, b.n, b.i, b.l]) if (x) gl.deleteBuffer(x);
     const mk = (t, d) => { if (!d.length) return null; const o = gl.createBuffer(); gl.bindBuffer(t, o); gl.bufferData(t, d, gl.STATIC_DRAW); return o; };
-    this.bufs = parts.map(p => ({ p: mk(gl.ARRAY_BUFFER, p.g.pos), n: mk(gl.ARRAY_BUFFER, p.g.nrm), i: mk(gl.ELEMENT_ARRAY_BUFFER, p.g.idx), ni: p.g.idx.length, l: mk(gl.ARRAY_BUFFER, p.g.lines), nl: p.g.lines.length / 3, part: p }));
+    this.bufs = parts.map(p => ({ p: mk(gl.ARRAY_BUFFER, p.g.pos), n: mk(gl.ARRAY_BUFFER, p.g.nrm), i: mk(gl.ELEMENT_ARRAY_BUFFER, p.g.idx), ni: p.g.idx.length,
+      it: p.g.idx instanceof Uint32Array && this.u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, l: mk(gl.ARRAY_BUFFER, p.g.lines), nl: p.g.lines.length / 3, part: p }));
     let lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
     for (const p of parts) if (!p.ref) for (let i = 0; i < p.g.pos.length; i += 3) for (let q = 0; q < 3; q++) { lo[q] = Math.min(lo[q], p.g.pos[i + q]); hi[q] = Math.max(hi[q], p.g.pos[i + q]); }
-    lo[0] = Math.max(lo[0], -30);
+    lo[0] = Math.max(lo[0], this.clampX);
     this.pts = [];
-    for (const p of parts) if (!p.ref) for (let i = 0; i < p.g.pos.length; i += 15) if (p.g.pos[i] > -16) this.pts.push([p.g.pos[i], p.g.pos[i + 1], p.g.pos[i + 2], p.ex]);
+    let nv = 0; for (const p of parts) if (!p.ref) nv += p.g.pos.length / 3;
+    const stride = 3 * Math.max(5, Math.ceil(nv / 40000));
+    for (const p of parts) if (!p.ref) for (let i = 0; i < p.g.pos.length; i += stride) if (p.g.pos[i] > this.fitMinX) this.pts.push([p.g.pos[i], p.g.pos[i + 1], p.g.pos[i + 2], p.ex]);
     const grew = !this.box || hi[0] - lo[0] > 1.1 * (this.box.hi[0] - this.box.lo[0]) || hi[0] - lo[0] < 0.8 * (this.box.hi[0] - this.box.lo[0]);
     this.box = { lo, hi };
     if (grew) this.fitDist = null;
@@ -245,13 +266,21 @@ void main(){
     const key = unit([dir[0] + yc[0] * 0.7 - xc[0] * 0.4, dir[1] + yc[1] * 0.7 - xc[1] * 0.4, dir[2] + yc[2] * 0.7 - xc[2] * 0.4]);
     return { vp: mmul(persp(f, asp, dist / 40, dist * 6), view), eye, key };
   };
+  // Ray through a screen point, in model coordinates: { o: origin, d: unit direction }.
+  View.prototype.pickRay = function (cx, cy) {
+    if (!this.lastVP) return null;
+    const r = this.cv.getBoundingClientRect(), x = (cx - r.left) / r.width * 2 - 1, y = 1 - (cy - r.top) / r.height * 2, inv = minv(this.lastVP);
+    const tf = (z) => { const v = [0, 1, 2, 3].map(i => inv[i] * x + inv[i + 4] * y + inv[i + 8] * z + inv[i + 12]); return [v[0] / v[3], v[1] / v[3], v[2] / v[3]]; };
+    const a = tf(-1), b = tf(1); return { o: a, d: unit(sub(b, a)) };
+  };
+  View.prototype.refit = function () { this.fitDist = null; this.box = null; };
   View.prototype.draw = function () { if (!this.gl || this.raf) return; this.raf = requestAnimationFrame(() => { this.raf = 0; this.drawNow(); }); };
   View.prototype.drawNow = function () {
     const gl = this.gl, cv = this.cv; if (!gl || !this.box) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1), w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
     if (!w || !h) return;
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; this.fitDist = null; }
-    const cam = this.camera(), u = this.u;
+    const cam = this.camera(), u = this.u; this.lastVP = cam.vp;
     gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.enable(gl.DEPTH_TEST); gl.useProgram(this.pr);
     gl.uniformMatrix4fv(u.uVP, false, new Float32Array(cam.vp)); gl.uniform3fv(u.uEye, cam.eye); gl.uniform3fv(u.uKey, cam.key);
@@ -267,12 +296,20 @@ void main(){
     gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1, 1);
     gl.uniform1f(u.uFlat, 0); gl.uniform1f(u.uA, 1); gl.disable(gl.BLEND);
     gl.enableVertexAttribArray(this.aN);
-    for (const b of this.bufs) {
-      if (!b.p) continue; common(b);
-      gl.uniform3fv(u.uCol, b.part.c);
+    const tri = b => {
+      common(b); gl.uniform3fv(u.uCol, b.part.c);
       gl.bindBuffer(gl.ARRAY_BUFFER, b.p); gl.vertexAttribPointer(this.aP, 3, gl.FLOAT, false, 0, 0);
       gl.bindBuffer(gl.ARRAY_BUFFER, b.n); gl.vertexAttribPointer(this.aN, 3, gl.FLOAT, false, 0, 0);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, b.i); gl.drawElements(gl.TRIANGLES, b.ni, gl.UNSIGNED_SHORT, 0);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, b.i); gl.drawElements(gl.TRIANGLES, b.ni, b.it, 0);
+    };
+    for (const b of this.bufs) if (b.p && !(b.part.a < 1)) tri(b);
+    // See-through parts last, without writing depth, so what's behind them still shows.
+    const see = this.bufs.filter(b => b.p && b.part.a < 1);
+    if (see.length) {
+      // Pulled slightly toward the eye, so a see-through surface lying on an opaque one shows evenly instead of in stripes.
+      gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); gl.polygonOffset(-1, -4);
+      for (const b of see) { gl.uniform1f(u.uA, b.part.a); tri(b); }
+      gl.depthMask(true); gl.disable(gl.BLEND); gl.uniform1f(u.uA, 1); gl.polygonOffset(1, 1);
     }
     gl.disable(gl.POLYGON_OFFSET_FILL); gl.disableVertexAttribArray(this.aN); gl.vertexAttrib3f(this.aN, 1, 0, 0);
     gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.uniform1f(u.uFlat, 1);
