@@ -27,7 +27,9 @@ const SITE = [
       { id: "aft-turbine-v2", href: "aft-turbine-v2.html", menu: "Aft turbine V2",
         title: "Aft Turbine V2", sub: "JetCat P100-RX · spare turbine wheel in a cone shroud, direct-coupled motor, exhaust split into two round pipes" },
       { id: "aft-turbine-v3", href: "aft-turbine-v3.html", menu: "Aft turbine V3 “Big Ben”",
-        title: "Aft Turbine V3 “Big Ben”", sub: "JetCat P100-RX · wheel slides past side windows in a straight tube into two big pipes, necked exits" }
+        title: "Aft Turbine V3 “Big Ben”", sub: "JetCat P100-RX · wheel slides past side windows in a straight tube into two big pipes, necked exits" },
+      { id: "aft-turbine-v3-cad", href: "aft-turbine-v3-cad.html", menu: "Aft turbine V3 “Big Ben” - CAD",
+        title: "Aft Turbine V3 “Big Ben” - CAD", sub: "Open a STEP export of the duct, measure it off the CAD in the browser, and run the V3 cycle analysis on it" }
     ]
   },
   {

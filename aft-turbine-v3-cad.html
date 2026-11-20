@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aft Turbine V3 “Big Ben” - CAD</title>
+<meta name="description" content="Open a STEP or IGES export of the Big Ben aft turbine duct, measure its features off the CAD surfaces in the browser, and run the V3 cycle analysis on the measured geometry.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f4f3ef; --surface:#fcfcfb; --surface-2:#efeee9; --line:#dcdad3; --grid:#e7e5df;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#7a7972;
+  --accent:#c2410c; --s1:#2a78d6; --s2:#eb6834;
+  --good:#1c7c3c; --warn:#a35f00; --bad:#b42318; --band:rgba(42,120,214,.08); --pt:#0b0b0b; --s3:#1baf7a; --steel:#cfcdc5;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+    --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+    --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+    --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec; --s3:#199e70; --steel:#3c3b37;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121211; --surface:#1a1a19; --surface-2:#232321; --line:#34332f; --grid:#2a2a27;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+  --accent:#f08a4b; --s1:#3987e5; --s2:#d95926;
+  --good:#5cc27f; --warn:#e3a53c; --bad:#f07067; --band:rgba(57,135,229,.14); --pt:#f0efec; --s3:#199e70; --steel:#3c3b37;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+.mono,td.num,.kpi .v{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+main.wrap{display:grid;grid-template-columns:330px 1fr;gap:20px;padding-top:20px;padding-bottom:40px}
+@media (max-width:900px){main.wrap{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+aside.panel{padding:6px 16px 16px;align-self:start;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+aside.panel::-webkit-scrollbar{width:8px}
+aside.panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+@media (max-width:900px){aside.panel{position:static;max-height:none;overflow:visible}}
+fieldset{border:0;border-top:1px solid var(--line);margin:0;padding:12px 0 4px}
+fieldset:first-of-type{border-top:0}
+legend{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0}
+.field{display:grid;grid-template-columns:1fr 92px;align-items:center;gap:8px;margin:8px 0}
+.field label{font-size:14px;color:var(--text-2)}
+.field label small{color:var(--muted);display:block;font-size:12px;line-height:1.2}
+.field input[type=number]{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:14px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.field input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent);margin:-2px 0 0}
+.toggle{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--text-2);margin:8px 0}
+.toggle input{accent-color:var(--accent)}
+.btns{display:flex;gap:8px;margin-top:14px}
+button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--muted)}
+section.out{display:flex;flex-direction:column;gap:20px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{padding:12px 14px}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi .v{font-size:26px;font-weight:500;margin:2px 0 0;line-height:1.2}
+.kpi .v span{font-size:14px;color:var(--text-2);margin-left:3px}
+.kpi .c{font-size:12px;color:var(--text-2);margin-top:4px;display:flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.card{padding:16px}
+.card h2{font-size:15px;font-weight:600;margin:0 0 2px}
+.card .sub{font-size:13px;color:var(--text-2);margin:0 0 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:1100px){.grid2{grid-template-columns:1fr}}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-weight:500;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;text-align:right;padding:6px 10px;border-bottom:1px solid var(--line)}
+th:first-child,th:nth-child(2),td:first-child,td:nth-child(2){text-align:left}
+td{padding:7px 10px;border-bottom:1px solid var(--grid)}
+td.num{text-align:right}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:4px 20px;margin-top:14px;font-size:14px}
+.summary div{display:flex;justify-content:space-between;border-bottom:1px dashed var(--grid);padding:4px 0}
+.summary span:first-child{color:var(--text-2)}
+.warn{border-left:3px solid var(--warn);background:var(--surface);padding:10px 14px;border-radius:6px;font-size:14px}
+.warn:empty{display:none}
+svg text{font-family:"IBM Plex Sans",sans-serif}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--text);color:var(--surface);font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity .1s;font-family:"IBM Plex Mono",monospace}
+.units{padding:12px 0 10px;border-bottom:1px solid var(--line)}
+.units-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.units-l{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;padding:2px;background:var(--surface-2)}
+.seg button{border:0;background:transparent;padding:5px 14px;border-radius:5px;color:var(--text-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 0 0 1px var(--line)}
+details{margin-top:8px}
+summary{cursor:pointer;font-size:13px;color:var(--text-2)}
+.tag{font-size:11px;color:var(--accent);margin-left:4px}
+.unit-grid{display:grid;grid-template-columns:1fr 128px;gap:6px 8px;align-items:center;margin-top:10px;font-size:13px;color:var(--text-2)}
+.unit-grid select{font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);width:100%}
+.hint{font-size:12px;color:var(--muted);margin:-2px 0 8px;line-height:1.35}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 8px}
+.presets button{font-size:12px;padding:3px 9px}
+.tests input,.rotor-in input{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.tests input{min-width:86px}
+.tests input.lbl{text-align:left;font-family:inherit;min-width:120px}
+.tests td{padding:4px 5px;border-bottom:0}
+.tests th{white-space:nowrap}
+.x{border:0;background:transparent;color:var(--muted);font-size:18px;line-height:1;padding:2px 6px}
+.x:hover{color:var(--text)}
+.row-btns{display:flex;gap:8px;margin:10px 0 4px;flex-wrap:wrap;align-items:center}
+.fn{font-size:12px;color:var(--muted);margin:6px 0 0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin:-4px 0 8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:16px;height:0;border-top:2px solid}
+.legend i.dash{border-top-style:dashed}
+.legend i.pt{width:9px;height:9px;border:2px solid var(--text);border-radius:50%;background:var(--surface)}
+.legend i.band{width:14px;height:10px;border:0;background:var(--band)}
+h3{font-size:13px;font-weight:600;margin:16px 0 6px;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em}
+.rotor-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px;margin-bottom:6px}
+.rotor-in label{font-size:12px;color:var(--text-2);display:block;margin-bottom:3px}
+td.ok{color:var(--good)} td.off{color:var(--warn)}
+.toc{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;margin-top:10px}
+.toc a{color:var(--text-2)}
+.prose{font-size:15px;line-height:1.6;color:var(--text)}
+.prose p{margin:8px 0;max-width:78ch}
+.prose li{margin:6px 0;max-width:76ch}
+.prose h2{font-size:17px;margin:4px 0 6px}
+.prose h3{text-transform:none;letter-spacing:0;font-size:15px;color:var(--text);margin:18px 0 4px}
+.eq{font-family:"IBM Plex Mono",monospace;font-size:14px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.live{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;background:var(--surface-2);border-radius:4px;padding:0 4px}
+.pill{display:inline-block;font-size:12px;font-weight:500;padding:1px 8px;border-radius:10px;border:1px solid;white-space:nowrap}
+.pill.have{color:var(--good)} .pill.partial{color:var(--warn)} .pill.need{color:var(--bad)}
+ol.steps{padding-left:22px}
+ol.steps>li{margin:14px 0}
+ol.steps>li>b{display:block;margin-bottom:2px}
+ol.steps ul{margin:4px 0;padding-left:18px}
+.callout{border-left:3px solid var(--accent);background:var(--surface-2);padding:10px 14px;border-radius:6px;margin:12px 0;font-size:14px}
+.rec{font-size:15px;line-height:1.55;margin:0}
+tr.sel td{background:var(--surface-2)}
+td.st-ok{color:var(--good)} td.st-no{color:var(--bad)}
+.geo svg text{font-family:"IBM Plex Sans",sans-serif}
+.grid2>*{min-width:0}
+.notes{font-size:14px;color:var(--text-2)}
+.notes h2{color:var(--text)}
+.notes li{margin:4px 0}
+.bo-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:2px 0 8px}
+.bo-bar .seg button{padding:4px 11px;font-size:13px}
+.bo-view{position:relative;height:420px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);overflow:hidden}
+.bo-view canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:pan-y}
+.bo-view canvas:active{cursor:grabbing}
+@media (max-width:640px){.bo-view{height:320px}}
+.bo-hint{position:absolute;left:10px;bottom:8px;font-size:12px;color:var(--muted);pointer-events:none}
+.bo-fallback{padding:16px;color:var(--text-2);font-size:14px}
+.swatches{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--text-2);margin:10px 0 4px}
+.swatches span{display:inline-flex;align-items:center;gap:6px}
+.swatches i,.part h3 i{width:12px;height:12px;border-radius:3px;display:inline-block;flex:none}
+@media (max-width:1100px){.bo-cols{grid-template-columns:1fr}}
+.fseg{margin:10px 0}
+.fseg .fl{display:block;font-size:14px;color:var(--text-2);margin-bottom:5px}
+.fseg .seg,.vsel{display:flex;flex-wrap:wrap}
+.fseg .seg button{padding:4px 10px;font-size:13px}
+.vsel button{flex:1 1 auto;padding:6px 10px}
+.dimmed{opacity:.45}
+.vcard{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:14px;background:var(--surface)}
+.vcard.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.vhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.vhead h3{margin:0;text-transform:none;letter-spacing:0;font-size:15px;color:var(--text)}
+.vhead .tagl{font-size:13px;color:var(--text-2);margin-left:6px;font-weight:400}
+.vcard ul{margin:8px 0 0;padding-left:18px;font-size:14px}
+.vcard li{margin:3px 0}
+.vstats{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--text-2);margin-top:8px;font-family:"IBM Plex Mono",monospace}
+.vstats b{font-family:"IBM Plex Sans",sans-serif;font-weight:500;color:var(--muted);margin-right:4px}
+.bar{position:relative;height:16px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--s2);opacity:.75}
+.bar span{position:relative;font-size:11px;padding-left:6px;line-height:16px;color:var(--text)}
+.kpis.k6{grid-template-columns:repeat(3,1fr)}
+@media (max-width:640px){.kpis.k6{grid-template-columns:repeat(2,1fr)}}
+.bo-view{height:400px}
+.dd-select{width:100%;font:inherit;font-size:14px;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);cursor:pointer}
+.vbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px}
+.vbar label{font-size:13px;color:var(--text-2)}
+.vbar .dd-select{width:auto;min-width:230px}
+.vbar .tagl{font-size:13px;color:var(--text-2)}
+#vdesc{margin:10px 0 0;padding-left:18px;font-size:14px}
+#vdesc li{margin:3px 0}
+.filebtn{position:relative;display:inline-flex;align-items:center;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--accent);background:var(--surface-2);color:var(--text);cursor:pointer;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.filebtn:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+#status{margin:10px 0 0;font-size:13px;color:var(--text-2);line-height:1.4}
+#status.bad{color:var(--bad)}
+.tagrow{display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:start;padding:8px 4px;border-bottom:1px dashed var(--grid)}
+.tagrow .sw{width:12px;height:12px;border-radius:3px;margin-top:4px}
+.tagrow b{font-size:14px;font-weight:500}
+.tagrow small{display:block;font-size:12px;color:var(--muted);line-height:1.3}
+.tagrow .tv{display:block;font-size:12px;color:var(--text-2);margin-top:3px;font-family:"IBM Plex Mono",monospace}
+.tagrow .tv.none{color:var(--muted)}
+.tagrow .tv.badt{color:var(--warn)}
+.tagrow .tb{display:flex;gap:2px;align-items:center}
+.tagrow .tb button[data-act=pick]{font-size:12px;padding:3px 9px}
+.tagrow.picking{background:var(--surface-2);border-radius:6px;box-shadow:0 0 0 1px var(--accent)}
+button:disabled{opacity:.45;cursor:default}
+.insp{font-size:13px;color:var(--text-2);margin-top:10px;min-height:30px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.insp .assign{display:inline-flex;gap:6px;align-items:center}
+.insp .dd-select{width:auto;font-size:13px;padding:4px 6px}
+.muted{color:var(--muted)}
+td small,td small.u{color:var(--muted);font-size:12px}
+td small.u,small.cn{display:block}
+input.ov{width:96px;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+#view-cad.drag .bo-view{outline:2px dashed var(--accent);outline-offset:-6px}
+body.busy,body.busy canvas{cursor:progress}
+#measTable td:nth-child(3),#measTable td:nth-child(4){white-space:nowrap}
+.bo-view{height:460px}
+.prose a{color:var(--s1)}
+</style>
+</head>
+<body>
+<header id="site-header" data-page="aft-turbine-v3-cad"></header>
+<script src="site.js"></script>
+
+<main class="wrap">
+  <aside class="panel" aria-label="CAD file, features and assumptions">
+    <div class="units">
+      <span class="units-l">CAD file</span>
+      <div class="btns" style="margin-top:8px;flex-wrap:wrap">
+        <label class="filebtn"><input type="file" id="file" accept=".step,.stp,.iges,.igs,.brep"><span>Open STEP or IGES…</span></label>
+        <button type="button" id="example">Load the example</button>
+      </div>
+      <p id="status" role="status" aria-live="polite"></p>
+      <p class="hint" style="margin:8px 0 0">The file is read in your browser and never uploaded. Your tags are remembered in this browser only.</p>
+    </div>
+    <fieldset>
+      <legend>Features</legend>
+      <p class="hint" style="margin-top:6px">Press Pick, then click that face on the model. Either surface of a wall works; the page finds the other side.</p>
+      <div id="tags"></div>
+      <div class="btns" style="flex-wrap:wrap"><button type="button" id="autoTag">Auto-detect</button><button type="button" id="flip">Flip aft direction</button><button type="button" id="clearTags">Clear all</button></div>
+      <p class="hint" id="frameNote" style="margin:8px 0 0"></p>
+    </fieldset>
+    <form id="inputs" onsubmit="return false"></form>
+    <div class="btns"><button type="button" id="auto">Set load for 1000 W</button><button type="button" id="sizeExit">Size exits for EGT target</button></div>
+    <div class="btns"><button type="button" id="resetOv">Use the CAD values</button><button type="button" id="resetAll">Reset everything</button></div>
+  </aside>
+
+  <section class="out">
+    <div class="panel card prose">
+      <h2>From Ben's CAD to a cycle analysis</h2>
+      <p>This page reads a STEP or IGES export of the Big Ben duct, measures the features the Big Ben model needs straight off the CAD surfaces, and runs the same cycle model as the <a href="aft-turbine-v3.html">V3 page</a> on them. Nothing is typed in by hand unless the CAD doesn't show it.</p>
+      <ol class="steps">
+        <li><b>Export from NX.</b> File → Export → STEP (AP214 or AP242 both work). Export the duct parts, or the whole assembly; fasteners only slow it down. NX's native .prt can't be read outside NX, which is why STEP is needed.</li>
+        <li><b>Open it here.</b> Use the button on the left, or drop the file on the viewer. The page finds the planes, cylinders, cones and pipe bends among the faces and makes a first guess at each feature.</li>
+        <li><b>Check the tags.</b> Each feature is coloured on the model. If one is wrong, press Pick and click the right face. Clicking any face also shows its size and shape.</li>
+        <li><b>Fill in what the CAD can't show.</b> That's the hub, guide vanes, window edges and the load, on the left. The measured values sit in section 2, where any of them can be overridden.</li>
+      </ol>
+      <p class="fn" id="srcNote"></p>
+    </div>
+
+    <div class="kpis k6">
+      <div class="panel kpi"><div class="l">Power at 90%</div><div class="v" id="k-P"></div><div class="c" id="k-Pc"></div></div>
+      <div class="panel kpi"><div class="l">Thrust at 90%</div><div class="v" id="k-F"></div><div class="c" id="k-Fc"></div></div>
+      <div class="panel kpi"><div class="l">Wheel / motor speed</div><div class="v" id="k-N"></div><div class="c" id="k-Nc"></div></div>
+      <div class="panel kpi"><div class="l">Runaway at full throttle</div><div class="v" id="k-R"></div><div class="c" id="k-Rc"></div></div>
+      <div class="panel kpi"><div class="l">Gas split at 90%</div><div class="v" id="k-W"></div><div class="c" id="k-Wc"></div></div>
+      <div class="panel kpi"><div class="l">Envelope</div><div class="v" id="k-G"></div><div class="c" id="k-Gc"></div></div>
+    </div>
+    <div class="warn" id="warn" role="status"></div>
+
+    <div class="panel card">
+      <h2>1. The CAD and its features</h2>
+      <p class="sub">Coloured faces are the tagged features. Cutaway removes the top half so the bore and the wheel face can be clicked. Model shows the V3 model built from the measured values; Both lays it over the CAD as a check that the two agree.</p>
+      <div class="vbar"><span class="fl" style="font-size:13px;color:var(--text-2)">Show</span>
+        <div class="seg" id="showSeg" role="group" aria-label="What the viewer shows"><button type="button" data-show="cad">CAD</button><button type="button" data-show="model">Model</button><button type="button" data-show="both">Both</button></div>
+      </div>
+      <div id="view-cad"></div>
+      <div class="insp" id="insp" aria-live="polite"></div>
+      <div class="swatches" id="tagSw"></div>
+    </div>
+
+    <div class="panel card">
+      <h2>2. What was measured</h2>
+      <p class="sub">The model's geometry inputs, as read off the tagged faces. Type in the Used column to override one; ↺ goes back to the CAD value. Anything not measured falls back to the Ben's-layout preset.</p>
+      <div class="tablewrap"><table id="measTable"></table></div>
+      <h3>Checks</h3>
+      <div class="tablewrap"><table id="checkTable"></table></div>
+    </div>
+
+    <div class="panel card">
+      <h2>3. Operating points</h2>
+      <p class="sub">The measured geometry and the load resistor at 90% corrected speed (scored for power and thrust) and at full throttle (scored for thrust only).</p>
+      <div class="tablewrap"><table id="opTable"></table></div>
+    </div>
+
+    <div class="panel card">
+      <h2>4. Where the pressure goes</h2>
+      <p class="sub">Total-pressure drop at 90% speed, from the engine's turbine exit to the nozzle exits. With fixed exits, duct loss shows up as engine back-pressure (hotter EGT); after resizing the exits for the same EGT, it shows up as lost thrust.</p>
+      <div class="tablewrap"><table id="lossTable"></table></div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel card"><h2>Electrical power vs wheel position</h2><p class="sub">The measured duct with the wheel slid along the tube, 90% speed, current load. The dot is the wheel position read from the CAD.</p><div id="chP"></div></div>
+      <div class="panel card"><h2>Wheel speed vs wheel position</h2><p class="sub">Loaded at 90%, and with no load at full throttle.</p><div class="legend"><span><i style="border-color:var(--s1)"></i>Loaded, 90%</span><span><i class="dash" style="border-color:var(--s2)"></i>No load, full throttle</span></div><div id="chN"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="panel card"><h2>Where the gas goes vs wheel position</h2><p class="sub">90% speed, current load. Power follows the gas through the blades.</p><div class="legend"><span><i style="border-color:var(--s1)"></i>Through the blades</span><span><i class="dash" style="border-color:var(--s2)"></i>Window ahead of the wheel</span><span><i style="border-color:var(--muted)"></i>Tip gap</span></div><div id="chF"></div></div>
+      <div class="panel card">
+        <h2>5. Score estimate</h2>
+        <p class="sub">For the items this page models. Radial distance and length can come from the CAD's bounding box or from the model's own layout.</p>
+        <div class="vbar"><span class="fl" style="font-size:13px;color:var(--text-2)">Envelope from</span><div class="seg" id="envSeg" role="group" aria-label="Envelope from"><button type="button" data-env="cad">CAD</button><button type="button" data-env="model">Model</button></div></div>
+        <div class="tablewrap"><table id="scTable"></table></div>
+      </div>
+    </div>
+
+    <div class="panel card prose notes">
+      <h2>6. How the measuring works</h2>
+      <ul>
+        <li><b>Reading.</b> The file is opened with OpenCascade (the geometry kernel behind FreeCAD) compiled to run in the browser. It keeps each CAD face separate, so every face can be measured on its own. Units come from the file and are converted to mm.</li>
+        <li><b>Face shapes.</b> Each face's surface normals say what it is: all parallel is a flat face; all square to one direction is a cylinder or a cone about that direction; neither is tried as a pipe bend (stepping each point inward by the tube radius lands it on the bend's centreline arc). Radius, axis and cone angle come from least-squares fits.</li>
+        <li><b>Walls.</b> For a tube or pipe the page finds the coaxial face on the other side of the wall, so the inside diameter and wall thickness come out whichever side was clicked.</li>
+        <li><b>Frame.</b> The tube bore gives the engine axis. The flange (or, without it, the way the pipe leaves) says which way is aft, and x = 0 is at the flange. The first pipe's direction is +y.</li>
+        <li><b>Model inputs.</b> Pipe angle is between the pipe and engine axes. The window centre is where the pipe centreline meets the bore. The gap is twice the leg's distance from the axis less the pipe's outside diameter. The bend radius comes from where the straights end (exact when the bend is tangent to them), cross-checked against the bend surface. Exit ID is the smallest diameter of the neck cone.</li>
+        <li><b>Accuracy.</b> Planes, cylinders and cones come out within a few thousandths of a mm. Bends are read off the faceted surface, so their radius is good to about 1% and their angle to about a degree; that is why the straights are used when they agree.</li>
+        <li><b>What the model still assumes.</b> Both legs are mirror images in one plane through the axis, the pipe centrelines meet the engine axis, and the motor box, necks and exits sit where the V3 layout puts them. The checks in section 2 flag a CAD that doesn't fit those assumptions. Everything else (losses, the engine match, the wheel) is the V3 model unchanged, so the same caveats apply.</li>
+        <li><b>The example</b> is the V3 page's Ben's-layout preset written out as a surface model (tools/make-example-step.js in the repository), so its measured values should match that preset exactly.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+<script src="aft-turbine-v3-model.js"></script>
+<script src="viewer3d.js"></script>
+<script src="aft-turbine-v3-3d.js"></script>
+<script src="cadfit.js"></script>
+<script src="aft-turbine-v3-cad-measure.js"></script>
+<script src="aft-turbine-v3-cad.js"></script>
+</body>
+</html>
