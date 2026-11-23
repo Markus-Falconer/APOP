@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
 <style>
 :root{
   color-scheme:light;
@@ -35,9 +36,11 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
 .mono,td.num,.kpi .v{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
-main.wrap{display:grid;grid-template-columns:330px 1fr;gap:20px;padding-top:20px;padding-bottom:40px}
-@media (max-width:900px){main.wrap{grid-template-columns:1fr}}
+.wrap{max-width:1760px;margin:0 auto;padding:0 16px}
+/* inputs | results | key equations. Below 1280 px the equations drop under the results. */
+main.wrap{display:grid;grid-template-columns:320px minmax(0,1fr) 400px;gap:20px;padding-top:20px;padding-bottom:40px;align-items:start}
+@media (max-width:1279px){main.wrap{grid-template-columns:330px minmax(0,1fr)}main aside.eqs{grid-column:2;position:static;max-height:none;overflow:visible}}
+@media (max-width:900px){main.wrap{grid-template-columns:1fr}main aside.eqs{grid-column:auto}}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
 aside.panel{padding:6px 16px 16px;align-self:start;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 aside.panel::-webkit-scrollbar{width:8px}
@@ -56,9 +59,9 @@ legend{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.0
 .btns{display:flex;gap:8px;margin-top:14px}
 button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
 button:hover{border-color:var(--muted)}
-section.out{display:flex;flex-direction:column;gap:20px;min-width:0}
+section.out{display:flex;flex-direction:column;gap:20px;min-width:0;container-type:inline-size}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-@media (max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@container (max-width:620px){.kpis{grid-template-columns:repeat(2,1fr)}}
 .kpi{padding:12px 14px}
 .kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .kpi .v{font-size:26px;font-weight:500;margin:2px 0 0;line-height:1.2}
@@ -69,7 +72,7 @@ section.out{display:flex;flex-direction:column;gap:20px;min-width:0}
 .card h2{font-size:15px;font-weight:600;margin:0 0 2px}
 .card .sub{font-size:13px;color:var(--text-2);margin:0 0 12px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-@media (max-width:1100px){.grid2{grid-template-columns:1fr}}
+@container (max-width:780px){.grid2{grid-template-columns:1fr}}
 .tablewrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th{font-weight:500;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;text-align:right;padding:6px 10px;border-bottom:1px solid var(--line)}
@@ -120,6 +123,30 @@ td.ok{color:var(--good)} td.off{color:var(--warn)}
 .notes{font-size:14px;color:var(--text-2)}
 .notes h2{color:var(--text)}
 .notes li{margin:4px 0}
+/* key equations panel */
+aside.eqs{padding:14px 16px 16px}
+aside.eqs .eq-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+aside.eqs h2{font-size:15px;font-weight:600;margin:0}
+aside.eqs .toggle{margin:0;font-size:13px;white-space:nowrap}
+aside.eqs .sub{font-size:12px;color:var(--muted);margin:4px 0 4px;line-height:1.4}
+aside.eqs h3{margin:18px 0 2px;padding-top:12px;border-top:1px solid var(--line)}
+aside.eqs .eq-sec:first-child h3{border-top:0;padding-top:0;margin-top:10px}
+.eq{margin:6px 0 10px}
+.eq-row{display:flex;align-items:center;gap:8px}
+.eq-tex{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.eq-tex .katex-display{margin:.35em 0;text-align:left}
+.eq-tex .katex-display>.katex{text-align:left}
+.eqs .katex{font-size:1.06em}
+.eq-tag{flex:none;font-family:KaTeX_Main,"Times New Roman",serif;font-size:15px;color:var(--text-2)}
+.eq-note{font-size:12px;line-height:1.4;color:var(--text-2);margin:0 0 2px}
+.eq-note sub{font-size:.8em;line-height:0}
+.eq-val{border-left:2px solid var(--s1);background:var(--surface-2);border-radius:0 6px 6px 0;padding:1px 8px;margin-top:3px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;color:var(--text-2)}
+.eq-val .katex{font-size:.92em}
+.eq-val .katex-display{margin:.3em 0;text-align:left}
+.eq-val .katex-display>.katex{text-align:left}
+.eq-val.na{font-size:12px;padding:4px 8px}
+.eqs.novals .eq-val{display:none}
+.eq-raw{font-family:"IBM Plex Mono",monospace;font-size:12px;white-space:pre-wrap;color:var(--text-2)}
 .dd-menu{display:none;position:absolute;top:100%;right:0;z-index:20;min-width:150px;padding:6px 0;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
 .dd-menu a{display:block;margin:0;padding:6px 12px;white-space:nowrap}
 .dd-menu a:hover{background:var(--surface-2);color:var(--text)}
@@ -216,13 +243,14 @@ td.ok{color:var(--good)} td.off{color:var(--warn)}
 
     <div class="panel card notes">
       <h2>How this model works</h2>
+      <p>Numbers in brackets are the equation tags in the Key equations panel and in the page source.</p>
       <ul>
-        <li><b>Compressor.</b> Work comes from tip speed, Δh₀ = ψU², using your 60 mm impeller. ψ is set so the pressure ratio is JetCat's 2.9 at 154,000 rpm, so pressure ratio rises with speed squared. Air flow follows corrected speed as m ∝ N<sup>k</sup>, with k fitted from the test points. Under load the compressor can slide along its speed line, r ∝ m<sup>−S</sup>: lower flow and higher pressure ratio, toward surge.</li>
-        <li><b>Combustor.</b> Liquid n-dodecane at ambient temperature, complete lean combustion. A combustion efficiency (which also covers heat lost through the casing) comes from the fuel flow, plus a pressure-loss fraction.</li>
-        <li><b>Turbine.</b> Drives the compressor plus the generator shaft power (electrical ÷ efficiency, plus any extra drag). Bearing losses are folded into the calibrated turbine efficiency. The nozzle guide vanes are treated as choked, so m·√T₀₃/P₀₃ is fixed. The two test points agree on this value to within about 1.3%, which supports the assumption.</li>
-        <li><b>Nozzle.</b> Your measured 47.62 mm exit (minus any tail cone at the exit plane) with a discharge coefficient. The NGV and nozzle together fix the operating point: the model solves for the air flow and fuel flow that satisfy both.</li>
-        <li><b>Corrected values.</b> θ = T<sub>amb</sub>/288.15 K and δ = P<sub>amb</sub>/101.325 kPa. Corrected speed is N/√θ and corrected thrust is F/δ. The 90% scored condition is 138,600 rpm corrected, about 139,000 rpm in the scoring criteria.</li>
-        <li><b>Thermodynamics.</b> Ideal-gas mixtures with NASA 7-coefficient polynomials (GRI-Mech 3.0) for N₂, O₂, CO₂ and H₂O, which are variable-property throughout.</li>
+        <li><b>Compressor</b> (3.1)–(3.7)<b>.</b> Work comes from tip speed, Δh₀ = ψU², using your 60 mm impeller. ψ is set so the pressure ratio is JetCat's 2.9 at 154,000 rpm, so pressure ratio rises with speed squared. Air flow follows corrected speed as m ∝ N<sup>k</sup>, with k fitted from the test points. Under load the compressor can slide along its speed line, r ∝ m<sup>−S</sup>: lower flow and higher pressure ratio, toward surge.</li>
+        <li><b>Combustor</b> (4.1)–(4.5)<b>.</b> Liquid n-dodecane at ambient temperature, complete lean combustion. A combustion efficiency (which also covers heat lost through the casing) comes from the fuel flow, plus a pressure-loss fraction.</li>
+        <li><b>Turbine</b> (5.1)–(5.4)<b>.</b> Drives the compressor plus the generator shaft power (electrical ÷ efficiency, plus any extra drag). Bearing losses are folded into the calibrated turbine efficiency. The nozzle guide vanes are treated as choked, so m·√T₀₃/P₀₃ is fixed. The two test points agree on this value to within about 1.3%, which supports the assumption.</li>
+        <li><b>Nozzle</b> (6.1)–(6.6), matching (7.1)<b>.</b> Your measured 47.62 mm exit (minus any tail cone at the exit plane) with a discharge coefficient. The NGV and nozzle together fix the operating point: the model solves for the air flow and fuel flow that satisfy both.</li>
+        <li><b>Corrected values</b> (1.1)–(1.2)<b>.</b> θ = T<sub>amb</sub>/288.15 K and δ = P<sub>amb</sub>/101.325 kPa. Corrected speed is N/√θ and corrected thrust is F/δ. The 90% scored condition is 138,600 rpm corrected, about 139,000 rpm in the scoring criteria.</li>
+        <li><b>Thermodynamics</b> (2.1)–(2.5)<b>.</b> Ideal-gas mixtures with NASA 7-coefficient polynomials (GRI-Mech 3.0) for N₂, O₂, CO₂ and H₂O, which are variable-property throughout.</li>
       </ul>
       <h2>Limits of the calibration</h2>
       <ul>
@@ -239,15 +267,39 @@ td.ok{color:var(--good)} td.off{color:var(--warn)}
       </ul>
     </div>
   </section>
+
+  <aside class="panel eqs" id="eqs" aria-label="Key equations">
+    <div class="eq-head"><h2>Key equations</h2><label class="toggle"><input type="checkbox" id="eqVals" checked> Show values</label></div>
+    <p class="sub">SI units. Values are the current operating point. Each tag matches an <span class="mono">Eq. (x.y)</span> comment in the page source, so the code can be checked line by line.</p>
+    <div id="eqList"></div>
+  </aside>
 </main>
+<script src="vendor/katex/katex.min.js"></script>
 <script>
+// =====================================================================================
 // P100 cycle model V2: calibrated, fixed-geometry matching model.
-// Ideal-gas mixtures from NASA 7-coefficient polynomials (GRI-Mech 3.0), complete lean combustion
-// of liquid n-dodecane, compressor work from tip speed (Euler: Δh = ψU²), measured nozzle area
-// closes the cycle (fuel is solved so the nozzle passes the flow), components calibrated to test data.
+//
+// Every physical relation carries an equation tag such as "Eq. (3.6)". The "Key equations"
+// panel on the right of the page uses the same tags and shows each equation typeset, with
+// the numbers of the current operating point substituted, so the code can be checked line
+// by line against the physics.
+//
+// Stations (stagnation values unless noted)
+//   1  compressor inlet (= ambient)        2  compressor exit
+//   3  turbine inlet (NGV)                 4  turbine exit (where the ECU's EGT probe sits)
+//   5  nozzle exit plane (static values)
+// Units: SI throughout (K, Pa, kg/s, J/kg, W, m). "Molar" quantities are per mol.
+// =====================================================================================
 (function (root) {
-  const Ru = 8.314462618, P0 = 101325, TSTD = 288.15, PSTD = 101325;
-  const SP = {
+  // ---------- constants ----------
+  const R_u = 8.314462618;                 // J/(mol·K), universal gas constant
+  const P_REF = 101325;                    // Pa, reference pressure of the NASA entropy data
+  const TSTD = 288.15, PSTD = 101325;      // standard day for corrected values, Eq. (1.1)
+
+  // =================== §2 Gas properties ===================
+  // NASA 7-coefficient polynomials (GRI-Mech 3.0). a = [a1 … a7]; "lo" for T < Tm, "hi" above.
+  // MW in g/mol.
+  const SPECIES = {
     N2: { MW: 28.0134, Tm: 1000,
       lo: [3.298677, 1.4082404e-3, -3.963222e-6, 5.641515e-9, -2.444854e-12, -1020.8999, 3.950372],
       hi: [2.92664, 1.4879768e-3, -5.68476e-7, 1.0097038e-10, -6.753351e-15, -922.7977, 5.980528] },
@@ -261,113 +313,222 @@ td.ok{color:var(--good)} td.off{color:var(--warn)}
       lo: [2.35677352, 8.98459677e-3, -7.12356269e-6, 2.45919022e-9, -1.43699548e-13, -48371.9697, 9.90105222],
       hi: [3.85746029, 4.41437026e-3, -2.21481404e-6, 5.23490188e-10, -4.72084164e-14, -48759.166, 2.27163806] },
   };
-  // liquid n-dodecane: ΔHf(298) = -352.1 kJ/mol (gas -290.9 minus 61.2 vaporisation), cp ≈ 2.21 kJ/kg-K
-  const FUEL = { MW: 170.338, hf: -352.1e3, cp: 2.21e3 * 0.170338 };
-  const co = (s, T) => (T < s.Tm ? s.lo : s.hi);
-  const cpR = (s, T) => { const a = co(s, T); return a[0] + T * (a[1] + T * (a[2] + T * (a[3] + T * a[4]))); };
-  const hRT = (s, T) => { const a = co(s, T); return a[0] + T * (a[1] / 2 + T * (a[2] / 3 + T * (a[3] / 4 + T * a[4] / 5))) + a[5] / T; };
-  const sR = (s, T) => { const a = co(s, T); return a[0] * Math.log(T) + T * (a[1] + T * (a[2] / 2 + T * (a[3] / 3 + T * a[4] / 4))) + a[6]; };
-  const hm = (k, T) => hRT(SP[k], T) * Ru * T; // J/mol
+  const coeffs = (sp, T) => (T < sp.Tm ? sp.lo : sp.hi);
 
-  function Mix(x) {
-    const tot = Object.values(x).reduce((p, v) => p + v, 0);
-    this.x = {}; for (const k in x) if (x[k] > 0) this.x[k] = x[k] / tot;
-    this.MW = 0; for (const k in this.x) this.MW += this.x[k] * SP[k].MW;
-    this.R = Ru / (this.MW / 1000);
+  // Eq. (2.1)  cp°/Ru = a1 + a2·T + a3·T² + a4·T³ + a5·T⁴
+  function cp_over_R(sp, T) {
+    const [a1, a2, a3, a4, a5] = coeffs(sp, T);
+    return a1 + a2 * T + a3 * T ** 2 + a4 * T ** 3 + a5 * T ** 4;
   }
-  Mix.prototype.h = function (T) { let v = 0; for (const k in this.x) v += this.x[k] * hRT(SP[k], T) * Ru * T; return v / (this.MW / 1000); };
-  Mix.prototype.cp = function (T) { let v = 0; for (const k in this.x) v += this.x[k] * cpR(SP[k], T) * Ru; return v / (this.MW / 1000); };
-  Mix.prototype.s = function (T, P) { let v = 0; for (const k in this.x) { const xi = this.x[k]; v += xi * Ru * (sR(SP[k], T) - Math.log(xi * P / P0)); } return v / (this.MW / 1000); };
+  // Eq. (2.2)  h°/(Ru·T) = a1 + a2·T/2 + a3·T²/3 + a4·T³/4 + a5·T⁴/5 + a6/T
+  function h_over_RT(sp, T) {
+    const [a1, a2, a3, a4, a5, a6] = coeffs(sp, T);
+    return a1 + a2 * T / 2 + a3 * T ** 2 / 3 + a4 * T ** 3 / 4 + a5 * T ** 4 / 5 + a6 / T;
+  }
+  // Eq. (2.3)  s°/Ru = a1·ln T + a2·T + a3·T²/2 + a4·T³/3 + a5·T⁴/4 + a7
+  function s_over_R(sp, T) {
+    const [a1, a2, a3, a4, a5, , a7] = coeffs(sp, T);
+    return a1 * Math.log(T) + a2 * T + a3 * T ** 2 / 2 + a4 * T ** 3 / 3 + a5 * T ** 4 / 4 + a7;
+  }
+  // molar enthalpy of one species, J/mol (includes the enthalpy of formation)
+  const h_molar = (name, T) => h_over_RT(SPECIES[name], T) * R_u * T;
+
+  // Eq. (2.4)  Ideal-gas mixture with mole fractions x_i (input need not be normalised).
+  //   M = Σ x_i·M_i     R = Ru/M     h = Σ x_i·h_i°/M     cp = Σ x_i·cp_i°/M
+  //   s = Σ x_i·[s_i° − Ru·ln(x_i·P/P_ref)] / M        γ = cp/(cp − R)
+  function Mix(moles) {
+    const total = Object.values(moles).reduce((a, n) => a + n, 0);
+    this.x = {};
+    for (const k in moles) if (moles[k] > 0) this.x[k] = moles[k] / total;
+    this.MW = 0;                                       // g/mol
+    for (const k in this.x) this.MW += this.x[k] * SPECIES[k].MW;
+    this.R = R_u / (this.MW / 1000);                   // J/(kg·K)
+  }
+  Mix.prototype.h = function (T) {                     // J/kg
+    let sum = 0;
+    for (const k in this.x) sum += this.x[k] * h_over_RT(SPECIES[k], T) * R_u * T;
+    return sum / (this.MW / 1000);
+  };
+  Mix.prototype.cp = function (T) {                    // J/(kg·K)
+    let sum = 0;
+    for (const k in this.x) sum += this.x[k] * cp_over_R(SPECIES[k], T) * R_u;
+    return sum / (this.MW / 1000);
+  };
+  Mix.prototype.s = function (T, P) {                  // J/(kg·K)
+    let sum = 0;
+    for (const k in this.x) { const xi = this.x[k]; sum += xi * R_u * (s_over_R(SPECIES[k], T) - Math.log(xi * P / P_REF)); }
+    return sum / (this.MW / 1000);
+  };
   Mix.prototype.gamma = function (T) { const cp = this.cp(T); return cp / (cp - this.R); };
-  Mix.prototype.T_h = function (h, Tg = 1000) { let T = Tg; for (let i = 0; i < 50; i++) { const d = (this.h(T) - h) / this.cp(T); T -= d; if (Math.abs(d) < 1e-6) break; } return T; };
-  Mix.prototype.T_sP = function (s, P, Tg = 1000) { let T = Tg; for (let i = 0; i < 50; i++) { const d = (this.s(T, P) - s) / (this.cp(T) / T); T -= d; if (Math.abs(d) < 1e-6) break; } return T; };
+  // inverse of h(T): Newton iteration, dh/dT = cp
+  Mix.prototype.T_h = function (h, Tguess = 1000) {
+    let T = Tguess;
+    for (let i = 0; i < 50; i++) { const dT = (this.h(T) - h) / this.cp(T); T -= dT; if (Math.abs(dT) < 1e-6) break; }
+    return T;
+  };
+  // inverse of s(T, P) at fixed P: Newton iteration, ∂s/∂T = cp/T
+  Mix.prototype.T_sP = function (s, P, Tguess = 1000) {
+    let T = Tguess;
+    for (let i = 0; i < 50; i++) { const dT = (this.s(T, P) - s) / (this.cp(T) / T); T -= dT; if (Math.abs(dT) < 1e-6) break; }
+    return T;
+  };
 
-  const AIR = new Mix({ O2: 0.21, N2: 0.79 });
-  const NF_STOICH = 0.21 / 18.5;                       // mol fuel per mol oxidiser at φ = 1
-  const FAR_of = nf => nf * FUEL.MW / AIR.MW;          // kg fuel / kg air
+  // Eq. (2.5)  Isentropic pressure ratio of a fixed-composition gas between Ta and Tb:
+  //   s(Tb, Pb) = s(Ta, Pa)   ⇔   Pb/Pa = exp{ [s(Tb, P) − s(Ta, P)] / R }   (any common P)
+  const isentropicPR = (gas, Ta, Tb, P) => Math.exp((gas.s(Tb, P) - gas.s(Ta, P)) / gas.R);
+
+  // =================== §4 Combustion chemistry ===================
+  // Eq. (4.1)  C12H26 (liquid) + 18.5 O2 → 12 CO2 + 13 H2O      (complete, lean)
+  const NU_CO2 = 12, NU_H2O = 13, NU_O2 = 18.5;        // mol per mol fuel
+  const X_O2 = 0.21, X_N2 = 0.79;                      // air composition, by mole
+  // Liquid n-dodecane: ΔHf(298) = −352.1 kJ/mol (gas −290.9 minus 61.2 vaporisation);
+  // cp ≈ 2.21 kJ/(kg·K), converted to J/(mol·K).
+  const FUEL = { MW: 170.338, hf298: -352.1e3, cp: 2.21e3 * 0.170338 };
+  const AIR = new Mix({ O2: X_O2, N2: X_N2 });
+  const NF_STOICH = X_O2 / NU_O2;                      // mol fuel per mol air at φ = 1
+  // Eq. (4.5)  fuel–air ratio by mass, and its inverse (n_f = mol fuel per mol air)
+  const FAR_of = nf => nf * FUEL.MW / AIR.MW;
   const nf_of = far => far * AIR.MW / FUEL.MW;
-  const prodMix = nf => new Mix({ CO2: 12 * nf, H2O: 13 * nf, O2: Math.max(0.21 - 18.5 * nf, 0), N2: 0.79 });
-  const Hox = T => 0.21 * hm("O2", T) + 0.79 * hm("N2", T);
-  const Dp = T => 12 * hm("CO2", T) + 13 * hm("H2O", T) - 18.5 * hm("O2", T);
-  const hfuel = Tf => FUEL.hf + FUEL.cp * (Tf - 298.15);
-  const LHVm = -(Dp(298.15) - FUEL.hf);                // J/mol fuel, liquid fuel, H2O vapour
-  const LHV = LHVm / (FUEL.MW / 1000);                 // J/kg
-  // fuel per mol oxidiser needed to reach T03 from T02 (closed form)
-  const nf_for = (T02, T03, Tf, eta_b) => (Hox(T02) - Hox(T03)) / (Dp(T03) - hfuel(Tf) + (1 - eta_b) * LHVm);
-  // combustion efficiency implied by a known fuel flow
-  const etab_for = (T02, T03, Tf, nf) => 1 - (Hox(T02) + nf * hfuel(Tf) - Hox(T03) - nf * Dp(T03)) / (nf * LHVm);
+  // burned-gas composition per mol of air
+  const products = nf => new Mix({ CO2: NU_CO2 * nf, H2O: NU_H2O * nf, O2: Math.max(X_O2 - NU_O2 * nf, 0), N2: X_N2 });
+  // enthalpy of one mol of air, J/mol
+  const H_air = T => X_O2 * h_molar("O2", T) + X_N2 * h_molar("N2", T);
+  // enthalpy change of the gas per mol fuel burned: products formed minus O2 used, J/mol
+  const D_rxn = T => NU_CO2 * h_molar("CO2", T) + NU_H2O * h_molar("H2O", T) - NU_O2 * h_molar("O2", T);
+  // liquid fuel enthalpy at its supply temperature, J/mol
+  const h_fuel = Tf => FUEL.hf298 + FUEL.cp * (Tf - 298.15);
+  // Eq. (4.4)  lower heating value (liquid fuel, water as vapour), J/mol and J/kg
+  const LHV_molar = FUEL.hf298 - D_rxn(298.15);
+  const LHV = LHV_molar / (FUEL.MW / 1000);
+  // Eq. (4.3)  Energy balance per mol of air, with a fraction (1 − η_b) of the heat release lost:
+  //   H_air(T02) + n_f·h_fuel(Tf) = H_air(T03) + n_f·D(T03) + n_f·(1 − η_b)·LHV
+  // solved for the fuel needed to reach T03 …
+  const fuelForT03 = (T02, T03, Tf, eta_b) =>
+    (H_air(T02) - H_air(T03)) / (D_rxn(T03) - h_fuel(Tf) + (1 - eta_b) * LHV_molar);
+  // … or for the combustion efficiency implied by a measured fuel flow n_f
+  const etaBFromFuel = (T02, T03, Tf, nf) =>
+    1 - (H_air(T02) + nf * h_fuel(Tf) - H_air(T03) - nf * D_rxn(T03)) / (nf * LHV_molar);
 
+  // root of f on [lo, hi] by bisection (f(lo) and f(hi) must differ in sign)
   function bisect(f, lo, hi, n = 60) {
     let flo = f(lo);
     for (let i = 0; i < n; i++) { const m = 0.5 * (lo + hi), fm = f(m); if ((fm > 0) === (flo > 0)) { lo = m; flo = fm; } else hi = m; }
     return 0.5 * (lo + hi);
   }
 
-  // ---- components ----
-  function ambient(T01, P01) { return { T01, P01, th: T01 / TSTD, de: P01 / PSTD }; }
-  // compressor work coefficient ψ = Δh0/U² from the reference pressure ratio at the reference corrected speed
-  function psiFrom(p) {
-    const s1 = AIR.s(TSTD, PSTD), T2s = AIR.T_sP(s1, PSTD * p.r_ref, TSTD * 1.4);
-    const dh = (AIR.h(T2s) - AIR.h(TSTD)) / p.eta_comp;
-    const U = Math.PI * p.D_comp * p.N_ref / 60;
-    return dh / (U * U);
-  }
-  function compressor(p, amb, Nphys) {
-    const U = Math.PI * p.D_comp * Nphys / 60, dh = p.psi * U * U;
-    const h1 = AIR.h(amb.T01), T2 = AIR.T_h(h1 + dh, amb.T01 + dh / 1005);
-    const T2s = AIR.T_h(h1 + p.eta_comp * dh, amb.T01 + p.eta_comp * dh / 1005);
-    const P2 = amb.P01 * Math.exp((AIR.s(T2s, amb.P01) - AIR.s(amb.T01, amb.P01)) / AIR.R);
-    return { U, dh, T2, P2, r: P2 / amb.P01 };
-  }
-  function nozzle(g, T04, P04, Pa, p) {
-    const A = Math.PI / 4 * (p.D_noz * p.D_noz - (p.D_cone || 0) ** 2), Aeff = A * p.Cd;
-    if (!(P04 > Pa)) return { m: 0, F: 0, V5: 0, T5: T04, P5: Pa, choked: false };
-    const h04 = g.h(T04), s04 = g.s(T04, P04), gm = g.gamma(T04);
-    const Pcrit = P04 * Math.pow(2 / (gm + 1), gm / (gm - 1));
-    const choked = Pcrit > Pa, P5 = Math.max(Pa, Pcrit);
-    const T5s = g.T_sP(s04, P5, T04), h5 = h04 - p.eta_nozzle * (h04 - g.h(T5s));
-    const V5 = Math.sqrt(Math.max(2 * (h04 - h5), 0)), T5 = g.T_h(h5, T5s), rho5 = P5 / (g.R * T5);
-    const m = rho5 * V5 * Aeff;
-    return { m, F: m * V5 + (P5 - Pa) * A, V5, T5, P5, choked, rho5, A };
+  // =================== §1 Ambient and corrected values ===================
+  // Eq. (1.1)  θ = T01/T_std,  δ = P01/P_std
+  function ambient(T01, P01) {
+    return { T01, P01, th: T01 / TSTD, de: P01 / PSTD, h1: AIR.h(T01), s1: AIR.s(T01, P01) };
   }
 
-  // ---- forward: predict an operating point ----
-  // Two matching constraints close the cycle: the choked turbine NGV (m·√T03/P03 = Q, calibrated) and the
-  // measured nozzle area. The compressor may slide along its speed line: r = r_op·(m/m_op)^(−S).
-  // p: parameters (incl. calibrated m_ref, k, eta_turb, eta_b, Q_ngv); op: {T01, P01, Nc, P_elec, eta_gen, P_drag}
+  // =================== §3 Compressor (1 → 2) ===================
+  // Eq. (3.1)  impeller tip speed
+  const tipSpeed = (D, N_rpm) => Math.PI * D * N_rpm / 60;
+
+  // Eq. (3.2)  work coefficient ψ = Δh0/U², fixed by the assumed pressure ratio r_ref at N_ref
+  // on a standard day: isentropic exit T from Eq. (2.5), then Δh0 = Δh_s/η_c.
+  function psiFrom(p) {
+    const s1 = AIR.s(TSTD, PSTD);
+    const T2s = AIR.T_sP(s1, PSTD * p.r_ref, TSTD * 1.4);
+    const dh0 = (AIR.h(T2s) - AIR.h(TSTD)) / p.eta_comp;
+    const U = tipSpeed(p.D_comp, p.N_ref);
+    return dh0 / (U * U);
+  }
+
+  // No-load operating line at physical speed N: Eq. (3.1)–(3.3)
+  function compressor(p, amb, N) {
+    const U = tipSpeed(p.D_comp, N);                               // (3.1)
+    const dh = p.psi * U * U;                                      // (3.2)  Δh0 = ψU²
+    const h1 = AIR.h(amb.T01);
+    const T2 = AIR.T_h(h1 + dh, amb.T01 + dh / 1005);              // h2 = h1 + Δh0
+    const T2s = AIR.T_h(h1 + p.eta_comp * dh, amb.T01 + p.eta_comp * dh / 1005); // (3.3)  h2s = h1 + η_c·Δh0
+    const P2 = amb.P01 * isentropicPR(AIR, amb.T01, T2s, amb.P01); // (2.5)
+    return { U, dh, h1, T2, T2s, P2, r: P2 / amb.P01 };
+  }
+
+  // Off the no-load line: the compressor slides along its speed line, Eq. (3.5)–(3.6)
+  function compressorAtFlow(p, amb, line, m, m_op) {
+    const r = line.r * Math.pow(m / m_op, -p.S);                   // (3.5)  r = r_op·(ṁ/ṁ_op)^−S
+    const P2 = r * amb.P01;
+    const T2s = AIR.T_sP(amb.s1, P2, line.T2);                     // s(T2s, P2) = s(T1, P1)
+    const h2 = amb.h1 + (AIR.h(T2s) - amb.h1) / p.eta_comp;        // (3.6)  h2 = h1 + (h2s − h1)/η_c
+    return { r, P2, T2s, T2: AIR.T_h(h2, line.T2), h2, dh: h2 - amb.h1 };
+  }
+
+  // =================== §6 Nozzle (4 → 5) ===================
+  // g: exhaust gas; T04, P04: turbine-exit stagnation state; Pa: ambient static pressure
+  function nozzle(g, T04, P04, Pa, p) {
+    const A = Math.PI / 4 * (p.D_noz * p.D_noz - (p.D_cone || 0) ** 2); // (6.1)  annulus if a cone reaches the exit
+    if (!(P04 > Pa)) return { m: 0, F: 0, V5: 0, T5: T04, P5: Pa, choked: false };
+    const h04 = g.h(T04), s04 = g.s(T04, P04), gm = g.gamma(T04);
+    const Pcrit = P04 * Math.pow(2 / (gm + 1), gm / (gm - 1));    // (6.2)  critical (sonic) pressure
+    const choked = Pcrit > Pa;
+    const P5 = Math.max(Pa, Pcrit);                                // (6.2)  convergent nozzle: P5 ≥ P*
+    const T5s = g.T_sP(s04, P5, T04);                              //        s(T5s, P5) = s(T04, P04)
+    const h5 = h04 - p.eta_nozzle * (h04 - g.h(T5s));              // (6.3)
+    const V5 = Math.sqrt(Math.max(2 * (h04 - h5), 0));             // (6.4)  V5 = √(2(h04 − h5))
+    const T5 = g.T_h(h5, T5s);
+    const rho5 = P5 / (g.R * T5);                                  // (6.4)  ρ5 = P5/(R·T5)
+    const m = rho5 * V5 * (A * p.Cd);                              // (6.5)  ṁ5 = ρ5·V5·Cd·A5
+    const F = m * V5 + (P5 - Pa) * A;                              // (6.6)  momentum + pressure thrust
+    return { m, F, V5, T5, P5, choked, rho5, A, h04, h5, T5s, Pcrit, gamma: gm };
+  }
+
+  // =================== §7 Forward model: predict an operating point ===================
+  // p:  parameters, including the calibrated m_ref, k, eta_turb, eta_b, Q_ngv (§9)
+  // op: { T01, P01, Nc (corrected rpm), P_elec, eta_gen, P_drag }
+  // Two constraints close the cycle (Eq. 7.1): the choked turbine NGV, Eq. (5.1), and the
+  // measured nozzle, Eq. (6.5). The solver finds the air flow that satisfies both.
   function run(p, op) {
-    const amb = ambient(op.T01, op.P01), Nphys = op.Nc * Math.sqrt(amb.th);
-    const c0 = compressor(p, amb, Nphys);
-    const m_op = p.m_ref * Math.pow(op.Nc / p.N_ref, p.k) * amb.de / Math.sqrt(amb.th);
-    const P_shaft = op.P_elec / op.eta_gen + op.P_drag, Tf = amb.T01;
-    const h1 = AIR.h(amb.T01), s1 = AIR.s(amb.T01, amb.P01);
-    const comp = m => {
-      const r = c0.r * Math.pow(m / m_op, -p.S), P2 = r * amb.P01;
-      const T2s = AIR.T_sP(s1, P2, c0.T2), h2 = h1 + (AIR.h(T2s) - h1) / p.eta_comp;
-      return { r, P2, T2: AIR.T_h(h2, c0.T2), dh: h2 - h1 };
-    };
-    const state = m => {
-      const c = comp(m), P03 = (1 - p.dp_comb) * c.P2;
-      // NGV: m_tot·√T03 / P03 = Q  →  T03
-      const fT = T03 => { const nf = nf_for(c.T2, T03, Tf, p.eta_b); if (!(nf > 0)) return -1; if (nf > 0.95 * NF_STOICH) return 1; return m * (1 + FAR_of(nf)) * Math.sqrt(T03) / P03 - p.Q_ngv; };
+    const amb = ambient(op.T01, op.P01);
+    const Nphys = op.Nc * Math.sqrt(amb.th);                       // (1.2)  N = Nc·√θ
+    const line = compressor(p, amb, Nphys);                        // no-load line, (3.1)–(3.3)
+    const m_op = p.m_ref * Math.pow(op.Nc / p.N_ref, p.k) * amb.de / Math.sqrt(amb.th); // (3.4)
+    const P_shaft = op.P_elec / op.eta_gen + op.P_drag;            // (5.2)
+    const Tf = amb.T01;                                            // fuel supplied at ambient temperature
+
+    // Everything downstream of the compressor for a trial air flow m (kg/s).
+    function cycleAt(m) {
+      const c = compressorAtFlow(p, amb, line, m, m_op);           // (3.5)–(3.6)
+      const P03 = (1 - p.dp_comb) * c.P2;                          // (4.2)
+
+      // (5.1) choked NGV: ṁ4·√T03/P03 = Q_ngv, with ṁ4 = ṁ(1 + f) and f from (4.3). Solve for T03.
+      const ngvError = T03 => {
+        const nf = fuelForT03(c.T2, T03, Tf, p.eta_b);
+        if (!(nf > 0)) return -1;
+        if (nf > 0.95 * NF_STOICH) return 1;
+        return m * (1 + FAR_of(nf)) * Math.sqrt(T03) / P03 - p.Q_ngv;
+      };
       const lo = c.T2 + 20, hi = 2100;
-      if (fT(lo) > 0 || fT(hi) < 0) return null;
-      const T03 = bisect(fT, lo, hi, 45), nf = nf_for(c.T2, T03, Tf, p.eta_b);
-      const g = prodMix(nf), far = FAR_of(nf), m_f = m * far, m_tot = m + m_f;
-      const W_c = m * c.dh, W_t = W_c + P_shaft;
-      const h03 = g.h(T03), h04 = h03 - W_t / m_tot;
+      if (ngvError(lo) > 0 || ngvError(hi) < 0) return null;
+      const T03 = bisect(ngvError, lo, hi, 45);
+
+      const nf = fuelForT03(c.T2, T03, Tf, p.eta_b);               // (4.3)
+      const g = products(nf), far = FAR_of(nf);                    // (4.5)
+      const m_f = m * far, m_tot = m + m_f;                        // ṁ_f = f·ṁ,  ṁ4 = ṁ + ṁ_f
+
+      // §5 turbine (3 → 4)
+      const W_c = m * c.dh;                                        // (3.7)  W_c = ṁ(h2 − h1)
+      const W_t = W_c + P_shaft;                                   // (5.3)  turbine drives compressor + generator
+      const h03 = g.h(T03);
+      const h04 = h03 - W_t / m_tot;                               // (5.3)  h04 = h03 − W_t/ṁ4
       if (!(h04 > g.h(amb.T01))) return { c, T03, bad: true };
       const T04 = g.T_h(h04, T03 - 100);
-      const h4s = h03 - (h03 - h04) / p.eta_turb; if (!(h4s > g.h(250))) return { c, T03, bad: true };
-      const T4s = g.T_h(h4s, T04);
-      const s03 = g.s(T03, P03), P04 = P03 * Math.exp((g.s(T4s, P03) - s03) / g.R);
-      const nz = nozzle(g, T04, P04, amb.P01, p);
-      return { c, P03, nf, g, far, m_f, m_tot, W_c, W_t, T03, T04, P04, s03, nz };
-    };
-    // residual: nozzle capacity minus actual flow. Lower air flow → hotter NGV → more nozzle capacity.
-    const resid = m => { const st = state(m); if (!st) return NaN; if (st.bad) return -1; return (st.nz.m - st.m_tot) / st.m_tot; };
-    const out = { amb, Nphys, m_op, r_op: c0.r, P_shaft, warnings: [] };
-    // scan for a sign change from high flow (resid < 0) to low flow (resid > 0)
+      const h04s = h03 - (h03 - h04) / p.eta_turb;                 // (5.4)  η_t = (h03 − h04)/(h03 − h04s)
+      if (!(h04s > g.h(250))) return { c, T03, bad: true };
+      const T04s = g.T_h(h04s, T04);
+      const s03 = g.s(T03, P03);
+      const P04 = P03 * isentropicPR(g, T03, T04s, P03);           // (2.5)  s(T04s, P04) = s(T03, P03)
+
+      const nz = nozzle(g, T04, P04, amb.P01, p);                  // §6
+      return { c, P03, nf, g, far, m_f, m_tot, W_c, W_t, T03, h03, h04, h04s, T04, T04s, P04, s03, nz };
+    }
+
+    // (7.1) residual: nozzle capacity minus the flow arriving. Lower air flow → hotter NGV → more nozzle capacity.
+    const resid = m => { const st = cycleAt(m); if (!st) return NaN; if (st.bad) return -1; return (st.nz.m - st.m_tot) / st.m_tot; };
+    const out = { amb, Nphys, m_op, r_op: line.r, line, P_shaft, warnings: [] };
+    // scan from high flow (resid < 0) to low flow (resid > 0) for a sign change, then bisect
     let a = null, b = null, prev = null;
     for (let f = 1.6; f >= 0.35; f -= 0.05) {
       const m = m_op * f, v = resid(m);
@@ -375,72 +536,91 @@ td.ok{color:var(--good)} td.off{color:var(--warn)}
     }
     if (a == null) { out.failed = true; out.warnings.push("No matched operating point: the turbine cannot drive the compressor and generator through this nozzle at this speed."); return out; }
     const m_air = bisect(m => { const v = resid(m); return isFinite(v) ? v : 1; }, a, b, 45);
-    const st = state(m_air);
+    const st = cycleAt(m_air);
     if (!st || st.bad) { out.failed = true; out.warnings.push("No matched operating point at this condition."); return out; }
     const { g, nz } = st;
     Object.assign(out, st, {
-      m_air, flowShift: m_air / m_op - 1, rShift: st.c.r / c0.r - 1, U: c0.U,
-      phi: st.nf / NF_STOICH, F: nz.F, Fc: nz.F / amb.de, V5: nz.V5, T5: nz.T5, P5: nz.P5, choked: nz.choked, A5: nz.A,
-      EGT: st.T04 - p.egt_offset, TSFC: st.m_f * 3600 / nz.F, fuel_mlmin: st.m_f / p.rho_fuel * 60000,
+      m_air, flowShift: m_air / m_op - 1, rShift: st.c.r / line.r - 1, U: line.U,
+      phi: st.nf / NF_STOICH,                                      // (4.5)  φ = n_f / n_f,st
+      F: nz.F, Fc: nz.F / amb.de,                                  // (1.2)  Fc = F/δ
+      V5: nz.V5, T5: nz.T5, P5: nz.P5, choked: nz.choked, A5: nz.A,
+      EGT: st.T04 - p.egt_offset,                                  // (8.1)
+      TSFC: st.m_f * 3600 / nz.F,                                  // (8.2)  kg/(N·h)
+      fuel_mlmin: st.m_f / p.rho_fuel * 60000,                     // (8.2)  ml/min
       st: [
-        { n: "1", name: "Compressor inlet", T: amb.T01, P: amb.P01, s: s1 },
+        { n: "1", name: "Compressor inlet", T: amb.T01, P: amb.P01, s: amb.s1 },
         { n: "2", name: "Compressor exit", T: st.c.T2, P: st.c.P2, s: AIR.s(st.c.T2, st.c.P2) },
         { n: "3", name: "Turbine inlet", T: st.T03, P: st.P03, s: st.s03 },
         { n: "4", name: "Turbine exit", T: st.T04, P: st.P04, s: g.s(st.T04, st.P04) },
         { n: "5", name: "Nozzle exit (static)", T: nz.T5, P: nz.P5, s: g.s(nz.T5, nz.P5) },
       ],
-      eta_th: (nz.m * nz.V5 * nz.V5 / 2 + op.P_elec / op.eta_gen) / (st.m_f * LHV),
+      eta_th: (nz.m * nz.V5 * nz.V5 / 2 + op.P_elec / op.eta_gen) / (st.m_f * LHV), // (8.3)
     });
     return out;
   }
 
-  // ---- inverse: back out the engine from one test point ----
-  // t: {T01, P01, N, F, EGT (K), fuel (ml/min or null)}; returns m_air, eta_turb, (eta_b if fuel given)
+  // =================== §9 Inverse model: back out the engine from one test point ===================
+  // t: { T01, P01, N (physical rpm), F (N), EGT (K), fuel (ml/min or null) }
+  // Returns air flow, turbine inlet state, η_t and, if fuel was measured, η_b. No electrical load.
   function backout(p, t, eta_b_guess) {
-    const amb = ambient(t.T01, t.P01), Nc = t.N / Math.sqrt(amb.th), c = compressor(p, amb, t.N);
-    const T04 = t.EGT + p.egt_offset, P03 = (1 - p.dp_comb) * c.P2, Tf = amb.T01;
+    const amb = ambient(t.T01, t.P01), Nc = t.N / Math.sqrt(amb.th);
+    const c = compressor(p, amb, t.N);                             // no-load line, (3.1)–(3.3)
+    const T04 = t.EGT + p.egt_offset;                              // (8.1) inverted
+    const P03 = (1 - p.dp_comb) * c.P2;                            // (4.2)
+    const Tf = amb.T01;
     const m_f_known = t.fuel > 0 ? t.fuel * p.rho_fuel / 60000 : null;
+    // The exhaust composition depends on f, which depends on T03: iterate on f.
     let far = 0.022, r = null;
     for (let it = 0; it < 8; it++) {
-      const g = prodMix(nf_of(far));
+      const g = products(nf_of(far));
+      // (9.1) turbine-exit pressure that makes the nozzle produce the measured thrust, Eq. (6.6)
       const P04 = bisect(P => nozzle(g, T04, P, amb.P01, p).F - t.F, amb.P01 * 1.0001, amb.P01 * 4, 60);
-      const nz = nozzle(g, T04, P04, amb.P01, p), m_tot = nz.m;
+      const nz = nozzle(g, T04, P04, amb.P01, p), m_tot = nz.m;   // ṁ4 = ṁ5
       const m_air = m_f_known ? m_tot - m_f_known : m_tot / (1 + far);
-      const W_c = m_air * c.dh, h04 = g.h(T04), h03 = h04 + W_c / m_tot, T03 = g.T_h(h03, T04 + 100);
-      const farNew = m_f_known ? m_f_known / m_air : FAR_of(nf_for(c.T2, T03, Tf, eta_b_guess));
+      const W_c = m_air * c.dh;                                    // (3.7)
+      const h04 = g.h(T04);
+      const h03 = h04 + W_c / m_tot;                               // (9.2)  turbine work = compressor work
+      const T03 = g.T_h(h03, T04 + 100);
+      const farNew = m_f_known ? m_f_known / m_air : FAR_of(fuelForT03(c.T2, T03, Tf, eta_b_guess)); // (4.3)
       r = { amb, Nc, c, g, P04, nz, m_tot, m_air, W_c, T03, T04, P03, h03, h04 };
       if (Math.abs(farNew - far) < 1e-7) { far = farNew; break; }
       far = farNew;
     }
     r.far = far; r.m_f = r.m_air * far;
-    r.mc = r.m_air * Math.sqrt(amb.th) / amb.de;
+    r.mc = r.m_air * Math.sqrt(amb.th) / amb.de;                   // (9.5)  corrected air flow ṁ√θ/δ
     if (!(r.P04 < r.P03)) { r.bad = "This thrust and EGT need more turbine-exit pressure than the compressor delivers. Check the test values or assumptions."; return r; }
-    const s03 = r.g.s(r.T03, r.P03), T4s = r.g.T_sP(s03, r.P04, r.T04);
-    r.eta_turb = (r.h03 - r.h04) / (r.h03 - r.g.h(T4s));
-    r.eta_b = m_f_known ? etab_for(c.T2, r.T03, Tf, nf_of(far)) : null;
+    const s03 = r.g.s(r.T03, r.P03);
+    const T04s = r.g.T_sP(s03, r.P04, r.T04);                      // s(T04s, P04) = s(T03, P03)
+    r.h04s = r.g.h(T04s);
+    r.eta_turb = (r.h03 - r.h04) / (r.h03 - r.h04s);               // (9.3)  = Eq. (5.4)
+    r.eta_b = m_f_known ? etaBFromFuel(c.T2, r.T03, Tf, nf_of(far)) : null; // (9.6)
     r.fuel_mlmin = r.m_f / p.rho_fuel * 60000;
     return r;
   }
 
-  // fit m_ref, k, eta_turb, eta_b to a list of test points
+  // Fit m_ref, k, η_t, η_b and Q_ngv to a list of test points, Eq. (9.4)–(9.6)
   function calibrate(p, tests, opts) {
     const res = { pts: [], warnings: [] };
+    const mean = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
+    // (9.6) combustion efficiency: mean over points with a measured fuel flow, else the manual value
     const withFuel = tests.filter(t => t.fuel > 0), noFuel = tests.filter(t => !(t.fuel > 0));
     const bf = withFuel.map(t => backout(p, t, 0.9));
     const ebs = bf.filter(r => !r.bad && isFinite(r.eta_b)).map(r => r.eta_b);
-    res.eta_b = ebs.length ? ebs.reduce((a, b) => a + b, 0) / ebs.length : opts.eta_b_manual;
+    res.eta_b = ebs.length ? mean(ebs) : opts.eta_b_manual;
     const bn = noFuel.map(t => backout(p, t, res.eta_b));
     tests.forEach(t => res.pts.push({ t, r: (t.fuel > 0 ? bf[withFuel.indexOf(t)] : bn[noFuel.indexOf(t)]) }));
     const good = res.pts.filter(q => !q.r.bad && isFinite(q.r.eta_turb));
     res.pts.filter(q => q.r.bad).forEach(q => res.warnings.push(`${q.t.label || "Test point"}: ${q.r.bad}`));
     if (!good.length) { res.failed = true; return res; }
-    res.eta_turb = good.reduce((a, q) => a + q.r.eta_turb, 0) / good.length;
+    // (9.3) turbine efficiency: mean of the points
+    res.eta_turb = mean(good.map(q => q.r.eta_turb));
+    // (9.4) NGV flow parameter Q = ṁ4·√T03/P03: mean of the points, and their spread
     good.forEach(q => { q.r.Q = q.r.m_tot * Math.sqrt(q.r.T03) / q.r.P03; });
-    res.Q_ngv = good.reduce((a, q) => a + q.r.Q, 0) / good.length;
+    res.Q_ngv = mean(good.map(q => q.r.Q));
     res.Q_spread = good.length > 1 ? (Math.max(...good.map(q => q.r.Q)) / Math.min(...good.map(q => q.r.Q)) - 1) : null;
-    // corrected flow vs corrected speed: ln(mc) = a + k ln(Nc)
+    // (9.5) least-squares line ln ṁc = a + k·ln Nc, then ṁ_ref = ṁc at N_ref
     const xs = good.map(q => Math.log(q.r.Nc)), ys = good.map(q => Math.log(q.r.mc));
-    const xm = xs.reduce((a, b) => a + b, 0) / xs.length, ym = ys.reduce((a, b) => a + b, 0) / ys.length;
+    const xm = mean(xs), ym = mean(ys);
     const sxx = xs.reduce((a, x) => a + (x - xm) ** 2, 0);
     res.k_fit = sxx > 1e-6 ? xs.reduce((a, x, i) => a + (x - xm) * (ys[i] - ym), 0) / sxx : null;
     res.k = opts.k_auto && res.k_fit != null ? res.k_fit : opts.k_manual;
@@ -448,7 +628,8 @@ td.ok{color:var(--good)} td.off{color:var(--warn)}
     return res;
   }
 
-  const api = { run, backout, calibrate, psiFrom, compressor, ambient, Mix, AIR, LHV, TSTD, PSTD };
+  const api = { run, backout, calibrate, psiFrom, compressor, ambient, Mix, AIR, LHV, LHV_molar, NF_STOICH, FUEL,
+    H_air, D_rxn, h_fuel, FAR_of, TSTD, PSTD, P_REF, R_u };
   if (typeof module !== "undefined") module.exports = api; else root.CycleV2 = api;
 })(this);
 </script>
@@ -669,7 +850,7 @@ function update() {
   const warn = [];
   const C = calibrateAll();
   C.cal.warnings.forEach(w => warn.push(w));
-  if (!C.pTest) { warn.push("Calibration failed: at least one valid test point with speed, thrust and EGT is needed."); $("warn").textContent = warn.join(" "); last = null; return; }
+  if (!C.pTest) { warn.push("Calibration failed: at least one valid test point with speed, thrust and EGT is needed."); $("warn").textContent = warn.join(" "); last = null; renderEquations(null, null); return; }
   const o = opAt(C.pPred, state.Nc, state.P_elec);
   last = { o, C };
   if (o.failed) warn.push(...o.warnings);
@@ -701,6 +882,7 @@ function update() {
   renderStations(o);
   drawTS(o.failed ? null : o);
   renderRotor(o);
+  renderEquations(o, C);
 }
 
 function powerAtLimit(p, sweep) {
@@ -768,15 +950,25 @@ function renderStations(o) {
 }
 
 // ---------- rotor ----------
+const R_NUT = 0.0066;   // m, nut radius used for the nuts' inertia
+// Rotor inertia, torques and load-step deceleration, Eq. (10.1)–(10.3)
+function rotorCalc(o) {
+  const m_turb = rotor.m_total - rotor.m_comp - rotor.m_shaft - rotor.m_nuts;   // turbine wheel = total − other parts
+  const R_c = state.D_comp / 2, R_t = rotor.D_turb / 2, r_s = rotor.d_shaft / 2;
+  const I = rotor.kc * rotor.m_comp * R_c ** 2 + rotor.kt * m_turb * R_t ** 2    // (10.1)  wheels: I = k·m·R²
+    + 0.5 * rotor.m_shaft * r_s ** 2 + 0.5 * rotor.m_nuts * R_NUT ** 2;          //         solid cylinders: ½·m·r²
+  const N = o.failed ? state.Nc * Math.sqrt(state.T01 / 288.15) : o.Nphys;
+  const w = N * 2 * Math.PI / 60;                                                // (10.2)  ω = 2πN/60
+  const Wc = o.failed ? NaN : o.W_c, Ps = state.P_elec / state.eta_gen + state.P_drag;   // (5.2)
+  const Tc = Wc / w, Tg = Ps / w;                                                // (10.2)  T = P/ω
+  const tau = 16 * (Tc + Tg) / (Math.PI * rotor.d_shaft ** 3);                   // (10.2)  solid-shaft torsion
+  const alpha = Ps / (I * w);                                                    // (10.3)  I·dω/dt = −P_shaft/ω
+  const rpmPerS = alpha * 60 / (2 * Math.PI), t1 = 0.01 * w / alpha;
+  return { m_turb, R_c, R_t, r_s, I, N, w, Wc, Ps, Tc, Tg, tau, alpha, rpmPerS, t1 };
+}
 function renderRotor(o) {
-  const m_turb = rotor.m_total - rotor.m_comp - rotor.m_shaft - rotor.m_nuts;
-  const I = rotor.kc * rotor.m_comp * (state.D_comp / 2) ** 2 + rotor.kt * m_turb * (rotor.D_turb / 2) ** 2
-    + 0.5 * rotor.m_shaft * (rotor.d_shaft / 2) ** 2 + 0.5 * rotor.m_nuts * 0.0066 ** 2;
-  const N = o.failed ? state.Nc * Math.sqrt(state.T01 / 288.15) : o.Nphys, w = N * 2 * Math.PI / 60;
-  const Wc = o.failed ? NaN : o.W_c, Ps = state.P_elec / state.eta_gen + state.P_drag;
-  const Tc = Wc / w, Tg = Ps / w, tau = 16 * (Tc + Tg) / (Math.PI * rotor.d_shaft ** 3);
-  const alpha = Ps / (I * w), rpmPerS = alpha * 60 / (2 * Math.PI), t1 = 0.01 * w / alpha;
-  const U = d => Math.PI * d * N / 60;
+  const { m_turb, I, N, w, Ps, Tc, Tg, tau, rpmPerS, t1 } = rotorCalc(o);
+  const U = d => Math.PI * d * N / 60;                                           // (3.1)
   const rows = [
     ["Turbine mass (total − parts)", `${fmtS(fromSI("mass", m_turb), 3)} ${un("mass")}`],
     ["Polar moment of inertia", `${fmtS(fromSI("inertia", I), 3)} ${un("inertia")}`],
@@ -938,6 +1130,168 @@ function drawTS(o) {
   });
 }
 
+// ---------- key equations panel ----------
+// Each entry: tag (matches the "Eq. (x.y)" comments in the model), tex (one or more display
+// lines), an optional note, and val(ctx) returning TeX with the current numbers substituted.
+// ctx = { o: operating point from CycleV2.run, p: prediction parameters, cal: calibration, rot: rotorCalc(o) }
+const tn = (v, sig = 4) => isFinite(v) ? fmtS(v, sig).replace(/,/g, "{,}") : "\\text{—}";   // number for TeX
+const tu = u => `\\,\\mathrm{${u}}`;                                                          // unit for TeX
+const kPa = v => tn(v / 1000) + tu("kPa"), K_ = v => tn(v) + tu("K"), kJkg = v => tn(v / 1000) + tu("kJ/kg");
+const EQS = [
+  ["Ambient and corrected values", [
+    { tag: "1.1", tex: String.raw`\theta=\frac{T_{01}}{288.15\,\mathrm{K}},\qquad \delta=\frac{P_{01}}{101.325\,\mathrm{kPa}}`,
+      val: ({ o }) => String.raw`\theta=${tn(o.amb.th, 5)},\qquad \delta=${tn(o.amb.de, 5)}` },
+    { tag: "1.2", tex: String.raw`N_c=\frac{N}{\sqrt{\theta}},\qquad F_c=\frac{F}{\delta},\qquad T_c=\frac{T}{\theta}`,
+      note: "Corrected speed, thrust and (on the speed charts) test-point EGT.",
+      val: ({ o }) => String.raw`\begin{gathered}N=${tn(state.Nc, 6)}\sqrt{${tn(o.amb.th, 5)}}=${tn(o.Nphys, 6)}${tu("rpm")}\\ F_c=\frac{${tn(o.F)}}{${tn(o.amb.de, 5)}}=${tn(o.Fc)}${tu("N")}\end{gathered}` },
+  ]],
+  ["Gas properties", [
+    { tag: "2.1", tex: String.raw`\frac{c_{p,i}^\circ}{R_u}=a_1+a_2T+a_3T^2+a_4T^3+a_5T^4` },
+    { tag: "2.2", tex: String.raw`\begin{aligned}\frac{h_i^\circ}{R_uT}={}&a_1+\tfrac{a_2}{2}T+\tfrac{a_3}{3}T^2+\tfrac{a_4}{4}T^3\\&+\tfrac{a_5}{5}T^4+\frac{a_6}{T}\end{aligned}` },
+    { tag: "2.3", tex: String.raw`\begin{aligned}\frac{s_i^\circ}{R_u}={}&a_1\ln T+a_2T+\tfrac{a_3}{2}T^2\\&+\tfrac{a_4}{3}T^3+\tfrac{a_5}{4}T^4+a_7\end{aligned}`,
+      note: "NASA 7-coefficient fits (GRI-Mech 3.0) for N₂, O₂, CO₂, H₂O; the coefficient set switches at 1000 K. h° includes the enthalpy of formation." },
+    { tag: "2.4", tex: String.raw`\begin{aligned}M&=\textstyle\sum x_iM_i,\quad R=\dfrac{R_u}{M},\quad \gamma=\dfrac{c_p}{c_p-R}\\ h&=\tfrac{1}{M}\textstyle\sum x_ih_i^\circ,\qquad c_p=\tfrac{1}{M}\textstyle\sum x_ic_{p,i}^\circ\\ s&=\tfrac{1}{M}\textstyle\sum x_i\Big[s_i^\circ-R_u\ln\dfrac{x_iP}{P_\mathrm{ref}}\Big]\end{aligned}`,
+      note: "Ideal-gas mixture of mole fractions x<sub>i</sub>; P<sub>ref</sub> = 101.325 kPa.",
+      val: ({ o }) => String.raw`\begin{gathered}\text{exhaust: }M=${tn(o.g.MW)}${tu("g/mol")},\ R=${tn(o.g.R)}${tu("J/(kg\\,K)")}\\ \gamma_{04}=\gamma(T_{04})=${tn(o.g.gamma(o.T04))}\end{gathered}` },
+    { tag: "2.5", tex: String.raw`\begin{gathered}s(T_b,P_b)=s(T_a,P_a)\\ \iff\ \frac{P_b}{P_a}=\exp\!\left[\frac{s(T_b,P)-s(T_a,P)}{R}\right]\end{gathered}`,
+      note: "Isentropic relation for a gas of fixed composition, used in the compressor, turbine and nozzle. T from h or s is found by Newton iteration." },
+  ]],
+  ["Compressor (1 → 2)", [
+    { tag: "3.1", tex: String.raw`U=\frac{\pi D_cN}{60}`,
+      val: ({ o, p }) => String.raw`U=\frac{\pi(${tn(p.D_comp)}${tu("m")})(${tn(o.Nphys, 6)}${tu("rpm")})}{60}=${tn(o.line.U)}${tu("m/s")}` },
+    { tag: "3.2", tex: String.raw`\Delta h_0=\psi U^2`,
+      note: "ψ is set so the pressure ratio equals the assumed r<sub>ref</sub> at 154,000 rpm on a standard day, so r rises roughly with N².",
+      val: ({ o, p }) => String.raw`\Delta h_0=(${tn(p.psi)})(${tn(o.line.U)})^2=${kJkg(o.line.dh)}` },
+    { tag: "3.3", tex: String.raw`h_{2s}=h_1+\eta_c\,\Delta h_0,\qquad r_\mathrm{op}=\frac{P_{02}}{P_{01}}\ \text{via (2.5)}`,
+      note: "No-load operating line.",
+      val: ({ o, p }) => String.raw`\eta_c=${tn(p.eta_comp, 3)}\ \Rightarrow\ T_{2s}=${K_(o.line.T2s)},\ r_\mathrm{op}=${tn(o.line.r)}` },
+    { tag: "3.4", tex: String.raw`\dot m_\mathrm{op}=\dot m_\mathrm{ref}\left(\frac{N_c}{N_\mathrm{ref}}\right)^{k}\frac{\delta}{\sqrt{\theta}}`,
+      val: ({ o, p }) => String.raw`\dot m_\mathrm{op}=${tn(p.m_ref)}\left(\frac{${tn(state.Nc, 6)}}{${tn(p.N_ref, 6)}}\right)^{${tn(p.k, 3)}}\frac{${tn(o.amb.de, 4)}}{\sqrt{${tn(o.amb.th, 4)}}}=${tn(o.m_op)}${tu("kg/s")}` },
+    { tag: "3.5", tex: String.raw`r=r_\mathrm{op}\left(\frac{\dot m}{\dot m_\mathrm{op}}\right)^{-S}`,
+      note: "Under load the compressor slides along its speed line: less flow, higher pressure ratio, toward surge.",
+      val: ({ o, p }) => String.raw`r=${tn(o.line.r)}\left(\frac{${tn(o.m_air)}}{${tn(o.m_op)}}\right)^{-${tn(p.S, 3)}}=${tn(o.c.r)}` },
+    { tag: "3.6", tex: String.raw`\begin{gathered}h_{02}=h_{01}+\frac{h(T_{2s})-h_{01}}{\eta_c}\\ s(T_{2s},\,rP_{01})=s(T_{01},P_{01})\end{gathered}`,
+      val: ({ o }) => String.raw`T_{2s}=${K_(o.c.T2s)},\quad T_{02}=${K_(o.c.T2)},\quad P_{02}=${kPa(o.c.P2)}` },
+    { tag: "3.7", tex: String.raw`W_c=\dot m\,(h_{02}-h_{01})`,
+      val: ({ o }) => String.raw`W_c=(${tn(o.m_air)})(${tn(o.c.dh / 1000)}\times10^3)=${tn(o.W_c)}${tu("W")}` },
+  ]],
+  ["Combustor (2 → 3)", [
+    { tag: "4.1", tex: String.raw`\mathrm{C_{12}H_{26}(l)}+18.5\,\mathrm{O_2}\longrightarrow12\,\mathrm{CO_2}+13\,\mathrm{H_2O}`,
+      note: "Complete lean combustion. Products per mol of air: 12n<sub>f</sub> CO₂, 13n<sub>f</sub> H₂O, (0.21 − 18.5n<sub>f</sub>) O₂, 0.79 N₂." },
+    { tag: "4.2", tex: String.raw`P_{03}=(1-\Delta_b)\,P_{02}`,
+      val: ({ o, p }) => String.raw`P_{03}=(1-${tn(p.dp_comb, 3)})(${kPa(o.c.P2)})=${kPa(o.P03)}` },
+    { tag: "4.3", tex: [String.raw`\begin{aligned}\bar H_\mathrm{air}(T_{02})+n_f\,\bar h_f(T_f)={}&\bar H_\mathrm{air}(T_{03})+n_f\,\bar D(T_{03})\\&+n_f\,(1-\eta_b)\,\overline{\mathrm{LHV}}\end{aligned}`,
+        String.raw`\begin{aligned}\bar H_\mathrm{air}&=0.21\,\bar h_\mathrm{O_2}+0.79\,\bar h_\mathrm{N_2}\\ \bar D&=12\,\bar h_\mathrm{CO_2}+13\,\bar h_\mathrm{H_2O}-18.5\,\bar h_\mathrm{O_2}\\ \bar h_f&=\bar h^\circ_{f}+\bar c_{p,f}\,(T_f-298.15)\end{aligned}`],
+      note: "Energy balance per mol of air (bars: molar values). Solved for n<sub>f</sub> given T₀₃, or for η<sub>b</sub> given a measured fuel flow. η<sub>b</sub> also covers heat lost through the casing. Fuel enters at ambient temperature.",
+      val: ({ o, p }) => { const Tf = o.amb.T01, C = CycleV2;
+        const num = C.H_air(o.c.T2) - C.H_air(o.T03), den = C.D_rxn(o.T03) - C.h_fuel(Tf) + (1 - p.eta_b) * C.LHV_molar;
+        return String.raw`n_f=\frac{${tn(num / 1000)}}{${tn(den / 1000)}}=${tn(o.nf)}${tu("mol/mol_{air}")},\ \ \eta_b=${tn(p.eta_b, 3)}`; } },
+    { tag: "4.4", tex: String.raw`\overline{\mathrm{LHV}}=\bar h^\circ_{f}-\bar D(298.15\,\mathrm{K})`,
+      val: () => String.raw`\overline{\mathrm{LHV}}=${tn(CycleV2.LHV_molar / 1000)}${tu("kJ/mol")}\ \Rightarrow\ \mathrm{LHV}=${tn(CycleV2.LHV / 1e6)}${tu("MJ/kg")}` },
+    { tag: "4.5", tex: String.raw`f=\frac{\dot m_f}{\dot m}=\frac{n_fM_f}{M_\mathrm{air}},\qquad \phi=\frac{n_f}{0.21/18.5}`,
+      val: ({ o }) => String.raw`f=${tn(o.far)},\quad \phi=${tn(o.phi, 3)},\quad \dot m_f=${tn(o.m_f * 1000)}${tu("g/s")}` },
+  ]],
+  ["Turbine (3 → 4)", [
+    { tag: "5.1", tex: String.raw`\frac{\dot m_4\sqrt{T_{03}}}{P_{03}}=Q_\mathrm{NGV},\qquad \dot m_4=\dot m\,(1+f)`,
+      note: "Choked nozzle guide vanes; Q<sub>NGV</sub> comes from the test points (9.4). Solved for T₀₃.",
+      val: ({ o, p }) => String.raw`\frac{(${tn(o.m_tot)})\sqrt{${tn(o.T03)}}}{${tn(o.P03, 5)}}=${tn(o.m_tot * Math.sqrt(o.T03) / o.P03 * 1e5)}\times10^{-5}=Q_\mathrm{NGV}` },
+    { tag: "5.2", tex: String.raw`P_\mathrm{shaft}=\frac{P_\mathrm{elec}}{\eta_\mathrm{gen}}+P_\mathrm{drag}`,
+      val: ({ o }) => String.raw`P_\mathrm{shaft}=\frac{${tn(state.P_elec)}}{${tn(state.eta_gen, 3)}}+${tn(state.P_drag)}=${tn(o.P_shaft)}${tu("W")}` },
+    { tag: "5.3", tex: String.raw`W_t=W_c+P_\mathrm{shaft}=\dot m_4\,(h_{03}-h_{04})`,
+      note: "Bearing losses are folded into the calibrated turbine efficiency.",
+      val: ({ o }) => String.raw`\begin{gathered}W_t=${tn(o.W_c)}+${tn(o.P_shaft)}=${tn(o.W_t)}${tu("W")}\\ h_{03}-h_{04}=\frac{${tn(o.W_t)}}{${tn(o.m_tot)}}=${kJkg(o.h03 - o.h04)}\ \Rightarrow\ T_{04}=${K_(o.T04)}\end{gathered}` },
+    { tag: "5.4", tex: String.raw`\begin{gathered}\eta_t=\frac{h_{03}-h_{04}}{h_{03}-h_{04s}}\\ s(T_{04s},P_{04})=s(T_{03},P_{03})\end{gathered}`,
+      val: ({ o, p }) => String.raw`\eta_t=${tn(p.eta_turb, 3)}\ \Rightarrow\ T_{04s}=${K_(o.T04s)},\ P_{04}=${kPa(o.P04)}` },
+  ]],
+  ["Nozzle (4 → 5)", [
+    { tag: "6.1", tex: String.raw`A_5=\frac{\pi}{4}\left(D_n^2-D_\mathrm{cone}^2\right)`,
+      val: ({ o, p }) => String.raw`A_5=\frac{\pi}{4}\left(${tn(p.D_noz)}^2-${tn(p.D_cone || 0)}^2\right)=${tn(o.A5 * 1e4)}${tu("cm^2")}` },
+    { tag: "6.2", tex: String.raw`P^*=P_{04}\left(\frac{2}{\gamma+1}\right)^{\frac{\gamma}{\gamma-1}},\qquad P_5=\max(P_a,\,P^*)`,
+      val: ({ o }) => String.raw`\gamma=${tn(o.nz.gamma)},\ P^*=${kPa(o.nz.Pcrit)}\ \Rightarrow\ \text{${o.choked ? "choked" : "not choked"}},\ P_5=${kPa(o.P5)}` },
+    { tag: "6.3", tex: String.raw`\begin{gathered}h_5=h_{04}-\eta_n\left[h_{04}-h(T_{5s})\right]\\ s(T_{5s},P_5)=s(T_{04},P_{04})\end{gathered}`,
+      val: ({ o, p }) => String.raw`\eta_n=${tn(p.eta_nozzle, 3)},\ T_{5s}=${K_(o.nz.T5s)},\ T_5=${K_(o.T5)}` },
+    { tag: "6.4", tex: String.raw`V_5=\sqrt{2\,(h_{04}-h_5)},\qquad \rho_5=\frac{P_5}{RT_5}`,
+      val: ({ o }) => String.raw`V_5=\sqrt{2(${tn((o.nz.h04 - o.nz.h5) / 1000)}\times10^3)}=${tn(o.V5)}${tu("m/s")},\ \rho_5=${tn(o.nz.rho5)}${tu("kg/m^3")}` },
+    { tag: "6.5", tex: String.raw`\dot m_5=C_d\,\rho_5V_5A_5`,
+      val: ({ o, p }) => String.raw`\dot m_5=(${tn(p.Cd, 3)})(${tn(o.nz.rho5)})(${tn(o.V5)})(${tn(o.A5 * 1e4)}\times10^{-4})=${tn(o.nz.m)}${tu("kg/s")}` },
+    { tag: "6.6", tex: String.raw`F=\dot m_5V_5+(P_5-P_a)\,A_5`,
+      val: ({ o }) => String.raw`F=(${tn(o.nz.m)})(${tn(o.V5)})+(${tn(o.P5 - o.amb.P01)})(${tn(o.A5 * 1e4)}\times10^{-4})=${tn(o.F)}${tu("N")}` },
+  ]],
+  ["Matching the operating point", [
+    { tag: "7.1", tex: String.raw`\text{find } \dot m:\quad \dot m_5(\dot m)=\dot m\,(1+f)`,
+      note: "For a trial air flow: (3.5)–(3.6) give station 2, (5.1) with (4.3) gives T₀₃ and f, (5.3)–(5.4) give station 4, and (6.1)–(6.5) give the flow the nozzle can pass. Bisection on ṁ until the two flows agree.",
+      val: ({ o }) => String.raw`\dot m=${tn(o.m_air, 5)},\quad \dot m_5=${tn(o.nz.m, 5)}\approx\dot m_4=${tn(o.m_tot, 5)}${tu("kg/s")}` },
+  ]],
+  ["Performance", [
+    { tag: "8.1", tex: String.raw`\mathrm{EGT}=T_{04}-\Delta T_\mathrm{tc}`,
+      note: "ΔT<sub>tc</sub>: how low the ECU thermocouple reads.",
+      val: ({ o, p }) => String.raw`\mathrm{EGT}=${tn(o.T04)}-${tn(p.egt_offset)}=${K_(o.EGT)}\ (${tn(o.EGT - 273.15)}\,^\circ\mathrm{C})` },
+    { tag: "8.2", tex: String.raw`\mathrm{TSFC}=\frac{\dot m_f}{F},\qquad \dot V_f=\frac{\dot m_f}{\rho_f}`,
+      val: ({ o }) => String.raw`\mathrm{TSFC}=${tn(o.TSFC, 3)}${tu("kg/(N\\,h)")},\quad \dot V_f=${tn(o.fuel_mlmin, 3)}${tu("ml/min")}` },
+    { tag: "8.3", tex: String.raw`\eta_\mathrm{th}=\frac{\tfrac12\dot m_5V_5^2+P_\mathrm{elec}/\eta_\mathrm{gen}}{\dot m_f\,\mathrm{LHV}}`,
+      val: ({ o }) => String.raw`\eta_\mathrm{th}=\frac{${tn(o.nz.m * o.V5 ** 2 / 2)}+${tn(state.P_elec / state.eta_gen)}}{${tn(o.m_f * CycleV2.LHV)}}=${tn(o.eta_th * 100, 3)}\,\%` },
+  ]],
+  ["Calibration (test points run backwards)", [
+    { tag: "9.1", tex: String.raw`\begin{gathered}T_{04}=\mathrm{EGT}+\Delta T_\mathrm{tc}\\ F(P_{04})=F_\mathrm{meas}\ \text{via (6.2)–(6.6)}\\ \Rightarrow\ P_{04},\quad \dot m_4=\dot m_5\end{gathered}` },
+    { tag: "9.2", tex: String.raw`h_{03}=h_{04}+\frac{W_c}{\dot m_4},\qquad W_c=\dot m\,\psi U^2`,
+      note: "No electrical load during the tests; the compressor is on its no-load line." },
+    { tag: "9.3", tex: String.raw`\eta_t=\frac{h_{03}-h_{04}}{h_{03}-h_{04s}}\quad\text{(mean over points)}`,
+      val: ({ cal }) => String.raw`\eta_t=${tn(cal.eta_turb, 3)}` },
+    { tag: "9.4", tex: String.raw`Q_\mathrm{NGV}=\operatorname{mean}\!\left(\frac{\dot m_4\sqrt{T_{03}}}{P_{03}}\right)`,
+      val: ({ cal }) => String.raw`Q_\mathrm{NGV}=${tn(cal.Q_ngv * 1e5)}\times10^{-5}${cal.Q_spread != null ? String.raw`\ \ (\text{spread } ${tn(cal.Q_spread * 100, 2)}\,\%)` : ""}` },
+    { tag: "9.5", tex: String.raw`\begin{gathered}\ln\dot m_c=a+k\ln N_c\ \ \text{(least squares)}\\ \dot m_c=\frac{\dot m\sqrt{\theta}}{\delta},\qquad \dot m_\mathrm{ref}=\dot m_c(N_\mathrm{ref})\end{gathered}`,
+      val: ({ cal }) => String.raw`k=${tn(cal.k, 3)}\ (\text{${state.k_auto && cal.k_fit != null ? "fitted" : "manual"}}),\quad \dot m_\mathrm{ref}=${tn(cal.m_ref)}${tu("kg/s")}` },
+    { tag: "9.6", tex: String.raw`\eta_b\ \text{from (4.3) with the measured } \dot m_f`,
+      val: ({ cal }) => String.raw`\eta_b=${tn(cal.eta_b, 3)}${cal.pts.some(q => q.t.fuel > 0) ? "" : String.raw`\ (\text{manual})`}` },
+  ]],
+  ["Rotor and shaft", [
+    { tag: "10.1", tex: String.raw`I=k_cm_cR_c^2+k_tm_tR_t^2+\tfrac12m_sr_s^2+\tfrac12m_nr_n^2`,
+      note: "k = I/(mR²) for each wheel; shaft and nuts as solid cylinders.",
+      val: ({ rot }) => String.raw`I=${tn(rot.I * 1e6)}${tu("kg\\,mm^2")}` },
+    { tag: "10.2", tex: String.raw`\omega=\frac{2\pi N}{60},\qquad T=\frac{P}{\omega},\qquad \tau=\frac{16\,(T_c+T_g)}{\pi d^3}`,
+      val: ({ rot }) => String.raw`T_c=${tn(rot.Tc, 3)},\ T_g=${tn(rot.Tg, 3)}${tu("N\\,m")},\ \tau=${tn(rot.tau / 1e6, 3)}${tu("MPa")}` },
+    { tag: "10.3", tex: String.raw`\frac{dN}{dt}=-\frac{60}{2\pi}\,\frac{P_\mathrm{shaft}}{I\,\omega}`,
+      note: "If the load comes on before the ECU adds fuel.",
+      val: ({ rot }) => String.raw`\frac{dN}{dt}=-${tn(rot.rpmPerS, 3)}${tu("rpm/s")}` },
+  ]],
+];
+
+// KaTeX draws the TeX; if it failed to load, show the TeX source instead.
+function tex(el, src) {
+  if (window.katex) katex.render(src, el, { displayMode: true, throwOnError: false });
+  else { el.classList.add("eq-raw"); el.textContent = src; }
+}
+function buildEquations() {
+  const host = $("eqList");
+  host.innerHTML = EQS.map(([title, eqs], si) => `<div class="eq-sec"><h3>${si + 1} · ${title}</h3>` + eqs.map(e => `
+    <div class="eq" id="eq-${e.tag}">
+      ${[].concat(e.tex).map((_, i) => `<div class="eq-row"><div class="eq-tex" data-i="${i}"></div>${i === 0 ? `<span class="eq-tag">(${e.tag})</span>` : ""}</div>`).join("")}
+      ${e.note ? `<p class="eq-note">${e.note}</p>` : ""}
+      ${e.val ? `<div class="eq-val"></div>` : ""}
+    </div>`).join("") + "</div>").join("");
+  EQS.forEach(([, eqs]) => eqs.forEach(e => {
+    const box = $("eq-" + e.tag);
+    [].concat(e.tex).forEach((src, i) => tex(box.querySelector(`.eq-tex[data-i="${i}"]`), src));
+  }));
+  const cb = $("eqVals");
+  cb.checked = load("p100-v2-eqvals", true);
+  $("eqs").classList.toggle("novals", !cb.checked);
+  cb.addEventListener("change", () => { $("eqs").classList.toggle("novals", !cb.checked); save("p100-v2-eqvals", cb.checked); });
+}
+// fill in the numbers; o is null or failed when there is no matched operating point
+function renderEquations(o, C) {
+  const ok = o && !o.failed;
+  const ctx = ok ? { o, p: C.pPred, cal: C.cal, rot: rotorCalc(o) } : null;
+  EQS.forEach(([, eqs]) => eqs.forEach(e => {
+    if (!e.val) return;
+    const el = $("eq-" + e.tag).querySelector(".eq-val");
+    let src = null;
+    if (ctx) { try { src = e.val(ctx); } catch (err) { console.warn(`Eq. (${e.tag})`, err); } }
+    if (src == null) { el.classList.add("na"); el.textContent = "No matched operating point."; return; }
+    el.classList.remove("na"); el.textContent = ""; tex(el, src);
+  }));
+}
+
 // ---------- CSV ----------
 $("csv").onclick = () => {
   if (!last || last.o.failed) return;
@@ -954,6 +1308,6 @@ $("csv").onclick = () => {
   navigator.clipboard.writeText(L.join("\n")).then(() => { const b = $("csv"); b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy results (CSV)", 1200); });
 };
 
-buildUnits(); buildForm(); buildTests(); buildRotor(); update();
+buildUnits(); buildForm(); buildTests(); buildRotor(); buildEquations(); update();
 </script>
 </body></html>
