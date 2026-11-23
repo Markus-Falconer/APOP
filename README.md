@@ -32,3 +32,7 @@ To move or rename a page in the menus, change only `site.js`. Any page can still
 ## 3D views
 
 `viewer3d.js` is a small shared WebGL viewer (orbit, preset views, cutaway, exploded view, clipping) plus mesh helpers for tubes, bends, cones, lofts and plates. Load it before a page's own geometry script and build parts as described at the top of the file; `aft-turbine-v3-3d.js` is a compact example.
+
+## Equations on Cycle Analysis V2
+
+The "Key equations" panel on `cycle-v2.html` typesets the model's equations with KaTeX (vendored in `vendor/katex/`, no network needed) and substitutes the current operating point's numbers. Each equation has a tag such as (3.6), and the model code carries the same tag in an `Eq. (3.6)` comment, so a reviewer can check the code against the panel line by line. The equations are listed in `EQS` in the page script; when you change a relation in the model, update its entry there too.
