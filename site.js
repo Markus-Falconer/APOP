@@ -42,7 +42,7 @@ const SITE = [
       { id: "magnetic-gear", href: "magnetic-gear.html", menu: "Magnetic gear options",
         title: "Magnetic Gear Options", sub: "Coaxial and face-to-face magnetic gears to run the Lehner 1535 below its 85,000 rpm limit" },
       { id: "motor-dynamics", href: "motor-dynamics.html", menu: "Motor dynamics",
-        title: "Motor Dynamics", sub: "Donor motor as a high-speed starter-generator: rotor stress, sleeve fit, Kv, losses, bearings, critical speeds, starting" }
+        title: "Motor Dynamics", sub: "LMT 1535/17 against the 1525 as a high-speed starter-generator: sleeve burst, critical speeds, Kv, losses, bearings, starting" }
     ]
   }
 ];
