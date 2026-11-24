@@ -39,6 +39,8 @@ const SITE = [
         title: "Nozzle Modification", sub: "JetCat P100-RX · sizing the exhaust nozzle for the 90% corrected speed condition" },
       { id: "load-bank", href: "load-bank.html", menu: "Load bank shopping",
         title: "Load Bank Shopping", sub: "Test equipment for the power-generation side: what the ICD requires and what to buy" },
+      { id: "magnetic-coupler", href: "magnetic-coupler.html", menu: "Magnetic coupler",
+        title: "Magnetic Coupler", sub: "Coaxial magnet coupler from the Lehner 1525 starter-generator to the P100 compressor nut: torque, checks, modes and operating procedures" },
       { id: "magnetic-gear", href: "magnetic-gear.html", menu: "Magnetic gear options",
         title: "Magnetic Gear Options", sub: "Coaxial and face-to-face magnetic gears to run the Lehner 1535 below its 85,000 rpm limit" },
       { id: "motor-dynamics", href: "motor-dynamics.html", menu: "Motor dynamics",
