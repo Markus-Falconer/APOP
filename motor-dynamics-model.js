@@ -16,6 +16,8 @@
 //  - Rotordynamics: Jeffcott bending mode with a stiffer magnet section, rigid-body bounce and rocking
 //    modes on the bearing stiffness, combined with Dunkerley.
 //  - Starting: DC-motor torque line against a quadratic spool drag, integrated in time.
+//
+// Each relation carries an "Eq. (x.y)" tag that matches the Key equations panel on the page.
 (function (root) {
   const MU0 = 4e-7 * Math.PI, RHO_CU20 = 1.724e-8, A_CU = 0.00393, RHO_FE = 7650;
   const AIR_RHO = 1.2, AIR_MU = 1.85e-5, NU_MAG = 0.24, NU_SH = 0.3, DRAG_REF_RPM = 20000, PRELOAD_N = 20;
@@ -74,10 +76,10 @@
   // Fundamental peak radial field at the stator bore.
   function gapB(model, poles, Br, rm, ri, Rs, gMag, kc) {
     if (model === "diam" && poles === 2) {
-      // Uniformly magnetised cylinder (bore ri) inside an iron bore Rs: a 2-D dipole plus its image.
+      // Uniformly magnetised cylinder (bore ri) inside an iron bore Rs: a 2-D dipole plus its image.  Eq. (4.2)
       return Br * (rm * rm - ri * ri) / (Rs * Rs) / kc;
     }
-    const lm = rm - ri, arc = 0.85;   // surface magnets, 85% pole arc
+    const lm = rm - ri, arc = 0.85;   // surface magnets, 85% pole arc.  Eq. (4.3)
     return 4 / Math.PI * Math.sin(Math.PI * arc / 2) * Br * lm / (lm + 1.05 * kc * gMag);
   }
 
@@ -112,39 +114,42 @@
     const clr = Rs - rso, gMag = Rs - rm;
     Object.assign(o, { Rs, rm, ri, t, rso, rsm, Lm, Lstk, Leff, clr, gMag, fits: clr > 0 && rm > ri && t > 0 });
 
-    // ---------- 1. speeds
+    // ---------- 1. speeds  Eq. (1.1)
     const wD = w(i.nDesign), wG = w(i.nGen), wM = w(i.nMax);
     Object.assign(o, { wD, wG, wM, feD: pp * i.nDesign / 60, feG: pp * i.nGen / 60,
       vMag: wD * rm, vSlv: wD * rso, vSlvG: wG * rso });
 
     // ---------- 2. unsupported magnet
     const nu = NU_MAG;
-    o.sRing = mag.rho * (wD * rm) ** 2;
-    o.sBore = ri > 0 ? (3 + nu) / 4 * mag.rho * wD ** 2 * (rm * rm + (1 - nu) / (3 + nu) * ri * ri)
+    o.sRing = mag.rho * (wD * rm) ** 2;                               // Eq. (2.1)
+    o.sBore = ri > 0 ?   /* Eq. (2.2) */ (3 + nu) / 4 * mag.rho * wD ** 2 * (rm * rm + (1 - nu) / (3 + nu) * ri * ri)
                      : (3 + nu) / 8 * mag.rho * wD ** 2 * rm * rm;
     o.magMargin = mag.tens * 1e6 / o.sBore;
 
     // ---------- 3. sleeve and interference
-    o.pc = mag.rho * wD ** 2 * (rm ** 3 - ri ** 3) / (3 * rm);
+    o.pc = mag.rho * wD ** 2 * (rm ** 3 - ri ** 3) / (3 * rm);       // Eq. (3.1)
     o.sSelf = slv.rho * (wD * rsm) ** 2;
-    o.sLift = (o.pc + i.pres * 1e6) * rsm / t + o.sSelf;            // sleeve stress needed at speed
+    o.sLift = (o.pc + i.pres * 1e6) * rsm / t + o.sSelf;            // Eq. (3.2) sleeve stress needed at speed
     o.aIn = ri > 0 ? (mag.alpha * (rm - ri) + sh.alpha * ri) / rm : mag.alpha;
     o.dT = i.Trotor - i.Tasm;
-    o.sTh = slv.E * (o.aIn - slv.alpha) * o.dT;                      // + means heating tightens the fit
-    o.s0 = o.sLift - Math.min(0, o.sTh);                             // static stress to build in
+    o.sTh = slv.E * (o.aIn - slv.alpha) * o.dT;                      // Eq. (3.3) + means heating tightens the fit
+    o.s0 = o.sLift - Math.min(0, o.sTh);                             // Eq. (3.4) static stress to build in
     o.sMax = o.s0 + Math.max(0, o.sTh);
     o.allow = slv.ult * 1e6 / i.SF;
-    o.slvMargin = o.allow / o.sMax;
+    o.slvMargin = o.allow / o.sMax;                                  // Eq. (3.4)
     o.p0 = o.s0 * t / rsm;
     o.dSleeve = o.s0 * rsm / slv.E;
     o.dMag = o.p0 * (rm - ri) / mag.E;
     o.dShaft = ri > 0 ? o.p0 * (rm / ri) * ri * (1 - NU_SH) / sh.E : 0;
-    o.interf = 2 * (o.dSleeve + o.dMag + o.dShaft);                  // diametral, m
+    o.interf = 2 * (o.dSleeve + o.dMag + o.dShaft);                  // Eq. (3.5) diametral, m
     o.governs = o.sTh < 0 ? "hot at speed" : "cold at speed";
+    // Eq. (3.6) burst estimate with no preload (a glued sleeve): both terms of (3.2) scale with n²
+    o.sLift0 = o.pc * rsm / t + o.sSelf;
+    o.nBurst = i.nDesign * Math.sqrt(slv.ult * 1e6 / o.sLift0);
 
     // ---------- 4. field
     const BrT = (m, T) => m.Br * (1 + m.aBr * (T - 20));
-    o.BrHot = BrT(mag, i.Trotor);
+    o.BrHot = BrT(mag, i.Trotor);                                    // Eq. (4.1)
     o.BStock = gapB(model, poles, magS.Br, mm(i.dmStockOD) / 2, mm(i.dmStockID) / 2, Rs, Rs - mm(i.dmStockOD) / 2, i.kc);
     o.B20 = gapB(model, poles, mag.Br, rm, ri, Rs, gMag, i.kc);
     o.BHot = gapB(model, poles, o.BrHot, rm, ri, Rs, gMag, i.kc);
@@ -152,15 +157,15 @@
 
     // ---------- 5. Kv scaling
     const cRun = conn(i.connRated, i.connRun), LeffStock = Math.min(mm(i.LmStock), Lstk);
-    o.kvGeom = (o.BStock / o.B20) * (LeffStock / Leff) / i.turns * cRun.kv;
+    o.kvGeom = (o.BStock / o.B20) * (LeffStock / Leff) / i.turns * cRun.kv;   // Eq. (5.1)
     o.Kv20 = i.KvRated * o.kvGeom;
     o.KvHot = o.Kv20 * o.B20 / o.BHot;
-    o.Kt = 60 / (2 * Math.PI * o.KvHot);
+    o.Kt = 60 / (2 * Math.PI * o.KvHot);                              // Eq. (5.2)
     o.KtRated = 60 / (2 * Math.PI * i.KvRated);
     const VLL = (n, kv) => n / kv;
     o.volts = [["Idle", i.nIdle], ["Generating", i.nGen], ["Engine max", i.nMax], ["Design (overspeed)", i.nDesign]]
       .map(([k, n]) => ({ k, n, VpkHot: VLL(n, o.KvHot), VdcHot: 3 / Math.PI * VLL(n, o.KvHot), VdcCold: 3 / Math.PI * VLL(n, o.Kv20) }));
-    o.VocMaxCold = 3 / Math.PI * VLL(Math.max(i.nDesign, i.nMax), o.Kv20);
+    o.VocMaxCold = 3 / Math.PI * VLL(Math.max(i.nDesign, i.nMax), o.Kv20);   // Eq. (5.2)
 
     // ---------- 6. electrical resistance and inductance of the candidate winding
     o.rFac = i.turns * i.turns * cRun.r;
@@ -170,7 +175,7 @@
 
     // AC factor at the generating frequency, weighted over six-pulse current harmonics (amplitude 1/h)
     const rhoCu = RHO_CU20 * (1 + A_CU * (i.Twind - 20));
-    o.delta = Math.sqrt(rhoCu / (Math.PI * o.feG * MU0));
+    o.delta = Math.sqrt(rhoCu / (Math.PI * o.feG * MU0));            // Eq. (7.1)
     o.dOverDelta = mm(i.strand) / o.delta;
     const H = [1, 5, 7, 11, 13, 17, 19];
     let num = 0, den = 0;
@@ -181,20 +186,20 @@
 
     // ---------- 6b. generating point (six-diode bridge)
     o.Edc = 3 / Math.PI * i.nGen / o.KvHot;
-    o.V0 = o.Edc - 2 * i.Vd;
+    o.V0 = o.Edc - 2 * i.Vd;                                         // Eq. (6.1)
     o.Rx = 3 / Math.PI * (2 * Math.PI * o.feG) * (o.Lll / 2);        // commutation drop, not a loss
-    o.Req = o.Rac + o.Rx;
+    o.Req = o.Rac + o.Rx;                                            // Eq. (6.1)
     o.Pmax = o.V0 > 0 ? o.V0 * o.V0 / (4 * o.Req) : 0;
     const disc = o.V0 * o.V0 - 4 * o.Req * i.Pdc;
     o.canMake = disc >= 0 && o.V0 > 0;
-    o.Idc = o.canMake ? (o.V0 - Math.sqrt(disc)) / (2 * o.Req) : NaN;
+    o.Idc = o.canMake ? (o.V0 - Math.sqrt(disc)) / (2 * o.Req) : NaN;  // Eq. (6.2)
     o.Vdc = i.Pdc / o.Idc;
     o.Rload = o.Vdc / o.Idc;
     o.Iph = Math.sqrt(2 / 3) * o.Idc;
-    o.Pcu = o.Rac * o.Idc ** 2;
-    o.Pdiode = 2 * i.Vd * o.Idc;
+    o.Pcu = o.Rac * o.Idc ** 2;                                      // Eq. (7.1)
+    o.Pdiode = 2 * i.Vd * o.Idc;                                     // Eq. (7.4)
     o.Pem = i.Pdc + o.Pcu + o.Pdiode;
-    o.Tem = o.Pem / wG;
+    o.Tem = o.Pem / wG;                                              // Eq. (6.3)
     o.shear = o.Tem / (2 * Math.PI * Rs * Rs * Leff);
     o.ripple = 1 - Math.cos(Math.PI / 6);
     o.Icont = i.Icont;
@@ -205,21 +210,21 @@
     const fr = o.feG / 1000, B2 = o.Bcore ** 2;
     o.pFeH = lam.p * lam.hf * fr * B2;
     o.pFeE = lam.p * (1 - lam.hf) * fr * fr * B2;
-    o.Pfe = i.kfe * o.mFe * (o.pFeH + o.pFeE);
+    o.Pfe = i.kfe * o.mFe * (o.pFeH + o.pFeE);                       // Eq. (7.2)
     o.ReW = AIR_RHO * wG * rso * Math.max(o.clr, 1e-5) / AIR_MU;
     o.CM = windCM(o.ReW, Math.max(o.clr, 1e-5) / rso);
-    o.Pwind = 0.5 * o.CM * Math.PI * AIR_RHO * wG ** 3 * rso ** 4 * Lm;
+    o.Pwind = 0.5 * o.CM * Math.PI * AIR_RHO * wG ** 3 * rso ** 4 * Lm;   // Eq. (7.3)
     o.dm = (i.dBrg + i.DBrg) / 2;
     const nuN = lub.nu * i.nGen;
     o.M0 = (nuN >= 2000 ? 1e-7 * lub.f0 * Math.pow(nuN, 2 / 3) : 160e-7 * lub.f0) * o.dm ** 3;   // N·mm
     o.M1 = 0.0007 * PRELOAD_N * o.dm;                                                           // N·mm
-    o.Pbrg = 2 * (o.M0 + o.M1) * 1e-3 * wG;
+    o.Pbrg = 2 * (o.M0 + o.M1) * 1e-3 * wG;                          // Eq. (7.4)
     o.Ploss = o.Pcu + o.Pdiode + o.Pfe + o.Pwind + o.Pbrg;
     o.Pshaft = o.Pem + o.Pfe + o.Pwind + o.Pbrg;
     o.Tshaft = o.Pshaft / wG;
-    o.eff = i.Pdc / o.Pshaft;
+    o.eff = i.Pdc / o.Pshaft;                                        // Eq. (7.5)
 
-    // ---------- 8. bearings
+    // ---------- 8. bearings  Eq. (8.1)
     o.DN = i.dBrg * i.nDesign;
     o.ndm = o.dm * i.nDesign;
     o.DNlim = lub.DN;
@@ -234,17 +239,17 @@
     o.Jrot = 0.5 * o.mMag * (rm * rm + ri * ri) + 0.5 * o.mSlv * (rso * rso + rm * rm) + 0.5 * (o.mShaft * rsh * rsh + o.mCore * ri * ri);
     o.It = o.mRot * (3 * rm * rm + Lm * Lm) / 12;                      // transverse inertia, rotor as a cylinder
     const EIs = sh.E * Math.PI * Math.pow(2 * rsh, 4) / 64;
-    const EIc = sh.E * Math.PI * Math.pow(2 * ri, 4) / 64 + i.kStack * (mag.E * Math.PI * (Math.pow(2 * rm, 4) - Math.pow(2 * ri, 4)) / 64
+    const EIc = /* Eq. (9.2) */ sh.E * Math.PI * Math.pow(2 * ri, 4) / 64 + i.kStack * (mag.E * Math.PI * (Math.pow(2 * rm, 4) - Math.pow(2 * ri, 4)) / 64
       + slv.E * Math.PI * (Math.pow(2 * rso, 4) - Math.pow(2 * rm, 4)) / 64);
     const a = Math.max(0, (span - Lm) / 2), half = span / 2;
-    const flex = 2 * (Math.pow(Math.min(a, half), 3) / (12 * EIs) + (half ** 3 - Math.pow(Math.min(a, half), 3)) / (12 * Math.max(EIc, 1e-12)));
+    const flex = 2 * /* Eq. (9.1) */ (Math.pow(Math.min(a, half), 3) / (12 * EIs) + (half ** 3 - Math.pow(Math.min(a, half), 3)) / (12 * Math.max(EIc, 1e-12)));
     o.kShaft = 1 / flex;
     o.EIs = EIs; o.EIc = EIc;
     const kb = i.kBrg * 1e6;
-    o.wBend = Math.sqrt(o.kShaft / o.mRot);
+    o.wBend = Math.sqrt(o.kShaft / o.mRot);                           // Eq. (9.3)
     o.wBounce = Math.sqrt(2 * kb / o.mRot);
     o.wRock = Math.sqrt(2 * kb * half * half / o.It);
-    o.w1 = 1 / Math.sqrt(1 / o.wBend ** 2 + 1 / o.wBounce ** 2);      // Dunkerley: bending + bounce
+    o.w1 = 1 / Math.sqrt(1 / o.wBend ** 2 + 1 / o.wBounce ** 2);      // Eq. (9.4) Dunkerley: bending + bounce
     o.modes = [
       { k: "Bounce on bearings (rigid body)", rpm: rpmOf(o.wBounce), rigid: true },
       { k: "Rocking on bearings (rigid body, no gyroscopic stiffening)", rpm: rpmOf(o.wRock), rigid: true },
@@ -253,7 +258,7 @@
     ];
     o.bendRatio = rpmOf(o.w1) / i.nDesign;
 
-    // ---------- 10. balance and stored energy
+    // ---------- 10. balance and stored energy  Eq. (10.1)
     o.ecc = i.G * 1e-3 / wD;
     o.Fub = o.mRot * o.ecc * wD * wD;
     o.Ures = o.mRot * 1e3 * o.ecc * 1e3;                               // g·mm
@@ -268,7 +273,7 @@
     o.Istall = Math.min(i.Iesc, i.Vbat / o.Rstart);
     o.Tstall = o.KtStart * o.Istall;
     o.Jtot = i.Jeng * 1e-6 + o.Jrot;
-    const Tm = n => o.KtStart * Math.min(i.Iesc, Math.max(0, (i.Vbat - n / o.KvStart) / o.Rstart));
+    const Tm = n => /* Eq. (11.1) */ o.KtStart * Math.min(i.Iesc, Math.max(0, (i.Vbat - n / o.KvStart) / o.Rstart));
     const Td = n => i.Tdrag * 1e-3 * (n / DRAG_REF_RPM) ** 2;
     o.Tm = Tm; o.Td = Td;
     let lo = 0, hi = o.nNoLoad;
@@ -277,13 +282,13 @@
     o.canStart = o.nEq > i.nHand;
     if (o.canStart) {
       const N = 400, dn = i.nHand / N; let tt = 0;
-      for (let k = 0; k < N; k++) { const n = (k + 0.5) * dn; tt += o.Jtot * w(dn) / (Tm(n) - Td(n)); }
+      for (let k = 0; k < N; k++) { const n = (k + 0.5) * dn; tt += o.Jtot * w(dn) / (Tm(n) - Td(n)); }   // Eq. (11.2)
       o.tStart = tt;
     } else o.tStart = NaN;
 
     // ---------- 11b. stock starter as the reference requirement (brushed DC, e.g. RK-370SD-5028)
     const KtR = 60 / (2 * Math.PI * i.refKv);
-    const Tr = n => Math.max(0, KtR * ((i.refV - n / i.refKv) / i.refR - i.refI0));
+    const Tr = n => /* Eq. (11.3) */ Math.max(0, KtR * ((i.refV - n / i.refKv) / i.refR - i.refI0));
     o.Tr = Tr; o.KtRef = KtR;
     o.refNoLoad = i.refKv * (i.refV - i.refI0 * i.refR);
     o.refStall = Tr(0);
