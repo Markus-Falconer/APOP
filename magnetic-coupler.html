@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magnetic Coupler</title>
+<meta name="description" content="Coaxial magnetic coupler between the Lehner 1525 starter-generator and the JetCat P100 compressor nut: options compared, torque and margins, field and stress checks, motor rotor modes, a load-application simulator, operating procedures, and typeset key equations.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<style>
+:root{--steel:#b9b7ae;--sleeve:#52514e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--steel:#4a4945;--sleeve:#c3c2b7}}
+:root[data-theme="dark"]{--steel:#4a4945;--sleeve:#c3c2b7}
+.mono,td.num,.kpi .v{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:1760px;margin:0 auto;padding:0 16px}
+/* inputs | results | key equations. Below 1280 px the equations drop under the results. */
+main.wrap{display:grid;grid-template-columns:320px minmax(0,1fr) 420px;gap:20px;padding-top:20px;padding-bottom:40px;align-items:start}
+@media (max-width:1279px){main.wrap{grid-template-columns:320px minmax(0,1fr)}main aside.eqs{grid-column:2;position:static;max-height:none;overflow:visible}}
+@media (max-width:900px){main.wrap{grid-template-columns:minmax(0,1fr)}main aside.eqs{grid-column:auto}}
+main.wrap>*{min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+aside.panel{padding:6px 16px 16px;align-self:start;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+@media (max-width:900px){aside.panel{position:static;max-height:none;overflow:visible}}
+.setbar{padding:12px 0 10px;border-bottom:1px solid var(--line)}
+.units-l{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px}
+.presets button{font-size:12px;padding:3px 9px}
+.presets button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.hint{font-size:12px;color:var(--muted);margin:6px 0 0;line-height:1.35}
+details.grp{border-top:1px solid var(--line);padding:8px 0 2px}
+details.grp:first-of-type{border-top:0}
+details.grp>summary{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:4px 0}
+details.grp>summary::-webkit-details-marker{display:none}
+details.grp>summary::after{content:"+";font-size:15px;font-weight:400}
+details.grp[open]>summary::after{content:"–"}
+.ghelp{font-size:12px;color:var(--muted);margin:2px 0 6px;line-height:1.35}
+.field{display:grid;grid-template-columns:1fr 96px;align-items:center;gap:4px 8px;margin:7px 0}
+.field label{font-size:14px;color:var(--text-2);line-height:1.25}
+.field label small{color:var(--muted);display:block;font-size:12px;line-height:1.2}
+.field input[type=number],.field select{width:100%;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:14px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text);text-align:right}
+.field select{font-family:inherit;text-align:left}
+.field.sel{grid-template-columns:1fr 168px}
+.field.chk{grid-template-columns:1fr 24px}
+.field.chk input{accent-color:var(--accent);width:16px;height:16px;justify-self:end}
+.field.diff label{color:var(--text)}
+.field.diff label::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:middle}
+.btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button.primary{border-color:var(--accent);color:var(--accent);background:transparent}
+section.out{display:flex;flex-direction:column;gap:20px;min-width:0;container-type:inline-size}
+.intro{padding:14px 16px;font-size:14px;color:var(--text-2)}
+.intro p{margin:4px 0}
+.intro b{color:var(--text)}
+.toc{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;margin-top:8px}
+.toc a{color:var(--text-2)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@container (max-width:680px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{padding:12px 14px;min-width:0}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi .v{font-size:24px;font-weight:500;margin:2px 0 0;line-height:1.2}
+.kpi .v span{font-size:14px;color:var(--text-2);margin-left:3px}
+.kpi .c{font-size:13px;color:var(--text-2);margin-top:4px;font-family:"IBM Plex Mono",monospace}
+.kpi .n{font-size:12px;color:var(--muted);margin-top:3px}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;padding:12px}
+.check{font-size:13px;color:var(--text-2);padding:7px 9px;border-radius:6px;background:var(--surface-2);display:flex;gap:8px;align-items:flex-start}
+.check b{display:block;color:var(--text);font-weight:500;font-size:13px;margin-bottom:1px}
+.check a{color:inherit;text-decoration:none}
+.ico{flex:none;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:600;color:var(--surface);margin-top:1px}
+.ico.ok{background:var(--good)}.ico.warn{background:var(--warn)}.ico.bad{background:var(--bad)}.ico.info{background:var(--muted)}
+.card{padding:16px;min-width:0}
+.card h2{font-size:16px;font-weight:600;margin:0 0 2px}
+.card .sub{font-size:14px;color:var(--text-2);margin:2px 0 10px;max-width:900px}
+.prose{font-size:15px;line-height:1.6}
+.prose p{margin:8px 0;max-width:86ch}
+.prose li{margin:5px 0;max-width:84ch}
+.prose h3{font-size:14px;font-weight:600;margin:18px 0 4px}
+.prose a{color:var(--accent)}
+.tagref{font-family:KaTeX_Main,"Times New Roman",serif;color:var(--muted);font-size:13px;white-space:nowrap}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-weight:500;color:var(--muted);font-size:12px;letter-spacing:.02em;text-align:right;padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:bottom}
+th:first-child,td:first-child{text-align:left}
+th.l,td.l{text-align:left}
+td{padding:6px 10px;border-bottom:1px solid var(--grid);vertical-align:top}
+td.num{text-align:right;white-space:nowrap}
+td.st-ok{color:var(--good)} td.st-warn{color:var(--warn)} td.st-bad{color:var(--bad)}
+tr.rec td{background:var(--surface-2)}
+.verdict{display:inline-block;font-size:12px;font-weight:500;padding:1px 8px;border-radius:10px;border:1px solid;white-space:nowrap}
+.verdict.ok{color:var(--good)} .verdict.warn{color:var(--warn)} .verdict.no{color:var(--bad)}
+.callout{border-left:3px solid var(--accent);background:var(--surface-2);padding:10px 14px;border-radius:6px;margin:10px 0;font-size:14px;line-height:1.55}
+.callout p{margin:4px 0}
+.figs{display:grid;grid-template-columns:minmax(240px,340px) minmax(0,1fr);gap:20px;align-items:start}
+@container (max-width:760px){.figs{grid-template-columns:minmax(0,1fr)}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--text-2);margin:6px 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px}
+.legend i.ln{width:16px;height:0;border-top:2px solid;border-radius:0}
+.legend i.dash{width:16px;height:0;border-top:2px dashed;border-radius:0}
+.fn{font-size:12px;color:var(--muted);margin:6px 0 0;line-height:1.4}
+svg text{font-family:"IBM Plex Sans",system-ui,sans-serif}
+.ctrl{display:flex;gap:10px 14px;flex-wrap:wrap;align-items:center;font-size:14px;color:var(--text-2);margin:6px 0 10px}
+.ctrl label{display:flex;gap:6px;align-items:center}
+.ctrl input,.ctrl select{font:inherit;font-size:14px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--text)}
+.ctrl input{width:78px;font-family:"IBM Plex Mono",monospace;text-align:right}
+.simres{font-size:14px;margin:8px 0 0}
+.simres b.ok{color:var(--good)} .simres b.bad{color:var(--bad)}
+.notes{font-size:14px;color:var(--text-2)}
+.notes h2{color:var(--text)}
+.notes li{margin:4px 0}
+.notes a{color:var(--accent)}
+/* key equations panel */
+aside.eqs{padding:14px 16px 16px}
+aside.eqs .eq-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+aside.eqs h2{font-size:15px;font-weight:600;margin:0}
+aside.eqs .toggle{display:flex;gap:6px;align-items:center;margin:0;font-size:13px;color:var(--text-2);white-space:nowrap}
+aside.eqs .toggle input{accent-color:var(--accent)}
+aside.eqs .sub{font-size:12px;color:var(--muted);margin:4px 0 4px;line-height:1.4}
+aside.eqs h3{font-size:13px;font-weight:600;margin:18px 0 2px;padding-top:12px;border-top:1px solid var(--line);color:var(--text-2);text-transform:uppercase;letter-spacing:.05em}
+aside.eqs .eq-sec:first-child h3{border-top:0;padding-top:0;margin-top:10px}
+.eq{margin:6px 0 10px}
+.eq-row{display:flex;align-items:center;gap:8px}
+.eq-tex{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.eq-tex .katex-display{margin:.35em 0;text-align:left}
+.eq-tex .katex-display>.katex{text-align:left}
+.eqs .katex{font-size:1.04em}
+.eq-tag{flex:none;font-family:KaTeX_Main,"Times New Roman",serif;font-size:15px;color:var(--text-2)}
+.eq-note{font-size:12px;line-height:1.4;color:var(--text-2);margin:0 0 2px}
+.eq-val{border-left:2px solid var(--s1);background:var(--surface-2);border-radius:0 6px 6px 0;padding:1px 8px;margin-top:3px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;color:var(--text-2)}
+.eq-val .katex{font-size:.9em}
+.eq-val .katex-display{margin:.3em 0;text-align:left}
+.eq-val .katex-display>.katex{text-align:left}
+.eqs.novals .eq-val{display:none}
+.eq-raw{font-family:"IBM Plex Mono",monospace;font-size:12px;white-space:pre-wrap;color:var(--text-2)}
+</style>
+</head>
+<body>
+<header id="site-header" data-page="magnetic-coupler"></header>
+<script src="site.js"></script>
+
+<main class="wrap" id="main">
+  <aside class="panel" aria-label="Coupler inputs">
+    <div class="setbar">
+      <span class="units-l">Design presets</span>
+      <div class="presets" id="presets" role="group" aria-label="Design presets"></div>
+      <p class="hint" id="presetNote"></p>
+      <p class="hint">A dot beside a label means the value differs from the selected preset. Inputs are saved in this browser.</p>
+    </div>
+    <form id="inputs" onsubmit="return false"></form>
+    <div class="btns">
+      <button type="button" id="reset">Reset to preset</button>
+      <button type="button" id="share" class="primary">Copy link</button>
+    </div>
+    <p class="ghelp" id="shareMsg" role="status"></p>
+  </aside>
+
+  <section class="out">
+    <div class="panel intro">
+      <p><b>Goal.</b> Couple the Lehner 1525 starter-generator's 5 mm front shaft to the P100 compressor nut with no contact, so misalignment and vibration on one shaft do not reach the other, while carrying the torque for 1,000 W DC with a good margin. The motor turns at engine speed: about 141,000–144,000 rpm while generating, a proposed 145,000 rpm cap, 154,000 rpm at maximum and 160,000 rpm on test.</p>
+      <p>The left panel drives every number marked live, the checks, the figures and the values in the Key equations panel. Numbers in brackets such as <span class="tagref">(4.2)</span> are equation tags; the same tags appear as <span class="mono">Eq. (x.y)</span> comments in <span class="mono">magnetic-coupler-model.js</span>. All results are model estimates until the bench torque test and the spin rig measure them.</p>
+      <div class="toc"><a href="#verdict">Verdict</a><a href="#req">1. Requirements</a><a href="#options">2. Options</a><a href="#design">3. Design</a><a href="#field">4. Field checks</a><a href="#dist">5. Shaft-to-shaft</a><a href="#modes">6. Motor modes</a><a href="#engine">7. Engine side</a><a href="#sim">8. Load simulator</a><a href="#ops">9. Operating procedures</a><a href="#tests">10. Tests</a><a href="#build">11. Build notes</a><a href="#open">12. Open items</a><a href="#notes">Model notes</a></div>
+    </div>
+
+    <div class="kpis">
+      <div class="panel kpi"><div class="l">Pull-out torque, hot</div><div class="v" id="k1"></div><div class="c" id="k1c"></div><div class="n" id="k1n"></div></div>
+      <div class="panel kpi"><div class="l">Margin, hot / worst running</div><div class="v" id="k2"></div><div class="c" id="k2c"></div><div class="n" id="k2n"></div></div>
+      <div class="panel kpi"><div class="l">Torsional mode</div><div class="v" id="k3"></div><div class="c" id="k3c"></div><div class="n" id="k3n"></div></div>
+      <div class="panel kpi"><div class="l">Mass on engine nut</div><div class="v" id="k4"></div><div class="c" id="k4c"></div><div class="n" id="k4n"></div></div>
+    </div>
+
+    <div class="panel checks" id="checks" aria-label="Screening checks"></div>
+
+    <div class="panel card prose" id="verdict">
+      <h2>Verdict</h2>
+      <p><b>Use a 6-pole coaxial (radial-gap) synchronous magnet coupler.</b> A light inner rotor of six SmCo arcs under a titanium sleeve goes on the motor shaft. A steel cup lined with six N42UH arcs goes on the compressor nut.</p>
+      <ul>
+        <li><b>Torque.</b> Pull-out is about 0.25 N·m cold and 0.22 N·m hot, against 84 mN·m nominal and 103 mN·m worst-case running torque: at least 2.1× margin when hot.</li>
+        <li><b>Shaft-to-shaft disturbance is close to zero.</b> No contact, no net axial force, a radial pull of about 17 N/mm of offset (about 0.2 % of the motor's bearing stiffness), and no loss while it runs in sync.</li>
+        <li><b>Motor side, about 4 g.</b> The 1525's first mode stays at 177,000 rpm at 10 N/µm. The margin has a cliff: 5 g at 12 mm drops it to 166,000 (section 6).</li>
+        <li><b>Engine side, about 19–22 g on the nut, is the main new risk.</b> The engine's own vibration margin is unknown, so survey and field-balance the engine with the cup fitted before running the generator.</li>
+        <li><b>Engine acceleration is not a coupler limit.</b> The limits are electrical: load-bank mode, how the load is applied, and faults (section 9).</li>
+      </ul>
+    </div>
+
+    <div class="panel card prose" id="req">
+      <h2>1. Requirements and margins</h2>
+      <p>Torques at the coupler, from the operating point in the left panel. The shaft power covers 1 kW DC plus about 140–175 W of losses, rounded up; the worst case budgets about twice the modelled electromagnetic losses, as Pfister and Perriard's prototype needed.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Case</th><th>Torque</th><th>Pull-out hot ÷ torque</th><th class="l">Basis</th></tr></thead>
+        <tbody id="reqBody"></tbody>
+      </table></div>
+      <h3>Loss budget at 1 kW DC</h3>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Loss</th><th>Estimate</th><th class="l">Source</th></tr></thead>
+        <tbody>
+          <tr><td>Stator copper and iron</td><td class="num">85–115 W</td><td class="l">Lehner 1525 rebuild study</td></tr>
+          <tr><td>Rotor eddy currents</td><td class="num">~20 W</td><td class="l">Through-air fan study</td></tr>
+          <tr><td>Hybrid bearings</td><td class="num">13–16 W</td><td class="l">Lehner 1525 rebuild study</td></tr>
+          <tr><td>Windage</td><td class="num">~5 W</td><td class="l">Compressed-air spin rig study</td></tr>
+          <tr><td>Schottky bridge</td><td class="num">~15 W</td><td class="l">Estimate, about 11 A through two diodes</td></tr>
+          <tr><td>Coupler, in sync</td><td class="num">~0 W</td><td class="l">Every part sees a static field; see section 5 for stray-field loss</td></tr>
+          <tr><td><b>Total</b></td><td class="num"><b>~140–175 W</b></td><td class="l">1.14–1.18 kW shaft for 1.0 kW DC</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout"><p><b>Pull-out target:</b> at least 2× the worst running torque when hot (calculated), and at least 0.22 N·m measured cold on the bench. That covers magnet heating (NdFeB loses about 0.12 %/K of Br per half, SmCo about 0.035 %/K), about ±15 % model error, sudden load steps up to 0.725 × pull-out <span class="tagref">(7.3)</span>, and axial float, which the longer outer ring absorbs.</p></div>
+    </div>
+
+    <div class="panel card prose" id="options">
+      <h2>2. Options compared</h2>
+      <p>Face-coupling numbers come from a 3-D magnetic-charge model with images in ideal iron plates; coaxial numbers from the 2-D model on this page (use the presets to reproduce them). Masses are motor half / engine half.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Type</th><th class="l">Pull-out (calc.)</th><th class="l">Forces between shafts</th><th class="l">Motor / engine half</th><th class="l">Build</th><th class="l">Verdict</th></tr></thead>
+        <tbody>
+          <tr><td><b>Face (disc)</b>: 6 × Ø6.35 mm discs, 2–3 mm thick, per half, 1.0 mm gap, steel back plates</td><td class="l">0.23–0.27 N·m</td><td class="l"><b>58–60 N axial attraction</b> at light load, falling to about 0 only at pull-out; weak radial centring</td><td class="l">8–11 g / 8–11 g; motor mode about 174k at 10 N/µm</td><td class="l">Easiest: drilled pockets, catalogue discs</td><td class="l"><span class="verdict no">rejected</span> Axial pull is 6–12× the MR105's 5–10 N spring preload, plus an unknown thrust on the engine bearings</td></tr>
+          <tr><td><b>Coaxial 2-pole</b>: diametric ring in a cup around a diametric ring on the shaft</td><td class="l">0.10–0.19 N·m for 8–10 mm</td><td class="l">Axial about 0</td><td class="l">3–4 g / <b>30–60 g</b></td><td class="l">Catalogue diametric rings</td><td class="l"><span class="verdict no">rejected</span> 2-pole flux needs a 5–6 mm steel wall; a thin cup saturates, and a diametric ring has no bore field without iron</td></tr>
+          <tr class="rec"><td><b>Coaxial 6-pole</b> (this page's baseline)</td><td class="l">0.25 / 0.22 N·m cold / hot</td><td class="l">Axial about 0; radial about −17 N/mm (destabilising but tiny next to the bearings)</td><td class="l"><b>~4 g / 19–22 g</b></td><td class="l">Custom 60° arcs plus turned parts</td><td class="l"><span class="verdict ok">baseline</span></td></tr>
+          <tr><td>Coaxial 4-pole / 8-pole</td><td class="l">About the same</td><td class="l">Same</td><td class="l">4-pole needs a thicker cup wall and loads the 5 mm shaft as back iron; 8-pole has tiny 45° arcs</td><td class="l">—</td><td class="l"><span class="verdict warn">alternatives</span> 6-pole is the balance</td></tr>
+          <tr><td>Eddy-current (asynchronous)</td><td class="l">Torque only with slip</td><td class="l">—</td><td class="l">—</td><td class="l">Simple</td><td class="l"><span class="verdict no">rejected</span> Each 1 % of slip is about 12.5 W of heat in a spinning conductor at the nut</td></tr>
+          <tr><td>Hysteresis</td><td class="l">Synchronous below rating</td><td class="l">—</td><td class="l">—</td><td class="l">—</td><td class="l"><span class="verdict no">no advantage</span> Lower torque per mass</td></tr>
+          <tr><td>Magnetic gear (<a href="magnetic-gear.html">options page</a>)</td><td class="l">—</td><td class="l">—</td><td class="l">42 g on the nut, 77 g outer rotor</td><td class="l">Stationary ring, two precision gaps, extra bearings</td><td class="l"><span class="verdict warn">future option</span> Would let the motor run slower</td></tr>
+          <tr><td>Mechanical flexible coupling</td><td class="l">—</td><td class="l">Misalignment loads go into the 5 mm shaft</td><td class="l">—</td><td class="l">—</td><td class="l"><span class="verdict no">reference</span> Lehner's reported failure mode</td></tr>
+        </tbody>
+      </table></div>
+      <p class="fn">The face coupling's axial force is inherent, not a quirk of these sizes: a published 1 N·m, 60,000 rpm disc coupling for a jet-engine generator (CTU Prague, 2021) quotes about 350 N of attraction.</p>
+    </div>
+
+    <div class="panel card prose" id="design">
+      <h2>3. The coupler as set in the left panel</h2>
+      <div class="figs">
+        <div>
+          <svg id="xsec" viewBox="0 0 340 340" role="img" aria-label="Cross-section of the coaxial coupler"></svg>
+          <div class="legend"><span><i style="background:var(--s2)"></i>N face toward gap</span><span><i style="background:var(--s1)"></i>S face toward gap</span><span><i style="background:var(--steel)"></i>Steel</span><span><i style="background:var(--sleeve)"></i>Sleeve</span></div>
+          <p class="fn" id="xsecCap"></p>
+        </div>
+        <div>
+          <h3 style="margin-top:0">Torque against angle</h3>
+          <div class="chart" id="curve"></div>
+          <div class="legend"><span><i class="ln" style="border-color:var(--s1)"></i>Cold</span><span><i class="ln" style="border-color:var(--accent)"></i>Hot</span><span><i class="dash" style="border-color:var(--muted)"></i>Nominal running</span><span><i class="dash" style="border-color:var(--warn)"></i>Worst running</span><span><i class="dash" style="border-color:var(--good)"></i>Sudden-step limit, hot</span></div>
+          <p class="fn">Inner rotor held against the cup and turned through one pole pitch (electrical degrees = p × mechanical). The peak is the pull-out torque <span class="tagref">(4.2)</span>; the dot is the running point.</p>
+        </div>
+      </div>
+      <div class="tablewrap" style="margin-top:12px"><table>
+        <thead><tr><th>Part</th><th class="l">As set</th><th class="l">Notes</th></tr></thead>
+        <tbody id="dimBody"></tbody>
+      </table></div>
+    </div>
+
+    <div class="panel card prose" id="field">
+      <h2>4. Field checks: back iron and demagnetisation</h2>
+      <p>The model treats iron as ideal, so torque does not fall when steel saturates. The back-iron and shaft checks stop that assumption from hiding a problem <span class="tagref">(5.1)</span>. The demagnetising field at the gap-facing pole faces is worst when the coupler slips and like poles pass each other <span class="tagref">(9.1)</span>.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Check</th><th>Value</th><th>Limit</th><th class="l">Status</th></tr></thead>
+        <tbody id="fieldBody"></tbody>
+      </table></div>
+      <p class="fn">Demagnetisation limit taken as 0.9 × H<sub>cj</sub> at the magnet temperature (the knee of a square loop). Parallel-magnetised arcs push more flux into the cup than radial ones, so they need a slightly thicker wall for the same torque.</p>
+    </div>
+
+    <div class="panel card prose" id="dist">
+      <h2>5. Shaft-to-shaft disturbance</h2>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Path</th><th>Value</th><th class="l">What it means</th></tr></thead>
+        <tbody id="distBody"></tbody>
+      </table></div>
+      <ul>
+        <li><b>Unbalance is not passed across.</b> Each half is balanced with its own rotor; the coupler only couples them through a weak magnetic spring.</li>
+        <li><b>Stray field.</b> The open end leaks the rotating pole field into nearby stationary aluminium. With 6 poles at about 143,700 rpm that field alternates at about 7.2 kHz, where aluminium's skin depth is about 1 mm. A rough estimate is a few watts at 4–5 mm and about 10 W at 2–3 mm, heat that lands in the end bell next to the bearing. Keep a 4 mm standoff from the end bell, fit a 0.8 mm steel shield washer on the shaft, keep at least 5 mm to any aluminium bracket (or make that part from G10 or PEEK), and confirm with a spin-down.</li>
+      </ul>
+    </div>
+
+    <div class="panel card prose" id="modes">
+      <h2>6. Motor rotor modes with the inner half fitted</h2>
+      <p>Beam finite-element model of the 1525 rotor <span class="tagref">(11.1)</span>: 5 mm shaft, 14.5 × 25 mm magnet carrying 20 % of its bending stiffness, bearings 43.5 mm apart, rotary inertia included, gyroscopic effects not. It reproduces the project's earlier 1525 figures. The pass mark is 1.1 × the test speed.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Configuration</th><th>6 N/µm</th><th>10 N/µm</th><th>20 N/µm</th></tr></thead>
+        <tbody id="modeBody"></tbody>
+      </table></div>
+      <h3>First mode against inner-half mass (10 N/µm, current layout)</h3>
+      <div class="chart" id="sweep"></div>
+      <div class="legend"><span><i class="ln" style="border-color:var(--s1)"></i>First mode</span><span><i class="dash" style="border-color:var(--bad)"></i>Pass mark</span><span><i style="background:var(--accent);border-radius:50%"></i>Current half</span></div>
+      <p class="fn">Two modes compete. Up to a threshold mass the first mode is set by the rotor itself and does not move; above it, the overhung coupler mode drops below it and falls quickly. Keep the half below the knee and its centroid within about 10 mm of the front-bearing centre. A 15 g cup on the motor side would drop the mode to about 128,000 rpm, which is why the cup goes on the engine.</p>
+    </div>
+
+    <div class="panel card prose" id="engine">
+      <h2>7. Engine side: mass and balance</h2>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Item</th><th>Value</th><th class="l">Notes</th></tr></thead>
+        <tbody id="engBody"></tbody>
+      </table></div>
+      <ul>
+        <li><b>The engine's vibration margin with extra mass at the nut is unknown.</b> JetCat does hard-couple a no-contact 900 W generator to the shaft of its P300 PRO-GH, so there is precedent, but the P100 rotor is smaller.</li>
+        <li><b>Field-balance the engine in place</b> with the cup fitted: cup rim as the correction plane, the generator's phase voltage as the once-per-rev reference (the motor is 2-pole), and an index mark so the cup goes back on in the same position.</li>
+        <li><b>Survey vibration</b> from idle to the 145,000 rpm cap with the generator open-circuit, and compare with the stock baseline before any loaded run.</li>
+      </ul>
+    </div>
+
+    <div class="panel card" id="sim">
+      <h2>8. Load-application simulator</h2>
+      <p class="sub">The motor rotor rides on the coupler spring against the much heavier engine rotor, which is held at the generating speed <span class="tagref">(13.1)</span>. Pick how the load comes on and watch the coupler angle. Crossing 180° electrical means a pole slipped; the coupler does not re-lock at speed.</p>
+      <div class="ctrl">
+        <label>Load-bank mode <select id="sMode"><option value="CR">Constant resistance</option><option value="CC">Constant current</option><option value="CP">Constant power</option></select></label>
+        <label>Shaft power <input id="sP" type="number" step="50" value="1250"> W</label>
+        <label>Ramp <input id="sRamp" type="number" step="0.5" min="0" value="3"> s</label>
+        <label>Load-bank lag <input id="sTau" type="number" step="0.5" min="0" value="1"> ms</label>
+        <label>Hold <input id="sHold" type="number" step="0.5" min="0.1" value="1"> s</label>
+        <label>Other damping ζ <input id="sZeta" type="number" step="0.001" min="0" value="0"></label>
+      </div>
+      <div class="presets" id="simPresets">
+        <button type="button" data-s='{"sMode":"CR","sRamp":3,"sP":1250}'>Procedure: CR, 3 s ramp</button>
+        <button type="button" data-s='{"sMode":"CR","sRamp":0,"sP":1250}'>CR step</button>
+        <button type="button" data-s='{"sMode":"CC","sRamp":0,"sP":1250}'>CC step</button>
+        <button type="button" data-s='{"sMode":"CP","sRamp":0,"sP":1250,"sHold":2}'>CP step</button>
+        <button type="button" data-s='{"sMode":"CC","sRamp":0,"sP":3000,"sHold":0.5}'>Fault-like 3 kW step</button>
+      </div>
+      <div class="chart" id="simChart"></div>
+      <div class="legend"><span><i class="ln" style="border-color:var(--s1)"></i>Coupler angle</span><span><i class="dash" style="border-color:var(--warn)"></i>Pull-out angle</span><span><i class="dash" style="border-color:var(--bad)"></i>Slip (180° electrical)</span></div>
+      <p class="simres" id="simRes"></p>
+      <p class="fn">Uses the hot torque-angle curve and the motor-side inertia from the left panel. A step overshoots to about twice the static angle because almost nothing damps the coupler: a constant-resistance load adds a damping ratio of only a few thousandths, constant current adds none, and a constant-power load that follows a 140 Hz oscillation adds negative damping. Whether a real load bank does follow it depends on its control loop: try a 5 ms lag. Treat the CP result as a risk, not a prediction.</p>
+    </div>
+
+    <div class="panel card prose" id="ops">
+      <h2>9. Operating procedures</h2>
+      <h3>What the coupler does not need</h3>
+      <ul>
+        <li><b>No special acceleration limit.</b> <span id="accText"></span></li>
+        <li><b>No overspeed hazard.</b> The generator rides on the ECU-governed spool, unlike the aft-turbine concepts.</li>
+      </ul>
+      <h3>Run sequence (follows the scoring test sequence)</h3>
+      <ol>
+        <li><b>Before every run.</b> Light-check the coupler gap for ferrous debris: the magnets collect it in the intake (Tinker is FOD-critical). Clean it with tape and use non-magnetic tools near the intake. Turn the engine by hand: motor and engine should turn together with no rub. Check the torque stripes on the nut and cup.</li>
+        <li><b>Set up the electrics.</b> Load contactor open. Load bank in <b>constant resistance</b> for about 1 kW at 90 %: R ≈ V<sub>dc</sub>²/P with the measured loaded DC voltage. ESC current limit at most half the measured pull-out torque: <span id="escText"></span></li>
+        <li><b>Start.</b> If the motor's speed runs away from the engine speed the ECU reports, the coupler slipped: abort. <b>Disarm the ESC and open the phase relay before the back-EMF passes the ESC bus voltage</b> (about 70,000 rpm for the /17 on 12S), or its body diodes brake the motor hard and slip the coupler.</li>
+        <li><b>Go to 90 % with no load.</b></li>
+        <li><b>Step 3 hold: apply the load.</b> Wait for rpm and EGT to settle, close the contactor, and ramp the load in over about 3–5 s (high resistance first, or the load bank's slew setting). <span id="stepText"></span> The ramp is for the engine: a step makes the ECU see an rpm droop and over-fuel, so EGT spikes. Watch EGT (ICD limit about 800 °C), DC volts and amps, and the slip check. Reach steady state before the 1-minute hold.</li>
+        <li><b>Steps 4–5:</b> hands off. Constant resistance is stable.</li>
+        <li><b>Step 6: ramp the load to zero before the max-thrust acceleration.</b> Power is not scored there. <span id="crText"></span> Load during the acceleration raises EGT and costs max thrust.</li>
+        <li><b>Steps 7–9:</b> the motor runs open-circuit. Keep the open-circuit voltage under the 200 V ICD limit at the top speed actually reached (delta /17: about 107 V at 154,000 rpm).</li>
+        <li><b>Shutdown and cool-down.</b> The ECU spins the engine with the starter at a constant speed after shutdown; here that is the ESC driving the motor, at low torque. Cool-down also limits soak-back into the nut magnets.</li>
+      </ol>
+      <h3>Load-bank mode</h3>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Mode</th><th class="l">Effect on the coupler</th><th class="l">Use</th></tr></thead>
+        <tbody>
+          <tr><td>Constant resistance (CR)</td><td class="l">Torque rises with speed; small positive damping of the torsional mode <span class="tagref">(7.2)</span></td><td class="l"><span class="verdict ok">recommended</span></td></tr>
+          <tr><td>Constant current (CC)</td><td class="l">Torque roughly constant; no damping</td><td class="l"><span class="verdict warn">acceptable</span></td></tr>
+          <tr><td>Constant power (CP)</td><td class="l">Torque ∝ 1/speed: any rpm dip raises torque, and it can add negative damping</td><td class="l"><span class="verdict no">avoid</span></td></tr>
+          <tr><td>Constant voltage (CV)</td><td class="l">Set below the rectified EMF, current is limited only by winding impedance: effectively a short, so pull-out</td><td class="l"><span class="verdict no">never</span></td></tr>
+        </tbody>
+      </table></div>
+      <h3>If it slips</h3>
+      <ul>
+        <li><b>Detect:</b> the generator's electrical frequency × 60 no longer matches the ECU rpm, or the DC voltage collapses while the engine holds speed, or a buzz is heard. Automate it in the support box: open the load contactor if the speeds disagree by more than about 2 % for more than about 50 ms, and flag the control room.</li>
+        <li><b>Respond:</b> load off, engine to idle, then shut down. <span id="relockText"></span> Running slipped vibrates the coupler and heats the magnets. Inspect and repeat the torque check before the next run.</li>
+        <li><b>The coupler is the system's torque fuse.</b> Things that can slip it: a short in the cable or rectifier, the ESC body-diode trap, CV mode, too high a starter current limit, a large load step when hot, or magnet and sleeve damage. A modelling study of a diesel generator set found the same: a magnetic coupling cut the peak torque on the shafts in a severe fault, at the cost of slower resynchronisation.</li>
+      </ul>
+      <h3>Returning to stock</h3>
+      <p>With the cup on the nut the stock O-ring starter cannot grip the nut. Plan the fallback as generator disconnected, motor used only as the starter, and carry the stock starter and bracket in case the cup must come off. Removing and refitting the cup changes the engine balance.</p>
+    </div>
+
+    <div class="panel card prose" id="tests">
+      <h2>10. Tests before engine runs</h2>
+      <ol>
+        <li><b>Static torque–angle curve.</b> Clamp the cup, turn the inner half with a lever arm and force gauge through pull-out, cold and then at about 100 °C. <b>Accept at least 0.22 N·m cold and 0.18 N·m hot.</b> This calibrates the end factor. Repeat after a deliberate pull-out to check for demagnetisation.</li>
+        <li><b>Spin rig stage 2</b> (already planned): drive through the coupler, coast-down loss with and without it, end-bell temperature rise, and a tap test with the inner half fitted.</li>
+        <li><b>Engine with the cup, generator open-circuit:</b> vibration survey to the 145,000 rpm cap against the stock baseline, field balance, and a temperature label on the nut to capture soak-back after shutdown.</li>
+        <li><b>Start the engine through the coupler with the ESC.</b> A sensorless start against a 140 Hz elastic link can lose sync; tune the start ramp and current limit.</li>
+      </ol>
+    </div>
+
+    <div class="panel card prose" id="build">
+      <h2>11. Build notes</h2>
+      <ul>
+        <li><b>Buy:</b> custom 60° arcs from a magnet vendor, six per ring plus spares, parallel magnetised, ±0.02 mm on the radii, coated. Order early: lead time is weeks. Catalogue diametric rings only suit the rejected 2-pole layout.</li>
+        <li><b>Inner rotor:</b> bond the arcs to the degreased shaft with alternating polarity in a printed 6-slot fixture (Loctite 648 or a high-temperature epoxy). Check polarity with a Hall probe or viewing film. Shrink-fit the titanium sleeve by heating it to about 250 °C, which SmCo tolerates, for about 15–20 µm interference. Balance the rotor with the half fitted to G1, at Lehner or by field balancing on the spin rig.</li>
+        <li><b>Outer cup:</b> bond the arcs into the back-iron ring with alternating polarity and fit the retaining lip. At speed the arcs are thrown outward onto the iron, so they need no sleeve. The hub pilots on the nut's 13.25 mm round land and drives through the 11 mm flats. Measure the nut first: land diameter and runout, flat length, thread hand and tightening torque. Generator torque acts opposite to starter torque on the nut, so torque-stripe the nut and cup and check them every run.</li>
+        <li><b>Alignment:</b> turned spigots on the motor bracket. Indicate the cup rim and the sleeve: concentricity at or under 0.1 mm, angle at or under 0.3°, inner half centred axially in the longer outer ring.</li>
+        <li><b>Assembly safety:</b> the radial pull near contact is tens of newtons. Fit the motor on guide pins with a Mylar shim, never let the inner half snap against the cup, and mind the pinch hazard.</li>
+      </ul>
+    </div>
+
+    <div class="panel card prose" id="open">
+      <h2>12. Open items</h2>
+      <ul>
+        <li><b>Lehner:</b> is the shaft magnetic (it is the inner back iron)? Shaft extension length and runout, front end-bell material, and balancing the rotor with the coupler half fitted.</li>
+        <li><b>JetCat:</b> compressor nut thread, torque and material; allowable added mass at the nut; balancing the rotor with the cup; how the P300 PRO-GH's no-contact generator coupling is arranged.</li>
+        <li><b>AFRL:</b> who switches the load and changes load-bank set-points between test steps, and whether the load bank has a CR slew setting.</li>
+        <li><b>Measure:</b> nut land diameter and runout, nut temperature after shutdown, engine vibration baseline.</li>
+      </ul>
+    </div>
+
+    <div class="panel card notes" id="notes">
+      <h2>Model notes and assumptions</h2>
+      <ul>
+        <li><b>Torque</b> <span class="tagref">(2.1)–(4.3)</span>: 2-D magnetic-charge model. Magnets have relative permeability 1, iron is ideal at the shaft surface and the cup bore, and each angular harmonic (odd multiples of p up to 9p) is solved exactly with the Green's function between the two iron cylinders. It matches the planar shear-stress formula to 0.1 % at large radius. 3-D end leakage is one factor, 0.85 by default; a 3-D charge model of an 8 mm long coupler gave 0.87. Torque scales with the overlap of the two rings, so an axial offset only costs torque once it exceeds half the extra length of the outer ring.</li>
+        <li><b>Back iron</b> <span class="tagref">(5.1)</span>: the fundamental flux entering the cup is carried around the wall at the chosen flux density. Saturation is screened, not modelled.</li>
+        <li><b>Radial pull</b> <span class="tagref">(6.1)</span>: planar two-array energy at the gap radius, differentiated with respect to the gap.</li>
+        <li><b>Retention</b> <span class="tagref">(8.1)–(8.2)</span>: magnets with no hoop strength pressing on thin rings, at the test speed.</li>
+        <li><b>Motor modes</b> <span class="tagref">(11.1)</span>: the coupler half is spread over its length as four masses with rotary inertia; the shield washer adds 0.5 g. The shaft extension is set to standoff + inner length + 2 mm. No gyroscopic stiffening, so the figures are slightly conservative.</li>
+        <li><b>Simulator</b> <span class="tagref">(13.1)</span>: the engine rotor is about 30× the motor rotor's inertia, so it is held at constant speed. No other damping unless entered.</li>
+        <li><b>Superseded figures.</b> The "Direct coaxial coupler" column on the <a href="magnetic-gear.html">Magnetic gear options</a> page is an earlier concept for the 1535 at 85,000 rpm: a 13 g half on the motor shaft and a decoupling actuator for max thrust. The 1525 runs at engine speed, so no decoupler is needed and the light half goes on the motor.</li>
+      </ul>
+      <h2 style="margin-top:14px">Sources</h2>
+      <ul>
+        <li><a href="https://www.chiefaircraft.com/jc-31117-0060.html">JetCat JC 31117-0060</a>: P300 PRO-GH starter/generator, hard-coupled to the turbine shaft with no mechanical contact, 900 W.</li>
+        <li><a href="https://control.fs.cvut.cz/wp-content/uploads/2022/01/M_Gazeau_STC2021.pdf">M. Gazeau, CTU Prague</a>: disc coupling for a 1 N·m, 60,000 rpm high-speed generator.</li>
+        <li><a href="https://control.fs.cvut.cz/wp-content/uploads/2022/01/K_Nagashima_STC2021.pdf">K. Nagashima et al., CTU Prague</a>: review and design of high-speed magnetic couplings for a jet-engine generator.</li>
+        <li><a href="https://research.nottingham.edu.cn/en/publications/electromechanical-analysis-of-low-voltage-faults-in-a-magneticall">Tweedy et al., ICEM 2022</a>: low-voltage faults in a magnetically coupled synchronous generator set.</li>
+        <li><a href="https://manualshive.com/en/manual/jetcat/p100-rx/646130?page=35">JetCat P100-RX manual</a>: starter run at constant speed during cool-down.</li>
+        <li><a href="https://www.rcuniverse.com/forum/rc-jets/10912972-jetcat-180rx-2-print.html">RCU forum</a>: P100 idle to full in about 6 s (one user's report).</li>
+        <li>Project studies: starter-generator plan for the 1525, through-air fan option, 1525 rebuild, high-speed bearing options, ESC shortlist, compressed-air spin rig, Pfister and Perriard notes, ICD rev A and scoring criteria rev A.</li>
+      </ul>
+    </div>
+  </section>
+
+  <aside class="panel eqs" id="eqs" aria-label="Key equations">
+    <div class="eq-head"><h2>Key equations</h2><label class="toggle"><input type="checkbox" id="eqVals" checked> Show values</label></div>
+    <p class="sub">SI units. Values are for the design in the left panel. Each tag matches an <span class="mono">Eq. (x.y)</span> comment in <span class="mono">magnetic-coupler-model.js</span>.</p>
+    <div id="eqList"></div>
+  </aside>
+</main>
+<script src="vendor/katex/katex.min.js"></script>
+<script src="magnetic-coupler-model.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const M = CouplerModel;
+const LS = "apop-magnetic-coupler-v1";
+const opts = obj => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, v.name]));
+
+// ---------- inputs: [key, label, unit, default, min, max, step] | [key, label, "select", default, options] | [key, label, "check", default]
+const FIELDS = [
+  { g: "Poles and magnets", open: true, f: [
+    ["p", "Pole pairs", "select", "3", { 1: "1 (2 poles)", 2: "2 (4 poles)", 3: "3 (6 poles)", 4: "4 (8 poles)", 5: "5 (10 poles)" }],
+    ["mode", "Arc magnetisation", "select", "parallel", { parallel: "Parallel", radial: "Radial" }],
+    ["alpha", "Pole-arc fraction", "of the pole pitch", 0.95, 0.5, 1, 0.01],
+    ["magIn", "Inner magnets (motor)", "select", "smco", opts(M.MAG)],
+    ["magOut", "Outer magnets (engine)", "select", "nduh", opts(M.MAG)],
+    ["kEnd", "3-D end factor", "× 2-D torque", 0.85, 0.5, 1, 0.01],
+  ]},
+  { g: "Inner rotor, on the motor shaft", open: true, f: [
+    ["dShaft", "Shaft diameter", "mm", 5, 3, 10, 0.1],
+    ["dMag", "Magnet outside diameter", "mm", 10, 6, 20, 0.1],
+    ["Lin", "Magnet length", "mm", 8, 2, 20, 0.5],
+    ["tSleeve", "Sleeve thickness", "mm", 0.3, 0.1, 1.5, 0.05],
+    ["sleeveMat", "Sleeve", "select", "ti64", opts(M.SLEEVE)],
+    ["shaftIron", "Shaft is magnetic steel", "check", true],
+    ["standoff", "Standoff from motor face", "mm, to the magnet", 4, 0, 15, 0.5],
+    ["washer", "Steel shield washer (0.5 g)", "check", true],
+  ]},
+  { g: "Gap and outer cup, on the nut", open: true, f: [
+    ["clr", "Radial clearance", "mm, sleeve to outer magnets", 0.6, 0.2, 2, 0.05],
+    ["tRing", "Outer magnet thickness", "mm", 2, 1, 6, 0.1],
+    ["Lout", "Outer magnet length", "mm; longer than inner absorbs axial float", 9, 2, 25, 0.5],
+    ["tWall", "Back-iron wall", "mm", 2.2, 0.5, 8, 0.1],
+    ["ironMat", "Back iron", "select", "s4140", opts(M.IRON)],
+    ["Bwall", "Design flux density in steel", "T", 1.5, 0.8, 2, 0.05],
+    ["hubMat", "Hub", "select", "ti", opts(M.HUB)],
+    ["tBase", "Hub base thickness", "mm", 2, 0.5, 6, 0.1],
+    ["zOff", "Axial offset", "mm, inner to outer centre", 0, 0, 5, 0.1],
+    ["offset", "Radial offset", "mm, for the side pull", 0.15, 0, 0.6, 0.01],
+  ]},
+  { g: "Temperatures", open: false, f: [
+    ["Tin", "Inner magnets", "°C; motor rotor runs 100–130 °C", 100, 20, 250, 5],
+    ["Tout", "Outer magnets", "°C; nut, plus soak-back", 80, 20, 250, 5],
+  ]},
+  { g: "Operating point", open: false, f: [
+    ["Pnom", "Nominal shaft power", "W", 1250, 100, 3000, 50],
+    ["nGen", "Generating speed", "rpm; 90 % corrected on a 25 °C day", 141400, 60000, 200000, 100],
+    ["Pworst", "Worst-case shaft power", "W", 1500, 100, 3000, 50],
+    ["nLow", "Lowest generating speed", "rpm", 139000, 60000, 200000, 100],
+    ["nMax", "Engine maximum", "rpm", 154000, 60000, 200000, 100],
+    ["nTest", "Test (stress) speed", "rpm", 160000, 60000, 220000, 1000],
+    ["nIdle", "Idle", "rpm", 44000, 10000, 100000, 1000],
+    ["tSpool", "Idle to max time", "s", 6, 0.1, 30, 0.1],
+  ]},
+  { g: "Starting, inertia and balance", open: false, f: [
+    ["Kv", "Motor Kv", "rpm/V; /17 delta is 1441", 1441, 100, 10000, 1],
+    ["Tmeas", "Measured pull-out, cold", "mN·m; 0 = use calculated", 0, 0, 2000, 1],
+    ["Jrotor", "Motor rotor inertia", "kg·mm²; 1525 rotor about 0.85", 0.854, 0.1, 5, 0.01],
+    ["G", "Balance grade", "G (mm/s)", 1, 0.4, 6.3, 0.1],
+    ["nCap", "Balance speed", "rpm", 145000, 60000, 200000, 1000],
+    ["mEngRotor", "Engine rotor mass", "g", 220, 100, 400, 1],
+    ["eccHalf", "Cup mounting eccentricity", "µm", 5, 0, 50, 0.5],
+  ]},
+];
+const DEF = {};
+FIELDS.forEach(g => g.f.forEach(f => { DEF[f[0]] = f[3]; }));
+const PRESETS = {
+  rec: { name: "Recommended", note: "6 poles, SmCo inner on the motor shaft, N42UH outer in a 2.2 mm steel cup on the nut.", v: {} },
+  nduh: { name: "N42UH both", note: "More torque, but the inner magnets on the hot motor shaft are closer to demagnetising if the coupler slips.", v: { magIn: "nduh", tWall: 2.3 } },
+  smco: { name: "SmCo both", note: "Least temperature sensitivity, least torque.", v: { magOut: "smco", tWall: 2.0 } },
+  p2: { name: "4-pole", note: "Same magnets with 2 pole pairs: thicker back iron, and the 5 mm shaft carries more flux.", v: { p: "2", tWall: 3.2 } },
+  p4: { name: "8-pole", note: "4 pole pairs: thinner back iron, tiny 45° arcs.", v: { p: "4", tWall: 1.8 } },
+  p1: { name: "2-pole diametric", note: "Rejected option: catalogue diametric rings. Look at the back-iron wall it needs.", v: { p: "1", alpha: 1, tRing: 3, tWall: 6.4 } },
+};
+let preset = "rec", S = { ...DEF };
+
+// ---------- formatting
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fs = (v, sig = 3) => {
+  if (!isFinite(v)) return "—";
+  if (v === 0) return "0";
+  const d = Math.max(0, sig - 1 - Math.floor(Math.log10(Math.abs(v))));
+  return Number(v.toFixed(Math.min(d, 6))).toLocaleString("en-US", { maximumFractionDigits: Math.min(d, 6) });
+};
+const kr = n => fs(Math.round(n / 100) * 100, 6);
+const ICON = { ok: "✓", warn: "!", bad: "✕", info: "i" };
+const st = (x, ok, warn) => x >= ok ? "ok" : x >= warn ? "warn" : "bad";
+
+// ---------- input panel
+function buildInputs() {
+  $("presets").innerHTML = Object.entries(PRESETS).map(([k, p]) => `<button type="button" data-p="${k}">${esc(p.name)}</button>`).join("");
+  $("presets").querySelectorAll("button").forEach(b => b.addEventListener("click", () => { preset = b.dataset.p; S = { ...DEF, ...PRESETS[preset].v }; fill(); update(); }));
+  $("inputs").innerHTML = FIELDS.map(g => `<details class="grp"${g.open ? " open" : ""}><summary>${esc(g.g)}</summary>` + g.f.map(f => {
+    const [k, lab, u] = f;
+    if (u === "select") return `<div class="field sel" id="f-${k}"><label for="${k}">${esc(lab)}</label><select id="${k}">${Object.entries(f[4]).map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join("")}</select></div>`;
+    if (u === "check") return `<div class="field chk" id="f-${k}"><label for="${k}">${esc(lab)}</label><input type="checkbox" id="${k}"></div>`;
+    return `<div class="field" id="f-${k}"><label for="${k}">${esc(lab)}<small>${esc(u)}</small></label><input type="number" id="${k}" min="${f[4]}" max="${f[5]}" step="${f[6]}"></div>`;
+  }).join("") + `</details>`).join("");
+  FIELDS.forEach(g => g.f.forEach(f => {
+    const el = $(f[0]);
+    el.addEventListener(f[2] === "check" || f[2] === "select" ? "change" : "input", () => {
+      if (f[2] === "check") S[f[0]] = el.checked;
+      else if (f[2] === "select") S[f[0]] = el.value;
+      else { const v = parseFloat(el.value); if (isFinite(v)) S[f[0]] = v; else return; }
+      update();
+    });
+  }));
+}
+function fill() {
+  FIELDS.forEach(g => g.f.forEach(f => { const el = $(f[0]); if (f[2] === "check") el.checked = !!S[f[0]]; else el.value = S[f[0]]; }));
+}
+function markDiffs() {
+  const ref = { ...DEF, ...PRESETS[preset].v };
+  FIELDS.forEach(g => g.f.forEach(f => $("f-" + f[0]).classList.toggle("diff", String(S[f[0]]) !== String(ref[f[0]]))));
+  $("presets").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.p === preset)));
+  $("presetNote").textContent = PRESETS[preset].note;
+}
+function modelInputs() { return { ...S, p: parseInt(S.p, 10) }; }
+
+// ---------- small SVG line chart
+function lineChart(el, o) {
+  const W = o.w || Math.max(320, Math.round(el.clientWidth || 560)), H = o.h || 260, L = 52, R = 14, T = 16, B = 40;
+  const [x0, x1] = o.xr, [y0, y1] = o.yr;
+  const X = x => L + (x - x0) / (x1 - x0) * (W - L - R), Y = y => T + (1 - (y - y0) / (y1 - y0)) * (H - T - B);
+  const tick = (a, b, n) => { const s = (b - a) / n, m = Math.pow(10, Math.floor(Math.log10(s))), f = s / m, st = (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * m, out = []; for (let v = Math.ceil(a / st) * st; v <= b + 1e-9; v += st) out.push(+v.toFixed(10)); return out; };
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(o.aria || "")}">`;
+  for (const v of tick(y0, y1, 5)) s += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${fs(v, 4)}</text>`;
+  for (const v of tick(x0, x1, 6)) s += `<text x="${X(v)}" y="${H - B + 16}" text-anchor="middle" font-size="11" fill="var(--muted)">${fs(v, 4)}</text>`;
+  s += `<line x1="${L}" x2="${W - R}" y1="${Y(y0)}" y2="${Y(y0)}" stroke="var(--line)"/>`;
+  s += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--text-2)">${esc(o.xl)}</text>`;
+  s += `<text x="${L}" y="${T - 3}" font-size="11" fill="var(--muted)">${esc(o.yl)}</text>`;
+  (o.hl || []).forEach(h => { if (h.y >= y0 && h.y <= y1) s += `<line x1="${L}" x2="${W - R}" y1="${Y(h.y)}" y2="${Y(h.y)}" stroke="${h.c}" stroke-dasharray="5 4" stroke-width="1.3"/>` + (h.t ? `<text x="${W - R - 4}" y="${Y(h.y) - 4}" text-anchor="end" font-size="11" fill="${h.c}">${esc(h.t)}</text>` : ""); });
+  (o.series || []).forEach(sr => {
+    const pts = sr.pts.filter(p => isFinite(p[1])).map(p => `${X(p[0]).toFixed(1)},${Y(Math.max(y0, Math.min(y1, p[1]))).toFixed(1)}`).join(" ");
+    s += `<polyline points="${pts}" fill="none" stroke="${sr.c}" stroke-width="${sr.wd || 2}"${sr.dash ? ' stroke-dasharray="4 3"' : ""}/>`;
+  });
+  (o.dots || []).forEach(d => { s += `<circle cx="${X(d.x)}" cy="${Y(Math.max(y0, Math.min(y1, d.y)))}" r="4.5" fill="${d.c}" stroke="var(--surface)" stroke-width="1.5"/>`; });
+  el.innerHTML = s + "</svg>";
+}
+
+// ---------- cross-section
+function annular(cx, cy, r0, r1, a0, a1) {
+  const p = (r, a) => `${(cx + r * Math.cos(a)).toFixed(2)},${(cy + r * Math.sin(a)).toFixed(2)}`;
+  const large = (a1 - a0) > Math.PI ? 1 : 0;
+  return `M${p(r1, a0)} A${r1},${r1} 0 ${large} 1 ${p(r1, a1)} L${p(r0, a1)} A${r0},${r0} 0 ${large} 0 ${p(r0, a0)} Z`;
+}
+function drawXsec(o) {
+  const cx = 170, cy = 170, sc = 150 / (o.rc * 1e3), r = v => v * 1e3 * sc, p = o.p, pitch = Math.PI / p, w = S.alpha * pitch;
+  const lag = (o.angRun * Math.PI / 180) / p;            // running lag, mechanical
+  let h = `<circle cx="${cx}" cy="${cy}" r="${r(o.rc)}" fill="var(--steel)"/><circle cx="${cx}" cy="${cy}" r="${r(o.b2)}" fill="var(--surface)"/>`;
+  for (let k = 0; k < 2 * p; k++) { const c = k * pitch - Math.PI / 2; h += `<path d="${annular(cx, cy, r(o.b1), r(o.b2), c - w / 2, c + w / 2)}" fill="${k % 2 ? "var(--s2)" : "var(--s1)"}"/>`; }
+  h += `<circle cx="${cx}" cy="${cy}" r="${r(o.a1 + o.tSl / 2)}" fill="none" stroke="var(--sleeve)" stroke-width="${Math.max(1, r(o.tSl))}"/>`;
+  for (let k = 0; k < 2 * p; k++) { const c = k * pitch - Math.PI / 2 + lag; h += `<path d="${annular(cx, cy, r(o.a0), r(o.a1), c - w / 2, c + w / 2)}" fill="${k % 2 ? "var(--s1)" : "var(--s2)"}"/>`; }
+  h += `<circle cx="${cx}" cy="${cy}" r="${r(o.a0)}" fill="var(--steel)" stroke="var(--line)"/>`;
+  h += `<line x1="${cx}" y1="${cy - r(o.rc) - 4}" x2="${cx}" y2="${cy - r(o.a0)}" stroke="var(--muted)" stroke-dasharray="2 3"/>`;
+  $("xsec").innerHTML = h;
+  $("xsecCap").textContent = `${2 * p} poles. Shaft Ø${fs(S.dShaft)}, inner magnets to Ø${fs(S.dMag)}, sleeve to Ø${fs((o.a1 + o.tSl) * 2e3, 3)}, outer magnets Ø${fs(o.b1 * 2e3, 3)}–${fs(o.b2 * 2e3, 3)}, cup Ø${fs(o.rc * 2e3, 3)} mm. Drawn at the nominal running load, the inner rotor lagging ${fs(o.angRun / p, 2)}° (${fs(o.angRun, 2)}° electrical).`;
+}
+
+// ---------- key equations
+const tn = (v, sig = 3) => isFinite(v) ? fs(v, sig).replace(/,/g, "{,}") : "\\text{—}";
+const tu = u => `\\,\\mathrm{${u}}`;
+const tmN = v => tn(v * 1e3) + tu("mN\\,m");
+const EQS = [
+  ["Running torque", [
+    { tag: "1.1", tex: String.raw`\omega=\frac{2\pi n}{60},\qquad T=\frac{P}{\omega}`,
+      val: o => String.raw`T_\mathrm{nom}=\frac{${tn(S.Pnom, 4)}}{${tn(o.wGen, 5)}}=${tmN(o.Tnom)},\quad T_\mathrm{worst}=\frac{${tn(S.Pworst, 4)}}{${tn(o.wLow, 5)}}=${tmN(o.Tworst)}` },
+    { tag: "1.2", tex: String.raw`T_\mathrm{CR}(n_\mathrm{max})=T_\mathrm{nom}\,\frac{n_\mathrm{max}}{n_\mathrm{gen}},\qquad P=T\omega`, note: "Constant-resistance load left on at maximum: torque rises with speed.",
+      val: o => String.raw`T_\mathrm{CR}=${tmN(o.Tcr)},\quad P=${tn(o.Pcr, 4)}${tu("W")}` },
+  ]],
+  ["Magnets as charges", [
+    { tag: "2.1", tex: String.raw`M=\frac{B_r}{\mu_0},\qquad B_r(T)=B_{r,20}\left[1+\alpha_B\,(T-20)\right]`,
+      val: o => String.raw`B_{r,\mathrm{in}}=${tn(o.BrIn20)}\to${tn(o.BrInHot)}${tu("T")},\quad B_{r,\mathrm{out}}=${tn(o.BrOut20)}\to${tn(o.BrOutHot)}${tu("T")}` },
+    { tag: "2.2", tex: String.raw`\begin{gathered}\sigma=\mathbf M\cdot\hat{\mathbf n},\qquad \rho=-\nabla\cdot\mathbf M\\ \text{radial arcs: }\rho=-M_r/r\end{gathered}`, note: "Charges sit on the arc faces; charges on an iron surface are cancelled by it." },
+    { tag: "2.3", tex: String.raw`\begin{gathered}a_m=\frac{2p}{\pi}M\left[\frac{\sin(m-1)h}{m-1}+\frac{\sin(m+1)h}{m+1}\right]\\ h=\frac{\alpha\pi}{2p},\qquad m=np,\ n\ \text{odd}\end{gathered}`,
+      note: "Face-charge harmonic of 2p parallel-magnetised arcs. The arc side faces add −(4p/π)M sin h cos(mh)·dr/r through the thickness. Radial arcs: a<sub>m</sub> = (4/nπ) sin(nπα/2) M.",
+      val: o => String.raw`a_p^\mathrm{in}/M=${tn(o.F.H[0].inn.as / o.Mi, 4)},\quad a_p^\mathrm{out}/M=${tn(o.F.H[0].out.as / o.Mo, 4)}` },
+  ]],
+  ["Field between iron cylinders", [
+    { tag: "3.1", tex: String.raw`\begin{gathered}u_\mathrm{in}=r^m-\frac{a_0^{2m}}{r^m},\qquad u_\mathrm{out}=r^{-m}-\frac{r^m}{b_2^{2m}}\\ G_m(r,s)=-\frac{u_\mathrm{in}(r_<)\,u_\mathrm{out}(r_>)}{u_\mathrm{in}u_\mathrm{out}'-u_\mathrm{in}'u_\mathrm{out}\big|_s}\end{gathered}`,
+      note: "Potential at r of a charge sheet cos(mθ) at radius s, with φ = 0 on the shaft (a<sub>0</sub>) and the cup bore (b<sub>2</sub>).",
+      val: o => String.raw`a_0=${tn(o.a0 * 1e3)},\ a_1=${tn(o.a1 * 1e3)},\ b_1=${tn(o.b1 * 1e3, 4)},\ b_2=${tn(o.b2 * 1e3, 4)}${tu("mm")}` },
+  ]],
+  ["Torque", [
+    { tag: "4.1", tex: String.raw`\begin{gathered}W(\delta)=\mu_0\pi\sum_m\sum_{i,j}a_i\,a_j\,G_m(s_j,s_i)\,s_j\cos m\delta\\ T(\delta)=-\frac{dW}{d\delta}\end{gathered}`,
+      note: "Interaction energy per metre between the inner sheets i and outer sheets j; δ is the angle of the inner rotor.",
+      val: o => String.raw`T'_\mathrm{max}=${tn(o.T2D)}${tu("N\\,m/m")}\ \text{at}\ p\delta=${tn(o.dPk * o.p * 180 / Math.PI)}^\circ` },
+    { tag: "4.2", tex: String.raw`T_\mathrm{max}=k_\mathrm{end}\,L_\mathrm{ov}\,T'_\mathrm{max}`, note: "L<sub>ov</sub>: overlap of the two rings.",
+      val: o => String.raw`T_\mathrm{max}=${tn(S.kEnd)}\,(${tn(o.overlap * 1e3)}\times10^{-3})(${tn(o.T2D)})=${tmN(o.TmaxCold)}` },
+    { tag: "4.3", tex: String.raw`\frac{T_\mathrm{hot}}{T_\mathrm{cold}}=\frac{B_{r,\mathrm{in}}(T_\mathrm{in})}{B_{r,\mathrm{in}}}\,\frac{B_{r,\mathrm{out}}(T_\mathrm{out})}{B_{r,\mathrm{out}}}`,
+      val: o => String.raw`T_\mathrm{hot}=${tmN(o.TmaxCold)}\times${tn(o.hotRatio)}=${tmN(o.TmaxHot)}` },
+  ]],
+  ["Back iron", [
+    { tag: "5.1", tex: String.raw`\hat B_1=\mu_0\bigl(H_r+M_r\bigr)_{r=b_2},\qquad t_\mathrm{wall}=\frac{b_2\hat B_1}{p\,B_\mathrm{wall}}`, note: "Half the fundamental flux per pole runs round the wall each way. Same rule for the shaft at a<sub>0</sub>.",
+      val: o => String.raw`\hat B_1=${tn(o.Bcup)}${tu("T")},\quad t_\mathrm{wall}=${tn(o.tWallNeed * 1e3)}${tu("mm")}\ \text{at}\ ${tn(S.Bwall)}${tu("T")}` },
+  ]],
+  ["Radial pull", [
+    { tag: "6.1", tex: String.raw`\begin{gathered}\sigma_n=-\frac{\partial W_\mathrm{pl}}{\partial g},\qquad k_r=\pi R\,L_\mathrm{ov}\left|\frac{\partial\sigma_n}{\partial g}\right|k_\mathrm{end}\\ F_r=k_r\,e\end{gathered}`,
+      note: "Planar two-array energy at the gap radius R; an offset e changes the local gap by e cos θ. Destabilising.",
+      val: o => String.raw`\sigma_n=${tn(o.sigN / 1e3)}${tu("kPa")},\ k_r=${tn(o.kr / 1e3)}${tu("N/mm")},\ F_r=${tn(o.Fr)}${tu("N")}` },
+  ]],
+  ["Torsional dynamics", [
+    { tag: "7.1", tex: String.raw`k_\theta=p\,T_\mathrm{max},\qquad f_n=\frac{1}{2\pi}\sqrt{\frac{k_\theta}{J}}`,
+      val: o => String.raw`k_\theta=${tn(o.kth)}${tu("N\\,m/rad")},\ J=${tn(o.J * 1e6)}${tu("kg\\,mm^2")},\ f_n=${tn(o.fn)}${tu("Hz")}` },
+    { tag: "7.2", tex: String.raw`\zeta_\mathrm{CR}=\frac{T/\omega}{2\sqrt{k_\theta J}}`, note: "A constant-resistance load gives dT/dω = T/ω; constant power gives −T/ω.",
+      val: o => String.raw`\zeta_\mathrm{CR}=${tn(o.zetaCR, 2)}` },
+    { tag: "7.3", tex: String.raw`x\,(\pi-\arcsin x)=1+\sqrt{1-x^2}\ \Rightarrow\ \frac{T_\mathrm{step}}{T_\mathrm{max}}\le0.725`, note: "Equal-area criterion: largest sudden load step from rest, no damping.",
+      val: o => String.raw`T_\mathrm{step}\le0.725\times${tmN(o.TmaxHot)}=${tmN(o.stepLim)}` },
+    { tag: "7.4", tex: String.raw`\Delta\omega_\mathrm{relock}=\sqrt{\frac{4\,T_\mathrm{max}}{p\,J}}`, note: "Slip speed below which the poles can pull back into step.",
+      val: o => String.raw`\Delta n=${tn(o.nRelock)}${tu("rpm")}` },
+    { tag: "7.5", tex: String.raw`T_\mathrm{acc}=J\alpha,\qquad \alpha=\frac{2\pi\,(n_\mathrm{max}-n_\mathrm{idle})}{60\,t}`,
+      val: o => String.raw`T_\mathrm{acc}=(${tn(o.J * 1e6)}\times10^{-6})(${tn(o.alphaSpool)})=${tmN(o.Tacc)}` },
+    { tag: "7.6", tex: String.raw`\frac{T_\mathrm{engine}}{T_\mathrm{ripple}}\approx\left(\frac{f_n}{f}\right)^2,\qquad f=\frac{6n}{60}`, note: "Six-pulse rectifier torque ripple reaching the engine shaft.",
+      val: o => String.raw`f=${tn(o.fRipple / 1e3)}${tu("kHz")},\ \text{ratio}=${tn(o.ripple, 2)}` },
+  ]],
+  ["Retention at test speed", [
+    { tag: "8.1", tex: String.raw`p_c=\frac{\rho_m\,\omega^2\,(r_o^3-r_i^3)}{3\,r_o}`, note: "Magnet arcs with no hoop strength pressing outward.",
+      val: o => String.raw`p_\mathrm{in}=${tn(o.pIn / 1e6)}${tu("MPa")},\quad p_\mathrm{out}=${tn(o.pOut / 1e6)}${tu("MPa")}` },
+    { tag: "8.2", tex: String.raw`\sigma_\theta=p_c\,\frac{\bar r}{t}+\rho_s\,\omega^2\bar r^2`, note: "Thin ring: sleeve over the inner arcs, back-iron wall behind the outer arcs.",
+      val: o => String.raw`\sigma_\mathrm{sleeve}=${tn(o.sSleeve / 1e6)},\quad \sigma_\mathrm{iron}=${tn(o.sIron / 1e6)}${tu("MPa")}` },
+  ]],
+  ["Demagnetisation", [
+    { tag: "9.1", tex: String.raw`H_{cj}(T)=H_{cj,20}\left[1+\beta\,(T-20)\right],\qquad |H|\le0.9\,H_{cj}`, note: "H along the magnetisation at the gap-facing pole face, poles opposed (slipping).",
+      val: o => String.raw`H_\mathrm{in}=${tn(o.HinSlip / 1e3)}\ \text{vs}\ ${tn(0.9 * o.HcjIn / 1e3)},\quad H_\mathrm{out}=${tn(o.HoutSlip / 1e3)}\ \text{vs}\ ${tn(0.9 * o.HcjOut / 1e3)}${tu("kA/m")}` },
+  ]],
+  ["Balance", [
+    { tag: "10.1", tex: String.raw`e=\frac{G}{\omega},\qquad U=m\,e`,
+      val: o => String.raw`e=${tn(o.ecc * 1e6)}${tu("\\mu m")},\ U_\mathrm{allow}=${tn(o.Uallow * 1e9)}${tu("g\\,\\mu m")}\ \text{vs cup}\ ${tn(o.Uhalf * 1e9)}` },
+  ]],
+  ["Motor rotor modes", [
+    { tag: "11.1", tex: String.raw`\bigl(\mathbf K-\omega^2\mathbf M\bigr)\mathbf x=0,\qquad \mathbf x_{k+1}=\mathbf K^{-1}\mathbf M\,\mathbf x_k`, note: "Beam FE with bearing springs; inverse iteration gives the lowest mode.",
+      val: o => String.raw`n_1=${tn(o.modes[0] / 1e3)},\ ${tn(o.modes[1] / 1e3)},\ ${tn(o.modes[2] / 1e3)}${tu("krpm")}\ \text{at}\ 6,10,20${tu("N/\\mu m")}` },
+  ]],
+  ["Starting", [
+    { tag: "12.1", tex: String.raw`K_t=\frac{60}{2\pi K_v},\qquad I_\mathrm{lim}=\frac{0.5\,T_\mathrm{pull\text{-}out}}{K_t}`,
+      val: o => String.raw`K_t=${tn(o.Kt * 1e3)}${tu("mN\\,m/A")},\ I_\mathrm{lim}=${tn(o.Ilim)}${tu("A")}` },
+  ]],
+  ["Load application", [
+    { tag: "13.1", tex: String.raw`\begin{gathered}J\ddot\varphi=T_L-T_c(\varphi),\qquad \omega_m=\omega_0-\dot\varphi\\ T_L^\mathrm{CR}=k\,\omega_m,\quad T_L^\mathrm{CC}=\tfrac{P}{\omega_0},\quad T_L^\mathrm{CP}=\tfrac{P}{\omega_m}\\ \tau\,\dot T_L=T_\mathrm{cmd}-T_L\end{gathered}`,
+      note: "Engine held at ω<sub>0</sub>; φ is the motor rotor's lag. Section 8 integrates this." },
+  ]],
+];
+function tex(node, src) {
+  if (window.katex) katex.render(src, node, { displayMode: true, throwOnError: false });
+  else { node.classList.add("eq-raw"); node.textContent = src; }
+}
+function buildEquations() {
+  $("eqList").innerHTML = EQS.map(([title, eqs], si) => `<div class="eq-sec"><h3>${si + 1} · ${title}</h3>` + eqs.map(e => `
+    <div class="eq" id="eq-${e.tag}">
+      <div class="eq-row"><div class="eq-tex"></div><span class="eq-tag">(${e.tag})</span></div>
+      ${e.note ? `<p class="eq-note">${e.note}</p>` : ""}
+      ${e.val ? `<div class="eq-val"></div>` : ""}
+    </div>`).join("") + "</div>").join("");
+  EQS.forEach(([, eqs]) => eqs.forEach(e => tex($("eq-" + e.tag).querySelector(".eq-tex"), e.tex)));
+  const cb = $("eqVals");
+  try { cb.checked = localStorage.getItem(LS + "-eqvals") !== "0"; } catch (e) {}
+  $("eqs").classList.toggle("novals", !cb.checked);
+  cb.addEventListener("change", () => { $("eqs").classList.toggle("novals", !cb.checked); try { localStorage.setItem(LS + "-eqvals", cb.checked ? "1" : "0"); } catch (e) {} });
+}
+function renderEquations(o) {
+  EQS.forEach(([, eqs]) => eqs.forEach(e => {
+    if (!e.val) return;
+    const node = $("eq-" + e.tag).querySelector(".eq-val");
+    let src = null;
+    try { src = e.val(o); } catch (err) { console.warn(`Eq. (${e.tag})`, err); }
+    node.textContent = ""; if (src != null) tex(node, src);
+  }));
+}
+
+// ---------- render
+let O = null, sweepTimer = null, simTimer = null;
+function row(cells) { return `<tr>${cells.map((c, k) => k === 0 ? `<td>${c}</td>` : c.startsWith("<td") ? c : `<td class="num">${c}</td>`).join("")}</tr>`; }
+function update() {
+  try { localStorage.setItem(LS, JSON.stringify({ preset, S })); } catch (e) {}
+  markDiffs();
+  const o = M.run(modelInputs()); O = o;
+  const mN = v => fs(v * 1e3, 3), g = v => fs(v * 1e3, 3), MPa = v => fs(v / 1e6, 3);
+
+  // KPIs
+  $("k1").innerHTML = `${mN(o.TmaxHot)}<span>mN·m</span>`;
+  $("k1c").textContent = `cold ${mN(o.TmaxCold)} mN·m`;
+  $("k1n").textContent = `inner ${S.Tin} °C, outer ${S.Tout} °C`;
+  $("k2").innerHTML = `${fs(o.marginWorst, 3)}<span>×</span>`;
+  $("k2c").textContent = `${fs(o.marginNom, 3)}× nominal`;
+  $("k2n").textContent = `worst ${mN(o.Tworst)} mN·m; target ≥ 2×`;
+  $("k3").innerHTML = `${fs(o.fn, 3)}<span>Hz</span>`;
+  $("k3c").textContent = `k = ${fs(o.kth, 3)} N·m/rad`;
+  $("k3n").textContent = `re-locks below ${kr(o.nRelock)} rpm slip`;
+  $("k4").innerHTML = `${g(o.mEngine)}<span>g</span>`;
+  $("k4c").textContent = `motor half ${g(o.mMotor)} g`;
+  $("k4n").textContent = "stock front nut about 4 g";
+
+  // checks
+  const pass = o.modePass, m10 = o.modes[1];
+  const C = [
+    ["Torque margin, hot", st(o.marginWorst, 2, 1.5), `${fs(o.marginWorst, 3)}× worst running torque`, "#req"],
+    ["Sudden load step", st(o.stepLim / o.Tworst, 1.2, 1), `limit ${mN(o.stepLim)} vs ${mN(o.Tworst)} mN·m`, "#sim"],
+    ["Demagnetisation if it slips", Math.max(o.demagIn, o.demagOut) <= 1 ? "ok" : Math.max(o.demagIn, o.demagOut) <= 1 / 0.9 ? "warn" : "bad", `${fs(100 * Math.max(o.demagIn, o.demagOut), 3)} % of the knee field`, "#field"],
+    ["Cup back iron", st(o.tW / o.tWallNeed, 1, 0.85), `${fs(S.tWall, 2)} mm wall, ${fs(o.Bwall, 3)} T`, "#field"],
+    ["Shaft as back iron", !S.shaftIron ? "info" : st(o.a0 / o.tShNeed, 1, 0.8), S.shaftIron ? `needs ${fs(o.tShNeed * 1e3, 2)} mm of ${fs(o.a0 * 1e3, 2)} mm radius` : "non-magnetic shaft: torque already reduced", "#field"],
+    ["Sleeve stress at test speed", st(o.sl.yld * 1e6 / o.sSleeve, 2, 1.5), `${MPa(o.sSleeve)} MPa, SF ${fs(o.sl.yld * 1e6 / o.sSleeve, 2)}`, "#design"],
+    ["Back-iron stress at test speed", st(o.fe.yld * 1e6 / o.sIron, 2, 1.5), `${MPa(o.sIron)} MPa, SF ${fs(o.fe.yld * 1e6 / o.sIron, 2)}`, "#design"],
+    ["Motor first mode, 10 N/µm", st(m10 / pass, 1, 0.95), `${kr(m10)} rpm vs ${kr(pass)}`, "#modes"],
+    ["Engine-side balance", o.Uhalf <= o.Uallow ? "ok" : "warn", o.Uhalf <= o.Uallow ? "within G" + S.G : `cup ${fs(o.Uhalf / o.Uallow, 2)}× G${S.G}: field-balance`, "#engine"],
+  ];
+  $("checks").innerHTML = C.map(([t, s, d, a]) => `<div class="check"><span class="ico ${s}" aria-hidden="true">${ICON[s]}</span><a href="${a}"><b>${t}</b>${esc(d)}</a></div>`).join("");
+
+  // requirements
+  $("reqBody").innerHTML = [
+    ["Nominal running", `${mN(o.Tnom)} mN·m`, `${fs(o.marginNom, 3)}×`, `<td class="l">${fs(S.Pnom, 4)} W at ${kr(S.nGen)} rpm <span class="tagref">(1.1)</span></td>`],
+    ["Worst-case running", `${mN(o.Tworst)} mN·m`, `${fs(o.marginWorst, 3)}×`, `<td class="l">${fs(S.Pworst, 4)} W at ${kr(S.nLow)} rpm</td>`],
+    ["CR load left on at maximum", `${mN(o.Tcr)} mN·m`, `${fs(o.TmaxHot / o.Tcr, 3)}×`, `<td class="l">about ${fs(o.Pcr, 3)} W at ${kr(S.nMax)} rpm <span class="tagref">(1.2)</span></td>`],
+    ["Starter, at the ESC limit", `${mN(o.TstartLim)} mN·m`, `${fs(o.TmaxCold / o.TstartLim, 3)}× cold`, `<td class="l">${fs(o.Ilim, 3)} A at K<sub>t</sub> ${fs(o.Kt * 1e3, 3)} mN·m/A; stock starter stall about 72 mN·m <span class="tagref">(12.1)</span></td>`],
+    ["Engine spool-up, inertia only", `${fs(o.Tacc * 1e3, 2)} mN·m`, `${fs(o.TmaxHot / o.Tacc, 3)}×`, `<td class="l">idle to max in ${fs(S.tSpool, 2)} s <span class="tagref">(7.5)</span></td>`],
+  ].map(row).join("");
+
+  // dimensions table
+  $("dimBody").innerHTML = [
+    ["Poles", `<td class="l">${2 * o.p} (${o.p} pole pairs), ${S.mode} arcs, ${fs(S.alpha * 100, 3)} % pole arc</td>`, `<td class="l">${2 * o.p} arcs per ring, ${fs(360 / (2 * o.p) * S.alpha, 3)}° each</td>`],
+    ["Inner rotor (motor)", `<td class="l">${esc(o.mi.name)}, Ø${fs(S.dMag)} × Ø${fs(S.dShaft)} × ${fs(S.Lin)} mm; ${esc(o.sl.name)} sleeve ${fs(S.tSleeve)} mm (Ø${fs((o.a1 + o.tSl) * 2e3, 3)})</td>`, `<td class="l">${g(o.mMotor)} g; starts ${fs(S.standoff)} mm from the motor face; shaft extension ${fs(o.frontExt * 1e3, 3)} mm</td>`],
+    ["Gap", `<td class="l">${fs(S.clr)} mm radial clearance, ${fs(o.gapMag * 1e3, 3)} mm magnetic gap</td>`, `<td class="l">keep running offset ≤ 0.15 mm, angle ≤ 0.3°</td>`],
+    ["Outer cup (engine)", `<td class="l">${esc(o.mo.name)}, Ø${fs(o.b1 * 2e3, 3)} × Ø${fs(o.b2 * 2e3, 3)} × ${fs(S.Lout)} mm in a ${fs(S.tWall)} mm ${esc(o.fe.name)} wall (Ø${fs(o.rc * 2e3, 3)})</td>`, `<td class="l">${g(o.mEngine)} g with ${esc(o.hub.name.toLowerCase())} (magnets ${g(o.mMagOut)}, iron ${g(o.mIron)}, hub ${g(o.mHub)})</td>`],
+    ["Pull-out torque", `<td class="l">${mN(o.TmaxCold)} mN·m cold, ${mN(o.TmaxHot)} hot</td>`, `<td class="l">ring overlap ${fs(o.overlap * 1e3, 3)} mm × end factor ${fs(S.kEnd)} <span class="tagref">(4.2)</span></td>`],
+    ["Stress at test speed", `<td class="l">sleeve ${MPa(o.sSleeve)} MPa (SF ${fs(o.sl.yld * 1e6 / o.sSleeve, 2)}); back iron ${MPa(o.sIron)} MPa (SF ${fs(o.fe.yld * 1e6 / o.sIron, 2)})</td>`, `<td class="l">surface speed ${fs(o.vIn, 3)} m/s at the sleeve, ${fs(o.vOut, 3)} m/s at the cup <span class="tagref">(8.2)</span></td>`],
+  ].map(r => `<tr><td>${r[0]}</td>${r[1]}${r[2]}</tr>`).join("");
+
+  // field checks
+  const stc = s => `<td class="l st-${s}">${{ ok: "OK", warn: "marginal", bad: "fails", info: "n/a" }[s]}</td>`;
+  const dIn = o.demagIn <= 1 ? "ok" : o.demagIn <= 1 / 0.9 ? "warn" : "bad", dOut = o.demagOut <= 1 ? "ok" : o.demagOut <= 1 / 0.9 ? "warn" : "bad";
+  $("fieldBody").innerHTML = [
+    ["Peak radial flux entering the cup", `${fs(o.Bcup, 3)} T`, "—", `<td class="l">fundamental, magnets aligned</td>`],
+    ["Cup wall needed / fitted", `${fs(o.tWallNeed * 1e3, 3)} / ${fs(S.tWall, 2)} mm`, `${fs(S.Bwall, 2)} T design`, stc(st(o.tW / o.tWallNeed, 1, 0.85))],
+    ["Flux density in the fitted wall", `${fs(o.Bwall, 3)} T`, `${fs(o.fe.Bsat, 2)} T saturation`, stc(o.Bwall <= S.Bwall * 1.001 ? "ok" : o.Bwall < o.fe.Bsat ? "warn" : "bad")],
+    ["Shaft flux depth needed", `${fs(o.tShNeed * 1e3, 3)} mm`, `${fs(o.a0 * 1e3, 3)} mm radius`, S.shaftIron ? stc(st(o.a0 / o.tShNeed, 1, 0.8)) : stc("info")],
+    ["Inner pole face at pull-out", `${fs(o.HinPk / 1e3, 3)} kA/m`, `${fs(-0.9 * o.HcjIn / 1e3, 3)} at ${S.Tin} °C`, stc(-o.HinPk <= 0.9 * o.HcjIn ? "ok" : "bad")],
+    ["Inner pole face, slipping", `${fs(o.HinSlip / 1e3, 3)} kA/m`, `${fs(-0.9 * o.HcjIn / 1e3, 3)}`, stc(dIn)],
+    ["Outer pole face at pull-out", `${fs(o.HoutPk / 1e3, 3)} kA/m`, `${fs(-0.9 * o.HcjOut / 1e3, 3)} at ${S.Tout} °C`, stc(-o.HoutPk <= 0.9 * o.HcjOut ? "ok" : "bad")],
+    ["Outer pole face, slipping", `${fs(o.HoutSlip / 1e3, 3)} kA/m`, `${fs(-0.9 * o.HcjOut / 1e3, 3)}`, stc(dOut)],
+  ].map(row).join("");
+
+  // disturbance
+  $("distBody").innerHTML = [
+    ["Radial (lateral)", `${fs(o.kr / 1e3, 3)} N/mm`, `<td class="l">Destabilising, about ${fs(o.kr / 1e7 * 100, 2)} % of a 10 N/µm bearing, so modes do not move. ${fs(S.offset)} mm offset pulls ${fs(o.Fr, 2)} N on each shaft <span class="tagref">(6.1)</span>.</td>`],
+    ["Axial", "≈ 0 N", `<td class="l">No net force when centred; small restoring force when offset. The ${fs(S.Lout - S.Lin, 2)} mm longer outer ring absorbs ±${fs(Math.max(0, (S.Lout - S.Lin) / 2), 2)} mm of float with no torque loss.</td>`],
+    ["Torsional", `${fs(o.fn, 3)} Hz`, `<td class="l">Soft spring, ${fs(o.kth, 3)} N·m/rad <span class="tagref">(7.1)</span>. Passes about ${o.ripple.toExponential(1)} of the ${fs(o.fRipple / 1e3, 3)} kHz rectifier ripple <span class="tagref">(7.6)</span>. Damping ratio about ${fs(o.zetaCR, 2)} with a CR load <span class="tagref">(7.2)</span>.</td>`],
+    ["Loss in sync", "≈ 0 W", `<td class="l">Both halves turn together, so rotating parts see a static field; only stationary metal nearby sees the ${fs(o.p * S.nGen / 60 / 1e3, 3)} kHz pole field.</td>`],
+  ].map(row).join("");
+
+  // modes table
+  const mc = v => `<td class="num ${v >= pass ? "st-ok" : v >= 0.95 * pass ? "st-warn" : "st-bad"}">${kr(v)}</td>`;
+  $("modeBody").innerHTML = `<tr><td>No coupler, stock 16 mm shaft extension</td>${o.modesBare.map(mc).join("")}</tr>` +
+    `<tr class="rec"><td>With the inner half as set (${g(o.mMotor)} g${S.washer ? " + washer" : ""}, ${fs(S.standoff)}–${fs(S.standoff + S.Lin, 3)} mm ahead of the face)</td>${o.modes.map(mc).join("")}</tr>` +
+    `<tr><td>Pass mark (1.1 × test speed)</td><td class="num" colspan="3">${kr(pass)} rpm</td></tr>`;
+
+  // engine side
+  $("engBody").innerHTML = [
+    ["Engine-side half", `${g(o.mEngine)} g`, `<td class="l">${esc(o.hub.name)}; stock front nut about 4 g</td>`],
+    ["Cup outside diameter", `${fs(o.rc * 2e3, 3)} mm`, `<td class="l">inside the motor's shadow in the intake</td>`],
+    ["G" + fs(S.G) + " permissible eccentricity at " + kr(S.nCap) + " rpm", `${fs(o.ecc * 1e6, 2)} µm`, `<td class="l">e = G/ω <span class="tagref">(10.1)</span></td>`],
+    ["Permissible residual unbalance, engine rotor + half", `${fs(o.Uallow * 1e9, 3)} g·µm`, `<td class="l">${fs(S.mEngRotor)} g rotor + the half</td>`],
+    ["Cup mounted " + fs(S.eccHalf) + " µm off centre", `${fs(o.Uhalf * 1e9, 3)} g·µm`, `<td class="l ${o.Uhalf <= o.Uallow ? "st-ok" : "st-warn"}">${fs(o.Uhalf / o.Uallow, 2)}× the allowance${o.Uhalf > o.Uallow ? ": field-balance in place" : ""}</td>`],
+    ["Permissible residual unbalance, 1525 rotor + half", `${fs(o.UallowMotor * 1e9, 3)} g·µm`, `<td class="l">balance the motor rotor with its half fitted</td>`],
+  ].map(row).join("");
+
+  // procedure text
+  const ex = [6, 1, 0.25].map(t => o.J * M.w(S.nMax - S.nIdle) / t);
+  $("accText").innerHTML = `The motor rotor's inertia puts only ${fs(o.Tacc * 1e3, 2)} mN·m through the coupler for a ${fs(S.tSpool, 2)} s spool-up (forum reports put the P100 at about 6 s from idle to full), ${fs(ex[1] * 1e3, 2)} mN·m for 1 s and ${fs(ex[2] * 1e3, 2)} mN·m for an unrealistic 0.25 s, against ${mN(o.TmaxHot)} mN·m pull-out hot <span class="tagref">(7.5)</span>. Decelerations and a flameout are similar.`;
+  $("escText").innerHTML = `with the pull-out ${S.Tmeas > 0 ? "you measured" : "calculated"} at ${mN(o.TstartBase)} mN·m and K<sub>v</sub> ${fs(S.Kv, 4)}, that is ${mN(o.TstartLim)} mN·m, or about <b>${fs(o.Ilim, 3)} A</b> <span class="tagref">(12.1)</span>.`;
+  $("stepText").innerHTML = `A sudden full-load step is within the coupler's step capacity (${mN(o.stepLim)} mN·m hot against ${mN(o.Tworst)} worst case <span class="tagref">(7.3)</span>), so the ramp is not for the coupler.`;
+  $("crText").innerHTML = `A CR load left on would draw about ${fs(o.Pcr, 3)} W and ${mN(o.Tcr)} mN·m at ${kr(S.nMax)} rpm, heating the motor.`;
+  $("relockText").innerHTML = `The coupler only re-locks once the slip speed falls below about ${kr(o.nRelock)} rpm <span class="tagref">(7.4)</span>, which happens during the coast-down.`;
+
+  drawXsec(o);
+  const xs = o.curveCold.map(([d]) => d * o.p * 180 / Math.PI);
+  const ymax = Math.max(o.TmaxCold, o.Tworst) * 1e3 * 1.15;
+  lineChart($("curve"), {
+    xr: [0, 180], yr: [0, ymax], xl: "Inner rotor angle from aligned, electrical degrees", yl: "mN·m", h: 250,
+    aria: `Torque against angle: pull-out ${mN(o.TmaxCold)} mN·m cold and ${mN(o.TmaxHot)} hot`,
+    series: [{ pts: o.curveCold.map(([d, T], k) => [xs[k], T * 1e3]), c: "var(--s1)" }, { pts: o.curveHot.map(([d, T], k) => [xs[k], T * 1e3]), c: "var(--accent)" }],
+    hl: [{ y: o.Tnom * 1e3, c: "var(--muted)" }, { y: o.Tworst * 1e3, c: "var(--warn)" }, { y: o.stepLim * 1e3, c: "var(--good)" }],
+    dots: [{ x: angleAt(o.curveHot, o.Tnom) * o.p * 180 / Math.PI, y: o.Tnom * 1e3, c: "var(--text)" }],
+  });
+  renderEquations(o);
+  clearTimeout(sweepTimer); sweepTimer = setTimeout(() => drawSweep(o), 250);
+  clearTimeout(simTimer); simTimer = setTimeout(runSim, 120);
+}
+function angleAt(curve, T) {                // first angle where the curve reaches T
+  for (let k = 1; k < curve.length; k++) if (curve[k][1] >= T) { const [d0, T0] = curve[k - 1], [d1, T1] = curve[k]; return d0 + (T - T0) / (T1 - T0) * (d1 - d0); }
+  return NaN;
+}
+function drawSweep(o) {
+  const sw = M.massSweep(o, modelInputs(), 10e6);
+  const ys = sw.map(r => r[1] / 1e3);
+  const lo = Math.min(...ys, o.modePass / 1e3) * 0.95, hi = Math.max(...ys, o.modePass / 1e3) * 1.03;
+  lineChart($("sweep"), {
+    xr: [0, 10], yr: [Math.floor(lo / 10) * 10, Math.ceil(hi / 10) * 10], xl: "Inner-half mass, g (spread over the magnet length as set)", yl: "krpm", h: 220,
+    aria: "First motor mode against coupler-half mass",
+    series: [{ pts: sw.map(([gm, n]) => [gm, n / 1e3]), c: "var(--s1)" }],
+    hl: [{ y: o.modePass / 1e3, c: "var(--bad)", t: "pass" }],
+    dots: [{ x: o.mMotor * 1e3, y: o.modes[1] / 1e3, c: "var(--accent)" }],
+  });
+}
+
+// ---------- simulator
+const SIMF = ["sMode", "sP", "sRamp", "sTau", "sHold", "sZeta"];
+function runSim() {
+  if (!O) return;
+  const v = id => parseFloat($(id).value);
+  const s = { mode: $("sMode").value, P: v("sP"), ramp: Math.max(0, v("sRamp") || 0), tau: Math.max(0, (v("sTau") || 0) / 1000), hold: Math.max(0.1, v("sHold") || 0.5), zeta: Math.max(0, v("sZeta") || 0) };
+  if (!isFinite(s.P)) return;
+  const r = M.simulate(O, s);
+  const pk = O.dPk * O.p * 180 / Math.PI;
+  const tr = r.trace.map(([t, e]) => [t, e]);
+  const ymax = Math.max(200, ...tr.map(p => Math.min(400, Math.abs(p[1])))) ;
+  lineChart($("simChart"), {
+    xr: [0, Math.max(r.tEnd, tr.length ? tr[tr.length - 1][0] : 0.1)], yr: [Math.min(0, ...tr.map(p => Math.max(-ymax, p[1]))), Math.min(400, ymax * 1.05)],
+    xl: "Time, s", yl: "Coupler lag, electrical degrees", h: 240, aria: "Coupler angle during load application",
+    series: [{ pts: tr, c: "var(--s1)", wd: 1.4 }],
+    hl: [{ y: pk, c: "var(--warn)", t: "pull-out" }, { y: 180, c: "var(--bad)", t: "slip" }],
+  });
+  const Tl = s.P / O.wGen;
+  $("simRes").innerHTML = r.slipped
+    ? `<b class="bad">Slipped</b> at ${fs(r.tSlip, 3)} s. Load ${fs(Tl * 1e3, 3)} mN·m against ${fs(O.TmaxHot * 1e3, 3)} mN·m pull-out hot.`
+    : `<b class="ok">Held.</b> Peak lag ${fs(r.maxE, 3)}° electrical (pull-out at ${fs(pk, 3)}°), peak coupler torque ${fs(r.Tpeak * 1e3, 3)} mN·m against ${fs(O.TmaxHot * 1e3, 3)} hot. Steady load ${fs(Tl * 1e3, 3)} mN·m.`;
+}
+function setupSim() {
+  SIMF.forEach(id => $(id).addEventListener(id === "sMode" ? "change" : "input", () => { clearTimeout(simTimer); simTimer = setTimeout(runSim, 120); }));
+  $("simPresets").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    const d = JSON.parse(b.dataset.s);
+    $("sHold").value = 1; $("sTau").value = 1; $("sZeta").value = 0;
+    Object.entries(d).forEach(([k, v]) => { $(k).value = v; });
+    runSim();
+  }));
+}
+
+// ---------- share link and persistence
+function readHash() {
+  if (!location.hash.startsWith("#s=")) return false;
+  try {
+    const d = JSON.parse(decodeURIComponent(location.hash.slice(3)));
+    preset = PRESETS[d.preset] ? d.preset : "rec";
+    S = { ...DEF, ...PRESETS[preset].v, ...d.v };
+    return true;
+  } catch (e) { return false; }
+}
+$("share").addEventListener("click", () => {
+  const ref = { ...DEF, ...PRESETS[preset].v }, v = {};
+  Object.keys(S).forEach(k => { if (String(S[k]) !== String(ref[k])) v[k] = S[k]; });
+  const url = location.href.split("#")[0] + "#s=" + encodeURIComponent(JSON.stringify({ preset, v }));
+  const done = ok => { $("shareMsg").textContent = ok ? "Link copied." : url; };
+  if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => done(true), () => done(false)); else done(false);
+});
+$("reset").addEventListener("click", () => { S = { ...DEF, ...PRESETS[preset].v }; fill(); update(); });
+
+buildInputs();
+buildEquations();
+setupSim();
+if (!readHash()) {
+  try { const d = JSON.parse(localStorage.getItem(LS)); if (d && d.S) { preset = PRESETS[d.preset] ? d.preset : "rec"; S = { ...DEF, ...d.S }; } } catch (e) {}
+}
+fill();
+update();
+let rsz = null;
+window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(update, 200); });
+</script>
+</body>
+</html>
